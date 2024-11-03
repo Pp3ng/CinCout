@@ -2,10 +2,11 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Web C/C++ Editor</title>
+    <title>Web C/C++</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/nord.min.css">
-    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg">
+    <link rel="icon" type="image/png"
+          href="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/gas/gas.min.js"></script>
@@ -240,7 +241,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Web C/C++ Editor</h1>
+        <h1>Web C/C++</h1>
         <div class="controls">
             <select id="language">
                 <option value="c">C</option>
@@ -269,6 +270,12 @@
                             <path d="M5 15l7-7 7 7"/>
                         </svg>
                         Compile & Run
+                    </button>
+                    <button id="format">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5l7 7-7 7M5 12h14"/>
+                        </svg>
+                        Format
                     </button>
                     <button id="viewAssembly">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -332,14 +339,14 @@
     });
 
     const templates = {
-    c: {
-        "Hello World": `#include <stdio.h>
+        c: {
+            "Hello World": `#include <stdio.h>
 
 int main(int argc, const char *argv[]) {
     printf("Hello, World!\\n");
     return 0;
 }`,
-        "Array Sum": `#include <stdio.h>
+            "Array Sum": `#include <stdio.h>
 
 int main(int argc, const char *argv[]) {
     int arr[] = {1, 2, 3, 4, 5};
@@ -352,7 +359,7 @@ int main(int argc, const char *argv[]) {
     printf("Sum: %d\\n", sum);
     return 0;
 }`,
-        "Recursion Factorial": `#include <stdio.h>
+            "Recursion Factorial": `#include <stdio.h>
 
 int factorial(int n) {
     if (n <= 1) return 1;
@@ -364,7 +371,7 @@ int main(int argc, const char *argv[]) {
     printf("Factorial of %d is %d\\n", n, factorial(n));
     return 0;
 }`,
-        "Dynamic Array": `#include <stdio.h>
+            "Dynamic Array": `#include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, const char *argv[]) {
@@ -381,12 +388,12 @@ int main(int argc, const char *argv[]) {
     free(arr); // Free allocated memory
     return 0;
 }`,
-        "Fork": `#include <stdio.h>
+            "Fork": `#include <stdio.h>
 #include <unistd.h>
 
 int main(int argc, const char *argv[]) {
     pid_t pid = fork();
-    
+
     if (pid < 0) {
         perror("Fork failed");
         return 1;
@@ -397,10 +404,10 @@ int main(int argc, const char *argv[]) {
         // Parent process
         printf("Hello from parent process!\\n");
     }
-    
+
     return 0;
 }`,
-        "Sleep": `#include <stdio.h>
+            "Sleep": `#include <stdio.h>
 #include <unistd.h>
 
 int main(int argc, const char *argv[]) {
@@ -409,7 +416,7 @@ int main(int argc, const char *argv[]) {
     printf("Awake now!\\n");
     return 0;
 }`,
-        "String Copy": `#include <stdio.h>
+            "String Copy": `#include <stdio.h>
 #include <string.h>
 
 int main() {
@@ -419,7 +426,7 @@ int main() {
     printf("Copied string: %s\\n", destination);
     return 0;
 }`,
-        "Pointer Arithmetic": `#include <stdio.h>
+            "Pointer Arithmetic": `#include <stdio.h>
 
 int main() {
     int arr[] = {10, 20, 30, 40, 50};
@@ -428,7 +435,7 @@ int main() {
     printf("Second element: %d\\n", *(ptr + 1)); // Pointer arithmetic
     return 0;
 }`,
-        "Swap Function": `#include <stdio.h>
+            "Swap Function": `#include <stdio.h>
 
 void swap(int *a, int *b) {
     int temp = *a;
@@ -442,15 +449,15 @@ int main() {
     printf("After swap: x = %d, y = %d\\n", x, y);
     return 0;
 }`
-    },
-    cpp: {
-        "Hello World": `#include <iostream>
+        },
+        cpp: {
+            "Hello World": `#include <iostream>
 
 int main(int argc, const char *argv[]) {
     std::cout << "Hello, World!" << std::endl;
     return 0;
 }`,
-        "Array Sum": `#include <iostream>
+            "Array Sum": `#include <iostream>
 
 int main() {
     int arr[] = {1, 2, 3, 4, 5};
@@ -463,7 +470,7 @@ int main() {
     std::cout << "Sum: " << sum << std::endl;
     return 0;
 }`,
-        "Classes": `#include <iostream>
+            "Classes": `#include <iostream>
 #include <string>
 
 class Person {
@@ -484,7 +491,7 @@ int main() {
     person.introduce();
     return 0;
 }`,
-        "Basic Pointer": `#include <iostream>
+            "Basic Pointer": `#include <iostream>
 
 int main() {
     int value = 42;
@@ -493,7 +500,7 @@ int main() {
     std::cout << "Value: " << value << ", Pointer points to: " << *ptr << std::endl;
     return 0;
 }`,
-        "Sorting with Array": `#include <iostream>
+            "Sorting with Array": `#include <iostream>
 #include <algorithm>
 
 int main() {
@@ -509,7 +516,7 @@ int main() {
     std::cout << std::endl;
     return 0;
 }`,
-        "Template Function": `#include <iostream>
+            "Template Function": `#include <iostream>
 
 template<typename T>
 T add(T a, T b) {
@@ -521,7 +528,7 @@ int main() {
     std::cout << "Sum of 5.5 and 4.5: " << add(5.5, 4.5) << std::endl;
     return 0;
 }`,
-        "String Manipulation": `#include <iostream>
+            "String Manipulation": `#include <iostream>
 #include <cstring>
 
 int main() {
@@ -532,7 +539,7 @@ int main() {
     std::cout << "Copied string: " << copy << std::endl;
     return 0;
 }`,
-        "Polymorphism": `#include <iostream>
+            "Polymorphism": `#include <iostream>
 
 class Animal {
 public:
@@ -554,7 +561,7 @@ int main() {
     delete[] animal;
     return 0;
 }`,
-        "Lambda Function": `#include <iostream>
+            "Lambda Function": `#include <iostream>
 #include <vector>
 #include <algorithm>
 
@@ -566,7 +573,7 @@ int main() {
     std::cout << std::endl;
     return 0;
 }`,
-        "Smart Pointers": `#include <iostream>
+            "Smart Pointers": `#include <iostream>
 #include <memory>
 
 class Resource {
@@ -581,8 +588,8 @@ int main() {
     res1->sayHello();
     return 0;
 }`
-    }
-};
+        }
+    };
 
 
     function updateTemplates() {
@@ -662,6 +669,34 @@ int main() {
             });
     };
 
+    // Format button click handler
+    document.getElementById("format").onclick = function () {
+        const code = editor.getValue();
+        const cursor = editor.getCursor();
+
+        const lang = document.getElementById("language").value;
+
+        fetch('format.jsp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'code=' + encodeURIComponent(code) +
+                '&lang=' + encodeURIComponent(lang)
+        })
+            .then(response => response.text())
+            .then(data => {
+                const scrollInfo = editor.getScrollInfo();
+                editor.setValue(data);
+                editor.setCursor(cursor);
+                editor.scrollTo(scrollInfo.left, scrollInfo.top);
+                editor.refresh();
+            })
+            .catch(error => {
+                console.error("Format error:", error);
+            });
+    }
+
     // View assembly button click handler
     document.getElementById("viewAssembly").onclick = function () {
         const code = editor.getValue();
@@ -712,7 +747,7 @@ int main() {
             document.getElementById("clear").click();
         }
         // Ctrl+S or Cmd+S to save code
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'S') {
             e.preventDefault();
             const code = editor.getValue();
             const blob = new Blob([code], {type: 'text/plain'});
@@ -736,6 +771,11 @@ int main() {
                 reader.readAsText(file);
             };
             input.click();
+        }
+        //Ctrl+Alt+L or Cmd+Alt+L to format code
+        if (e.ctrlKey && e.altKey && e.key === 'L') {
+            e.preventDefault();
+            document.getElementById("format").click();
         }
     });
 

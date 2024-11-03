@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Advanced C/C++ Editor</title>
+    <title>Web C/C++ Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/nord.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
@@ -42,6 +42,16 @@
             padding: 15px 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .github-icon {
+            width: 32px;
+            height: 32px;
+            transition: opacity 0.3s;
+        }
+
+        .github-icon:hover {
+            opacity: 0.8;
         }
 
         .controls {
@@ -229,7 +239,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Advanced C/C++ Editor</h1>
+            <h1>Web C/C++ Editor</h1>
             <div class="controls">
                 <select id="language">
                     <option value="c">C</option>
@@ -242,6 +252,9 @@
                         <span class="slider"></span>
                     </label>
                 </div>
+                <a href="https://github.com/Pp3ng/webCpp" target="_blank">
+                <img src="https://github.com/fluidicon.png" alt="GitHub" class="github-icon">
+                </a>
             </div>
         </div>
         <div class="editor-container">

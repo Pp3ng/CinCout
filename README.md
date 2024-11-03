@@ -10,8 +10,8 @@ This project is a web-based code editor and compiler for C/C++ programs. It allo
   - ctrl/cmd + enter to compile and run
   - ctrl/cmd + shift + A to show assembly code
   - ctrl/cmd + L to clear the output
-  - ctrl/cmd + s to save to local storage
-  - ctrl/cmd + o to load from local storage
+  - ctrl/cmd + S to save to local storage
+  - ctrl/cmd + O to load from local storage
 
 # setup guide
 

@@ -5,14 +5,25 @@ This project is a web-based code editor and compiler for C/C++ programs. It allo
 ## Features
 
 - Syntax highlighting
-- vim keybindings
+- vim keybindings for the editor
+- Show assembly code
+- Save and load code from local storage
 - shortcut keys for compiling and running code
+
   - ctrl/cmd + enter to compile and run
   - ctrl/cmd + shift + A to show assembly code
   - ctrl/cmd + L to clear the output
   - ctrl/cmd + S to save to local storage
   - ctrl/cmd + O to load from local storage
   - ctrl/cmd + Alt + F to format code
+
+- Multiple themes
+- Nord
+- Dracula
+- Monokai
+- Material
+- Ayu-dark
+- Gruvbox-dark
 
 # setup guide
 
@@ -107,27 +118,6 @@ Open in web browser:
 ```
 http://your_server_ip:8080/code-editor/
 ```
-
-## Troubleshooting
-
-### Common Issues
-
-1. 404 Not Found
-
-   - Check file permissions
-   - Verify JSP file locations
-   - Review Tomcat logs
-
-2. Compilation Failures
-
-   - Verify GCC/G++ installation
-   - Check tmp directory permissions
-   - Review system logs
-
-3. Permission Errors
-   - Verify catalina.policy configuration
-   - Check directory permissions
-   - Adjust SELinux settings if needed
 
 ### Debugging Commands
 

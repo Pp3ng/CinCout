@@ -419,7 +419,7 @@ int main(int argc, const char *argv[]) {
             "String Copy": `#include <stdio.h>
 #include <string.h>
 
-int main() {
+int main(int argc, const char *argv[]) {
     char source[] = "Hello, World!";
     char destination[50];
     strcpy(destination, source);
@@ -428,7 +428,7 @@ int main() {
 }`,
             "Pointer Arithmetic": `#include <stdio.h>
 
-int main() {
+int main(int argc, const char *argv[]) {
     int arr[] = {10, 20, 30, 40, 50};
     int *ptr = arr;
 
@@ -443,7 +443,7 @@ void swap(int *a, int *b) {
     *b = temp;
 }
 
-int main() {
+int main(int argc, const char *argv[]) {
     int x = 5, y = 10;
     swap(&x, &y);
     printf("After swap: x = %d, y = %d\\n", x, y);
@@ -459,7 +459,7 @@ int main(int argc, const char *argv[]) {
 }`,
             "Array Sum": `#include <iostream>
 
-int main() {
+int main(int argc, const char *argv[]) {
     int arr[] = {1, 2, 3, 4, 5};
     int sum = 0;
 
@@ -486,14 +486,14 @@ public:
     }
 };
 
-int main() {
+int main(int argc, const char *argv[]) {
     Person person("Alice", 25);
     person.introduce();
     return 0;
 }`,
             "Basic Pointer": `#include <iostream>
 
-int main() {
+int main(int argc, const char *argv[]) {
     int value = 42;
     int* ptr = &value;
 
@@ -503,7 +503,7 @@ int main() {
             "Sorting with Array": `#include <iostream>
 #include <algorithm>
 
-int main() {
+int main(int argc, const char *argv[]) {
     int arr[] = {5, 2, 8, 1, 4};
     int n = sizeof(arr) / sizeof(arr[0]);
 
@@ -523,15 +523,15 @@ T add(T a, T b) {
     return a + b;
 }
 
-int main() {
-    std::cout << "Sum of 3 and 4: " << add(3, 4) << std::endl;
+int 
+
     std::cout << "Sum of 5.5 and 4.5: " << add(5.5, 4.5) << std::endl;
     return 0;
 }`,
             "String Manipulation": `#include <iostream>
 #include <cstring>
 
-int main() {
+int main(int argc, const char *argv[]) {
     const char* str = "Hello, World!";
     char copy[20];
     strcpy(copy, str);
@@ -555,7 +555,7 @@ public:
     }
 };
 
-int main() {
+int main(int argc, const char *argv[]) {
     Animal* animal = new Dog();
     animal->speak(); // Triggers Dog's speak() due to polymorphism
     delete[] animal;
@@ -565,7 +565,7 @@ int main() {
 #include <vector>
 #include <algorithm>
 
-int main() {
+int main(int argc, const char *argv[]) {
     std::vector<int> nums = {1, 2, 3, 4, 5};
     std::for_each(nums.begin(), nums.end(), [](int n) {
         std::cout << n * n << " ";
@@ -583,7 +583,7 @@ public:
     void sayHello() const { std::cout << "Hello from Resource\\n"; }
 };
 
-int main() {
+int main(int argc, const char *argv[]) {
     std::unique_ptr<Resource> res1 = std::make_unique<Resource>();
     res1->sayHello();
     return 0;
@@ -669,33 +669,34 @@ int main() {
             });
     };
 
-    // Format button click handler
     document.getElementById("format").onclick = function () {
-        const code = editor.getValue();
-        const cursor = editor.getCursor();
+    const code = editor.getValue();
+    const cursor = editor.getCursor();
 
-        const lang = document.getElementById("language").value;
+    const lang = document.getElementById("language").value;
 
-        fetch('format.jsp', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'code=' + encodeURIComponent(code) +
-                '&lang=' + encodeURIComponent(lang)
+    fetch('format.jsp', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'code=' + encodeURIComponent(code) +
+            '&lang=' + encodeURIComponent(lang)
+    })
+        .then(response => response.text())
+        .then(data => {
+            // Remove leading and trailing newlines
+            const formattedData = data.replace(/^\n+/, '').replace(/\n+$/, '');
+            const scrollInfo = editor.getScrollInfo();
+            editor.setValue(formattedData);
+            editor.setCursor(cursor);
+            editor.scrollTo(scrollInfo.left, scrollInfo.top);
+            editor.refresh();
         })
-            .then(response => response.text())
-            .then(data => {
-                const scrollInfo = editor.getScrollInfo();
-                editor.setValue(data);
-                editor.setCursor(cursor);
-                editor.scrollTo(scrollInfo.left, scrollInfo.top);
-                editor.refresh();
-            })
-            .catch(error => {
-                console.error("Format error:", error);
-            });
-    }
+        .catch(error => {
+            console.error("Format error:", error);
+        });
+    };
 
     // View assembly button click handler
     document.getElementById("viewAssembly").onclick = function () {
@@ -742,12 +743,12 @@ int main() {
             document.getElementById("viewAssembly").click();
         }
         // Ctrl+L or Cmd+L to clear output
-        if ((e.ctrlKey || e.metaKey) && e.key === 'L') {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
             e.preventDefault();
             document.getElementById("clear").click();
         }
         // Ctrl+S or Cmd+S to save code
-        if ((e.ctrlKey || e.metaKey) && e.key === 'S') {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
             const code = editor.getValue();
             const blob = new Blob([code], {type: 'text/plain'});
@@ -772,8 +773,8 @@ int main() {
             };
             input.click();
         }
-        //Ctrl+Alt+L or Cmd+Alt+L to format code
-        if (e.ctrlKey && e.altKey && e.key === 'L') {
+        //Ctrl+Alt+F or Cmd+Alt+F to format code
+        if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'f') {
             e.preventDefault();
             document.getElementById("format").click();
         }

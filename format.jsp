@@ -7,24 +7,27 @@
         return;
     }
 
+    //create temp dir
     String tmpDir = application.getRealPath("/") + "tmp/";
     new File(tmpDir).mkdir();
     String inFile = tmpDir + "input.c";
     String outFile = tmpDir + "output.c";
 
     try {
+        //write code to file
         FileWriter writer = new FileWriter(inFile);
         writer.write(code);
         writer.close();
 
         Process format = Runtime.getRuntime().exec(new String[]{
             "clang-format",
-            "-style=LLVM",
+            "-style=LLVM",//LLVM
             inFile,
             "-i"
         });
         format.waitFor();
 
+        //read formatted code
         BufferedReader reader = new BufferedReader(new FileReader(inFile));
         StringBuilder formatted = new StringBuilder();
         String line;
@@ -38,6 +41,7 @@
     } catch (Exception e) {
         out.println("Error: " + e.getMessage());
     } finally {
+        //clean up
         new File(inFile).delete();
         new File(outFile).delete();
     }

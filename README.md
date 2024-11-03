@@ -12,6 +12,7 @@ This project is a web-based code editor and compiler for C/C++ programs. It allo
   - ctrl/cmd + L to clear the output
   - ctrl/cmd + S to save to local storage
   - ctrl/cmd + O to load from local storage
+  - ctrl/cmd + Alt + F to format code
 
 # setup guide
 
@@ -21,7 +22,7 @@ First, install the required packages:
 
 ```bash
 sudo apt update
-sudo apt install openjdk-11-jdk tomcat9 gcc g++
+sudo apt install openjdk-11-jdk tomcat9 gcc g++ clang-format
 ```
 
 ## Project Setup
@@ -41,27 +42,7 @@ sudo mkdir WEB-INF
 sudo mkdir tmp
 ```
 
-### 2. Create JSP Files
-
-Create two JSP files in the code-editor directory:
-
-#### index.jsp
-
-```bash
-sudo vim index.jsp
-```
-
-[Copy the content from the first artifact (cpp-editor)]
-
-#### compile.jsp
-
-```bash
-sudo vim compile.jsp
-```
-
-[Copy the content from the fixed compile handler]
-
-### 3. Set File Permissions
+### 2. Set File Permissions
 
 Configure the correct permissions for the project:
 
@@ -76,7 +57,7 @@ sudo chmod -R 755 /var/lib/tomcat9/webapps/code-editor
 sudo chmod 777 /var/lib/tomcat9/webapps/code-editor/tmp
 ```
 
-### 4. Configure Tomcat Security
+### 3. Configure Tomcat Security
 
 Add necessary permissions to Tomcat's security policy:
 
@@ -99,7 +80,7 @@ grant codeBase "file:${catalina.home}/webapps/code-editor/-" {
 };
 ```
 
-### 5. Start the Service
+### 4. Start the Service
 
 Restart Tomcat to apply changes:
 

@@ -5,6 +5,7 @@
     <title>Web C/C++ Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/nord.min.css">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/gas/gas.min.js"></script>
@@ -77,6 +78,8 @@
             flex-direction: column;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             height: 100%;
+            max-height: calc(100vh - 140px);
+            overflow: hidden;
         }
 
         .panel-header {
@@ -102,6 +105,7 @@
             border-radius: 4px;
             font-size: 14px;
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            overflow-y: hidden;
         }
 
         .button-container {
@@ -211,11 +215,9 @@
             border-radius: 4px;
             font-family: 'JetBrains Mono', monospace;
             white-space: pre-wrap;
-            overflow-y: auto;
-            flex-grow: 1;
+            flex: 1;
             font-size: 14px;
-            line-height: 1.5;
-            height: calc(100% - 60px);
+            overflow: auto;
         }
 
         button.active {
@@ -350,7 +352,7 @@ int main(int argc, const char *argv[]) {
     printf("Sum: %d\\n", sum);
     return 0;
 }`,
-        "Recursion": `#include <stdio.h>
+        "Recursion Factorial": `#include <stdio.h>
 
 int factorial(int n) {
     if (n <= 1) return 1;
@@ -379,7 +381,7 @@ int main(int argc, const char *argv[]) {
     free(arr); // Free allocated memory
     return 0;
 }`,
-        "Fork Example": `#include <stdio.h>
+        "Fork": `#include <stdio.h>
 #include <unistd.h>
 
 int main(int argc, const char *argv[]) {
@@ -398,7 +400,7 @@ int main(int argc, const char *argv[]) {
     
     return 0;
 }`,
-        "Sleep Example": `#include <stdio.h>
+        "Sleep": `#include <stdio.h>
 #include <unistd.h>
 
 int main(int argc, const char *argv[]) {
@@ -482,7 +484,7 @@ int main() {
     person.introduce();
     return 0;
 }`,
-        "Basic Pointer Example": `#include <iostream>
+        "Basic Pointer": `#include <iostream>
 
 int main() {
     int value = 42;
@@ -530,7 +532,7 @@ int main() {
     std::cout << "Copied string: " << copy << std::endl;
     return 0;
 }`,
-        "Polymorphism Example": `#include <iostream>
+        "Polymorphism": `#include <iostream>
 
 class Animal {
 public:

@@ -6,28 +6,39 @@ This project is a web-based code editor and compiler for C/C++ programs. It allo
 
 ![sample](sample.png)
 
-## Features
+# Try it(no guarantee always available due to myself's server)
 
-- Syntax highlighting
-- vim keybindings for the editor
-- Show assembly code
-- Save and load code from local storage
-- shortcut keys for compiling and running code
+http://120.26.168.212:8080/webCpp/
 
-  - ctrl/cmd + enter to compile and run
-  - ctrl/cmd + shift + A to show assembly code
-  - ctrl/cmd + L to clear the output
-  - ctrl/cmd + S to save to local storage
-  - ctrl/cmd + O to load from local storage
-  - ctrl/cmd + Alt + F to format code
+---
 
-- Multiple themes
-- Nord
-- Dracula
-- Monokai
-- Material
-- Ayu-dark
-- Gruvbox-dark
+# Features ✨
+
+- **Syntax Highlighting**: Enhance code readability with different colors for keywords, strings, and comments.
+- **Vim Keybindings**: Enable Vim-style navigation and editing for users familiar with Vim.
+- **Show Assembly Code**: Provide an option to view the generated assembly code for the written code.
+- **Save and Load Code**: Allow users to save their code snippets to local storage and load them when needed.
+- **Multiple Themes**: Offer a variety of themes for personalized aesthetics.
+
+# Shortcut Keys 🔑
+
+- **Compile and Run**: `Ctrl/Cmd + Enter` to compile and run the code.
+- **Show Assembly Code**: `Ctrl/Cmd + Shift + A` to display the assembly code.
+- **Clear Output**: `Ctrl/Cmd + L` to clear the output window.
+- **Save to Local Storage**: `Ctrl/Cmd + S` to save the current code.
+- **Load from Local Storage**: `Ctrl/Cmd + O` to load previously saved code.
+- **Format Code**: `Ctrl/Cmd + Alt + F` to format the code for better readability.
+
+# Themes 🎨
+
+- **Nord**: A polar night-inspired color palette that’s easy on the eyes.
+- **Dracula**: A dark theme with vibrant colors for a striking contrast.
+- **Monokai**: A classic dark theme with bright accents, popular among developers.
+- **Material**: A material design-inspired theme that offers a modern aesthetic.
+- **Ayu-dark**: A soothing dark theme with soft colors.
+- **Gruvbox-dark**: A retro groove style with a comfortable color palette.
+
+---
 
 # setup guide
 
@@ -78,7 +89,7 @@ Add necessary permissions to Tomcat's security policy:
 
 ```bash
 # Edit the policy file
-sudo vim /var/lib/tomcat9/conf/catalina.policy
+sudo vim /var/lib/tomcat9/conf/catalina.properties
 ```
 
 Add these lines at the end of the file:

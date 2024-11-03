@@ -2,6 +2,10 @@
 
 This project is a web-based code editor and compiler for C/C++ programs. It allows users to write, compile, and run code directly in the browser. The application is built using JavaServer Pages (JSP) and runs on Apache Tomcat.
 
+# sample
+
+![sample](sample.png)
+
 ## Features
 
 - Syntax highlighting

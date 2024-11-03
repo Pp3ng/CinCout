@@ -330,14 +330,14 @@
     });
 
     const templates = {
-        c: {
-            "Hello World": `#include <stdio.h>
+    c: {
+        "Hello World": `#include <stdio.h>
 
 int main(int argc, const char *argv[]) {
     printf("Hello, World!\\n");
     return 0;
 }`,
-            "Array Sum": `#include <stdio.h>
+        "Array Sum": `#include <stdio.h>
 
 int main(int argc, const char *argv[]) {
     int arr[] = {1, 2, 3, 4, 5};
@@ -350,7 +350,7 @@ int main(int argc, const char *argv[]) {
     printf("Sum: %d\\n", sum);
     return 0;
 }`,
-            "Recursion": `#include <stdio.h>
+        "Recursion": `#include <stdio.h>
 
 int factorial(int n) {
     if (n <= 1) return 1;
@@ -361,30 +361,107 @@ int main(int argc, const char *argv[]) {
     int n = 5;
     printf("Factorial of %d is %d\\n", n, factorial(n));
     return 0;
+}`,
+        "Dynamic Array": `#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, const char *argv[]) {
+    int n = 5;
+    int *arr = malloc(n * sizeof(int));
+    int sum = 0;
+
+    for(int i = 0; i < n; i++) {
+        arr[i] = i + 1; // Initialize array
+        sum += arr[i];
+    }
+
+    printf("Sum: %d\\n", sum);
+    free(arr); // Free allocated memory
+    return 0;
+}`,
+        "Fork Example": `#include <stdio.h>
+#include <unistd.h>
+
+int main(int argc, const char *argv[]) {
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("Fork failed");
+        return 1;
+    } else if (pid == 0) {
+        // Child process
+        printf("Hello from child process!\\n");
+    } else {
+        // Parent process
+        printf("Hello from parent process!\\n");
+    }
+    
+    return 0;
+}`,
+        "Sleep Example": `#include <stdio.h>
+#include <unistd.h>
+
+int main(int argc, const char *argv[]) {
+    printf("Sleeping for 3 seconds...\\n");
+    sleep(3);
+    printf("Awake now!\\n");
+    return 0;
+}`,
+        "String Copy": `#include <stdio.h>
+#include <string.h>
+
+int main() {
+    char source[] = "Hello, World!";
+    char destination[50];
+    strcpy(destination, source);
+    printf("Copied string: %s\\n", destination);
+    return 0;
+}`,
+        "Pointer Arithmetic": `#include <stdio.h>
+
+int main() {
+    int arr[] = {10, 20, 30, 40, 50};
+    int *ptr = arr;
+
+    printf("Second element: %d\\n", *(ptr + 1)); // Pointer arithmetic
+    return 0;
+}`,
+        "Swap Function": `#include <stdio.h>
+
+void swap(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int main() {
+    int x = 5, y = 10;
+    swap(&x, &y);
+    printf("After swap: x = %d, y = %d\\n", x, y);
+    return 0;
 }`
-        },
-        cpp: {
-            "Hello World": `#include <iostream>
+    },
+    cpp: {
+        "Hello World": `#include <iostream>
 
 int main(int argc, const char *argv[]) {
     std::cout << "Hello, World!" << std::endl;
     return 0;
 }`,
-            "Vector Sum": `#include <iostream>
-#include <vector>
+        "Array Sum": `#include <iostream>
 
-int main(int argc, const char *argv[]) {
-    std::vector<int> nums {1, 2, 3, 4, 5};
+int main() {
+    int arr[] = {1, 2, 3, 4, 5};
     int sum = 0;
 
-    for(const auto& num : nums) {
-        sum += num;
+    for(int i = 0; i < 5; i++) {
+        sum += arr[i];
     }
 
     std::cout << "Sum: " << sum << std::endl;
     return 0;
 }`,
-            "Classes": `#include <iostream>
+        "Classes": `#include <iostream>
 #include <string>
 
 class Person {
@@ -400,13 +477,111 @@ public:
     }
 };
 
-int main(int argc, const char *argv[]) {
+int main() {
     Person person("Alice", 25);
     person.introduce();
     return 0;
+}`,
+        "Basic Pointer Example": `#include <iostream>
+
+int main() {
+    int value = 42;
+    int* ptr = &value;
+
+    std::cout << "Value: " << value << ", Pointer points to: " << *ptr << std::endl;
+    return 0;
+}`,
+        "Sorting with Array": `#include <iostream>
+#include <algorithm>
+
+int main() {
+    int arr[] = {5, 2, 8, 1, 4};
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    std::sort(arr, arr + n);
+
+    std::cout << "Sorted numbers: ";
+    for (int i = 0; i < n; i++) {
+        std::cout << arr[i] << " ";
+    }
+    std::cout << std::endl;
+    return 0;
+}`,
+        "Template Function": `#include <iostream>
+
+template<typename T>
+T add(T a, T b) {
+    return a + b;
+}
+
+int main() {
+    std::cout << "Sum of 3 and 4: " << add(3, 4) << std::endl;
+    std::cout << "Sum of 5.5 and 4.5: " << add(5.5, 4.5) << std::endl;
+    return 0;
+}`,
+        "String Manipulation": `#include <iostream>
+#include <cstring>
+
+int main() {
+    const char* str = "Hello, World!";
+    char copy[20];
+    strcpy(copy, str);
+
+    std::cout << "Copied string: " << copy << std::endl;
+    return 0;
+}`,
+        "Polymorphism Example": `#include <iostream>
+
+class Animal {
+public:
+    virtual void speak() const {
+        std::cout << "Animal speaks!" << std::endl;
+    }
+};
+
+class Dog : public Animal {
+public:
+    void speak() const override {
+        std::cout << "Woof! Woof!" << std::endl;
+    }
+};
+
+int main() {
+    Animal* animal = new Dog();
+    animal->speak(); // Triggers Dog's speak() due to polymorphism
+    delete[] animal;
+    return 0;
+}`,
+        "Lambda Function": `#include <iostream>
+#include <vector>
+#include <algorithm>
+
+int main() {
+    std::vector<int> nums = {1, 2, 3, 4, 5};
+    std::for_each(nums.begin(), nums.end(), [](int n) {
+        std::cout << n * n << " ";
+    });
+    std::cout << std::endl;
+    return 0;
+}`,
+        "Smart Pointers": `#include <iostream>
+#include <memory>
+
+class Resource {
+public:
+    Resource() { std::cout << "Resource acquired\\n"; }
+    ~Resource() { std::cout << "Resource released\\n"; }
+    void sayHello() const { std::cout << "Hello from Resource\\n"; }
+};
+
+int main() {
+    std::unique_ptr<Resource> res1 = std::make_unique<Resource>();
+    res1->sayHello();
+    return 0;
 }`
-        }
-    };
+    }
+};
+
 
     function updateTemplates() {
         const lang = document.getElementById("language").value;

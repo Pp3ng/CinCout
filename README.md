@@ -73,14 +73,16 @@ sudo mkdir tmp
 Configure the correct permissions for the project:
 
 ```bash
-# Set directory ownership
-sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/code-editor
-
-# Set directory permissions
-sudo chmod -R 755 /var/lib/tomcat9/webapps/code-editor
-
-# Set tmp directory permissions
-sudo chmod 777 /var/lib/tomcat9/webapps/code-editor/tmp
+# Change ownership
+sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/webCpp
+# Change permissions
+sudo chmod -R 755 /var/lib/tomcat9/webapps/webCpp
+# Create tmp directory
+sudo mkdir -p /var/lib/tomcat9/webapps/webCpp/tmp
+# Change ownership and permissions
+sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/webCpp/tmp
+# Change permissions
+sudo chmod -R 777 /var/lib/tomcat9/webapps/webCpp/tmp
 ```
 
 ### 3. Configure Tomcat Security

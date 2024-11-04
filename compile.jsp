@@ -11,9 +11,23 @@
         return;
     }
 
-    // Create temporary directory
-    String tmpDir = application.getRealPath("/") + "tmp/";
-    new File(tmpDir).mkdir();
+    // Get user session ID
+    String sessionId = request.getSession().getId();
+
+    // Create user-specific temporary directory
+    String tmpDir = application.getRealPath("/") + "tmp/" + sessionId + "/";
+    File tmpDirFile = new File(tmpDir);
+    if (!tmpDirFile.exists()) {
+        if (!tmpDirFile.mkdirs()) {
+            out.println("Error: Failed to create temporary directory");
+            return;
+        }
+    }
+
+    // Set permissions for temporary directory
+    tmpDirFile.setWritable(true, false);
+    tmpDirFile.setReadable(true, false);
+    tmpDirFile.setExecutable(true, false);
     
     // Set file names based on language
     String sourceFile = tmpDir + "program." + (lang.equals("cpp") ? "cpp" : "c");
@@ -21,8 +35,15 @@
     String asmFile = tmpDir + "program.s";
     
     try {
+        // Create and write source code file
+        File srcFile = new File(sourceFile);
+        if (!srcFile.createNewFile()) {
+            out.println("Error: Failed to create source file");
+            return;
+        }
+
         // Write source code to file
-        FileWriter writer = new FileWriter(sourceFile);
+        FileWriter writer = new FileWriter(srcFile);
         writer.write(code);
         writer.close();
 
@@ -42,89 +63,82 @@
                 asmFile
             });
             
-            asmGen.waitFor();
-            
-            // Read assembly file
-            BufferedReader asmReader = new BufferedReader(new FileReader(asmFile));
-            StringBuilder asmOutput = new StringBuilder();
+            //Error output
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(asmGen.getErrorStream()));
+            StringBuilder errorOutput = new StringBuilder();
             String line;
-            while ((line = asmReader.readLine()) != null) {
-                asmOutput.append(line).append("\n");
+            while ((line = errorReader.readLine()) != null) {
+                errorOutput.append(line).append("\n");
             }
-            asmReader.close();
             
-            if (action.equals("assembly")) {
-                out.println(asmOutput.toString());
+            int exitCode = asmGen.waitFor();
+            if (exitCode != 0) {
+                out.println("Compilation Error:\n" + errorOutput.toString());
                 return;
             }
         }
 
         if (action.equals("compile") || action.equals("both")) {
-            // Compile code
+            // Compile source code
             Process compile = Runtime.getRuntime().exec(new String[]{
                 compiler,
                 sourceFile,
                 "-o",
-                outputFile,
-                "-Wall"
+                outputFile
             });
             
-            compile.waitFor();
-
-            // Check for compilation errors
+            // Error output
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(compile.getErrorStream()));
-            StringBuilder errors = new StringBuilder();
+            StringBuilder errorOutput = new StringBuilder();
             String line;
             while ((line = errorReader.readLine()) != null) {
-                errors.append(line).append("\n");
+                errorOutput.append(line).append("\n");
             }
-
-            if (errors.length() > 0) {
-                out.println("Compilation Error:\n" + errors.toString());
+            
+            int exitCode = compile.waitFor();
+            if (exitCode != 0) {
+                out.println("Compilation Error:\n" + errorOutput.toString());
                 return;
             }
 
-            // Run the compiled program
-            final Process run = Runtime.getRuntime().exec(outputFile);
-            
-            // Create a timer for timeout
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    run.destroy();
+            // Execute the compiled program and output the result
+            if (exitCode == 0) {
+                Process execute = Runtime.getRuntime().exec(outputFile);
+                BufferedReader outputReader = new BufferedReader(new InputStreamReader(execute.getInputStream()));
+                StringBuilder programOutput = new StringBuilder();
+                while ((line = outputReader.readLine()) != null) {
+                    programOutput.append(line).append("\n");
                 }
-            }, 5000);
-
-            // Get program output
-            BufferedReader outputReader = new BufferedReader(new InputStreamReader(run.getInputStream()));
-            StringBuilder output = new StringBuilder();
-            while ((line = outputReader.readLine()) != null) {
-                output.append(line).append("\n");
+                out.println(programOutput.toString());
             }
+        }
 
-            // Get program errors
-            errorReader = new BufferedReader(new InputStreamReader(run.getErrorStream()));
-            while ((line = errorReader.readLine()) != null) {
-                output.append("Error: ").append(line).append("\n");
-            }
-
-            timer.cancel();
-            
-            int exitCode = run.waitFor();
-            if (exitCode == 143) {
-                out.println("Error: Program execution timed out");
-            } else {
-                out.println(output.toString());
+        // Output assembly if requested
+        if (action.equals("assembly") || action.equals("both")) {
+            File asmFileObj = new File(asmFile);
+            if (asmFileObj.exists()) {
+                BufferedReader asmReader = new BufferedReader(new FileReader(asmFile));
+                StringBuilder asmOutput = new StringBuilder();
+                String line;
+                while ((line = asmReader.readLine()) != null) {
+                    asmOutput.append(line).append("\n");
+                }
+                asmReader.close();
+                out.println(asmOutput.toString());
             }
         }
 
     } catch (Exception e) {
-        out.println("System Error: " + e.getMessage());
+        out.println("Error: " + e.getMessage());
+        e.printStackTrace(new PrintWriter(out));
     } finally {
-        // Cleanup temporary files
-        new File(sourceFile).delete();
-        new File(outputFile).delete();
-        new File(asmFile).delete();
+        // Clean up
+        try {
+            new File(sourceFile).delete();
+            new File(outputFile).delete();
+            new File(asmFile).delete();
+        } catch (Exception e) {
+            // Ignore cleanup errors
+        }
     }
 %>

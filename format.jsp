@@ -81,6 +81,12 @@
         try {
             new File(inFile).delete();
             new File(outFile).delete();
+
+            File temDirFile = new File(application.getRealPath("/") + "tmp/" +
+            request.getSession().getId() + "/");
+            if(temDirFile.exists()){
+                temDirFile.delete();
+            }
         } catch (Exception e) {
             // Ignore cleanup errors
         }

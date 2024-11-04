@@ -137,6 +137,12 @@
             new File(sourceFile).delete();
             new File(outputFile).delete();
             new File(asmFile).delete();
+
+            File temDirFile = new File(application.getRealPath("/") + "tmp/" +
+            request.getSession().getId() + "/");
+            if(temDirFile.exists()){
+                temDirFile.delete();
+            }
         } catch (Exception e) {
             // Ignore cleanup errors
         }

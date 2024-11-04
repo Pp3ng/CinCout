@@ -28,7 +28,23 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Web C/C++</h1>
+        <div class="title-shortcuts">
+            <h1>Web C/C++</h1>
+            <div id="shortcuts-panel" class="shortcuts-panel">
+                <button id="toggle-shortcuts">Keyboard Shortcuts</button>
+                <div class="shortcuts-content">
+                    <h3>Keyboard Shortcuts</h3>
+                    <ul>
+                        <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Compile and Run</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> View Assembly</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>L</kbd> Clear Output</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>S</kbd> Save Code</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>O</kbd> Open Code File</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd> Format Code</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <div class="controls">
             <select id="language">
                 <option value="c">C</option>
@@ -109,6 +125,7 @@
             <div id="assembly" style="display: none;"></div>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -707,6 +724,23 @@ int main(int argc, const char *argv[]) {
             applyTheme(e.target.value);
         });
     }
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        const panel = document.getElementById('shortcuts-panel');
+        const toggleButton = document.getElementById('toggle-shortcuts');
+
+        toggleButton.addEventListener('click', function (e) {
+            e.stopPropagation();
+            panel.classList.toggle('show');
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!panel.contains(e.target)) {
+                panel.classList.remove('show');
+            }
+        });
+    });
+
 
     document.addEventListener('DOMContentLoaded', function () {
         Object.values(themes).forEach(theme => {
@@ -715,7 +749,9 @@ int main(int argc, const char *argv[]) {
 
         initializeThemeSelector();
     });
+   
 </script>
+
 </body>
 
 </html>

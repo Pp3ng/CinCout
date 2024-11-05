@@ -56,12 +56,14 @@ sudo apt install openjdk-11-jdk tomcat9 gcc g++ clang-format
 Create the necessary directories in Tomcat's webapps folder:
 
 ```bash
-# Navigate to webapps directory
-cd /var/lib/tomcat9/webapps/
+# Clone the repository
+git clone https://github.com/Pp3ng/webCpp.git
 
-# Create project directory
-sudo mkdir code-editor
-cd code-editor
+# Move the project to Tomcat's webapps folder
+mv webCpp /var/lib/tomcat9/webapps/
+
+# Change directory
+cd /var/lib/tomcat9/webapps/webCpp
 
 # Create required subdirectories
 sudo mkdir WEB-INF

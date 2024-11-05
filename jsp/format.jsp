@@ -44,7 +44,7 @@
         // Run clang-format
         Process format = Runtime.getRuntime().exec(new String[]{
             "clang-format",
-            "-style=LLVM",
+            "-style=WebKit",
             inFile,
             "-i"
         });

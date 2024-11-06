@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <title>Web C/C++</title>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&display=swap"
+          rel="stylesheet">
     <!-- CodeMirror core styles -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <!-- Themes -->
@@ -18,9 +19,12 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png"
           href="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg">
-    
+
     <!-- Devicons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.14.0/devicon.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <!-- CodeMirror core and plugins -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
@@ -35,8 +39,12 @@
     <div class="header">
         <div class="title-shortcuts">
             <h1>
-                Web <i class="devicon-c-plain"></i>  <i class="devicon-cplusplus-plain"></i>
+                <i class="devicon-c-plain"></i> <i class="devicon-cplusplus-plain"></i>
             </h1>
+            <button id="learn-cpp-btn" onclick="window.open('https://en.cppreference.com/w/', '_blank')"
+                    title="Learn C/C++">
+                <i class="fas fa-book"></i> Learn C/C++
+            </button>
             <div id="shortcuts-panel" class="shortcuts-panel">
                 <button id="toggle-shortcuts">Keyboard Shortcuts</button>
                 <div class="shortcuts-content">
@@ -135,12 +143,12 @@
 
 </div>
 
-<script src = "js/themes.js"></script>
-<script src = "js/editor.js"></script> 
-<script src = "js/handlers.js"></script>
-<script src = "js/shortcuts.js"></script>
-<script src = "js/templates.js"></script>
-    
+<script src="js/themes.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/handlers.js"></script>
+<script src="js/shortcuts.js"></script>
+<script src="js/templates.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const panel = document.getElementById('shortcuts-panel');
@@ -157,7 +165,7 @@
             }
         });
 
-         Object.values(themes).forEach(theme => {
+        Object.values(themes).forEach(theme => {
             loadThemeCSS(theme);
         });
 

@@ -41,14 +41,22 @@
             <h1>
                 <i class="devicon-c-plain"></i> <i class="devicon-cplusplus-plain"></i>
             </h1>
-            <button id="learn-cpp-btn" onclick="window.open('https://en.cppreference.com/w/', '_blank')"
-                    title="Learn C/C++">
-                <i class="fas fa-book"></i> Learn C/C++
-            </button>
+            <div class="dropdown">
+                <button id="learn-cpp-btn" class="dropbtn" title="Learn C/C++">
+                    <i class="fas fa-book"></i> Learn C/C++
+                </button>
+                <div class="dropdown-content">
+                    <a href="https://www.gnu.org/software/gnu-c-manual/gnu-c-manual.html" target="_blank">GNU C
+                        Manual</a>
+                    <a href="https://en.cppreference.com/w/" target="_blank">Cpp Reference</a>
+                    <a href="https://hackingcpp.com/" target="_blank">Hacking Cpp</a>
+                </div>
+            </div>
             <div id="shortcuts-panel" class="shortcuts-panel">
-                <button id="toggle-shortcuts">Keyboard Shortcuts</button>
+                <button id="toggle-shortcuts">
+                    <i class="fas fa-keyboard"></i> Keyboard Shortcuts
+                </button>
                 <div class="shortcuts-content">
-                    <h3>Keyboard Shortcuts</h3>
                     <ul>
                         <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Compile and Run</li>
                         <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> View Assembly</li>
@@ -92,22 +100,13 @@
                 <div class="panel-title">Code Editor</div>
                 <div class="button-container">
                     <button id="compile">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 15l7-7 7 7"/>
-                        </svg>
-                        Compile & Run
+                        <i class="fas fa-play"></i> Compile & Run
                     </button>
                     <button id="format">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 5l7 7-7 7M5 12h14"/>
-                        </svg>
-                        Format
+                        <i class="fas fa-align-left"></i> Format
                     </button>
                     <button id="viewAssembly">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 4v16m-8-8h16"/>
-                        </svg>
-                        View Assembly
+                        <i class="fas fa-cogs"></i> View Assembly
                     </button>
                 </div>
             </div>
@@ -117,29 +116,21 @@
             <div class="panel-header">
                 <div class="button-container">
                     <button id="outputTab" class="active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 5l7 7-7 7M5 12h14"/>
-                        </svg>
-                        Output
+                        <i class="fas fa-terminal"></i> Output
                     </button>
                     <button id="assemblyTab">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 4v16m-8-8h16"/>
-                        </svg>
-                        Assembly
+                        <i class="fas fa-cogs"></i> Assembly
                     </button>
                 </div>
                 <button id="clear">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 6v14H5V6M4 6h16M10 11v6M14 11v6"/>
-                    </svg>
-                    Clear
+                    <i class="fas fa-trash-alt"></i> Clear
                 </button>
             </div>
             <div id="output" style="display: block;">// Program output will appear here</div>
             <div id="assembly" style="display: none;"></div>
         </div>
     </div>
+</div>
 
 </div>
 

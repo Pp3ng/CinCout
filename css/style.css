@@ -243,6 +243,7 @@ button.active {
         min-height: 500px;
     }
 }
+
 .header {
     display: flex;
     justify-content: space-between;
@@ -332,4 +333,66 @@ button.active {
 
 #toggle-shortcuts:hover {
     background-color: var(--accent-hover, #81a1c1);
+}
+
+/* Dropdown styles */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropbtn {
+    background: var(--accent);
+    color: var(--text-primary);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    white-space: nowrap;
+}
+
+.dropbtn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.dropbtn:active {
+    transform: translateY(0);
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background: var(--bg-secondary);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.dropdown-content a {
+    color: var(--text-primary);
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    transition: background 0.2s;
+}
+
+.dropdown-content a:hover {
+    background: var(--bg-primary);
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .dropbtn {
+    background: var(--accent-hover);
 }

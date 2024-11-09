@@ -155,31 +155,3 @@ sudo -u tomcat g++ --version
 tail -f /var/lib/tomcat9/logs/catalina.out
 ```
 
-## Maintenance
-
-Regular maintenance tasks:
-
-1. Update system packages:
-
-```bash
-sudo apt update
-sudo apt upgrade
-```
-
-2. Monitor disk usage:
-
-```bash
-df -h /var/lib/tomcat9/webapps/code-editor/tmp
-```
-
-3. Check logs periodically:
-
-```bash
-sudo tail -f /var/lib/tomcat9/logs/catalina.out
-```
-
-4. Clear temporary files:
-
-```bash
-sudo rm -rf /var/lib/tomcat9/webapps/code-editor/tmp/*
-```

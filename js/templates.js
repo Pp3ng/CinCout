@@ -235,16 +235,6 @@ int main(int argc, const char* argv[])
     std::cout << "Sum of 5.5 and 4.5: " << add(5.5, 4.5) << std::endl;
     return 0;
 }`,
-        "String Manipulation": `#include <iostream>
-#include <string>
-
-int main(int argc, const char* argv[])
-{
-    std::string str = "Hello, World!";
-    std::string copy = str;
-    std::cout << "Copied string: " << copy << std::endl;
-    return 0;
-}`,
         "Polymorphism": `#include <iostream>
 
 class Animal {
@@ -303,6 +293,34 @@ int main(int argc, const char* argv[])
     } else {
         std::cout << target << " is not in the set." << std::endl;
     }
+    return 0;
+}`,
+        "Ranges and Views": `#include <iostream>
+#include <ranges>
+#include <vector>
+
+int main(int argc, const char* argv[])
+{
+    std::vector<std::vector<int>> numbers = {
+        { 1, 2, 3 },
+        { 4, 5, 6 },
+        { 7, 8, 9 },
+        { 10, 11, 12 }
+    };
+
+    auto view = numbers
+        | std::views::join
+        | std::views::filter([](int n) { return n % 2 == 0; })
+        | std::views::transform([](int n) { return n * n; })
+        | std::views::filter([](int n) { return n > 20; })
+        | std::views::transform([](int n) { return n / 2; })
+        | std::views::take(4);
+
+    for (int n : view) {
+        std::cout << n << " ";
+    }
+    std::cout << std::endl;
+
     return 0;
 }`
     }

@@ -49,7 +49,8 @@
 
         // Choose compiler based on language
         String compiler = lang.equals("cpp") ? "g++" : "gcc";
-        
+        String standarOption = lang.equals("cpp") ? "-std=c++23" : "-std=c17";
+
         if (action.equals("assembly") || action.equals("both")) {
             // Generate assembly code
             Process asmGen = Runtime.getRuntime().exec(new String[]{
@@ -58,11 +59,12 @@
                 "-masm=intel",       // Use Intel syntax
                 "-fno-asynchronous-unwind-tables", // Cleaner assembly output
                 "-O0",              // No optimization for clearer output
+                standarOption,
                 sourceFile,
                 "-o",
                 asmFile
             });
-            
+
             //Error output
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(asmGen.getErrorStream()));
             StringBuilder errorOutput = new StringBuilder();
@@ -70,7 +72,7 @@
             while ((line = errorReader.readLine()) != null) {
                 errorOutput.append(line).append("\n");
             }
-            
+
             int exitCode = asmGen.waitFor();
             if (exitCode != 0) {
                 out.println("Compilation Error:\n" + errorOutput.toString());
@@ -82,6 +84,7 @@
             // Compile source code
             Process compile = Runtime.getRuntime().exec(new String[]{
                 compiler,
+                standarOption,
                 sourceFile,
                 "-o",
                 outputFile

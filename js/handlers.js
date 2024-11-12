@@ -38,6 +38,7 @@ document.getElementById("assemblyTab").addEventListener("click", function () {
 document.getElementById("compile").onclick = function () {
     const code = editor.getValue();
     const lang = document.getElementById("language").value;
+    const compiler = document.getElementById("compiler").value;
     const output = document.getElementById("output");
 
     document.getElementById("outputTab").click();
@@ -50,6 +51,7 @@ document.getElementById("compile").onclick = function () {
         },
         body: 'code=' + encodeURIComponent(code) +
             '&lang=' + encodeURIComponent(lang) +
+            '&compiler=' + encodeURIComponent(compiler) +
             '&action=compile'
     })
         .then(response => response.text())
@@ -94,6 +96,7 @@ document.getElementById("format").onclick = function () {
 document.getElementById("viewAssembly").onclick = function () {
     const code = editor.getValue();
     const lang = document.getElementById("language").value;
+    const compiler = document.getElementById("compiler").value;
 
     document.getElementById("assemblyTab").click();
     assemblyView.setValue("Generating assembly code...");
@@ -105,6 +108,7 @@ document.getElementById("viewAssembly").onclick = function () {
         },
         body: 'code=' + encodeURIComponent(code) +
             '&lang=' + encodeURIComponent(lang) +
+            '&compiler=' + encodeURIComponent(compiler) +
             '&action=assembly'
     })
         .then(response => response.text())
@@ -115,6 +119,7 @@ document.getElementById("viewAssembly").onclick = function () {
             assemblyView.setValue("Error: " + error);
         });
 };
+
 
 // Clear button click handler
 document.getElementById("clear").onclick = function () {

@@ -47,9 +47,18 @@
         writer.write(code);
         writer.close();
 
-        // Choose compiler based on language
-        String compiler = lang.equals("cpp") ? "g++" : "gcc";
-        String standarOption = lang.equals("cpp") ? "-std=c++23" : "-std=c17";
+        // Choose compiler based on language and selected compiler
+        String compiler = "gcc"; // Default compiler
+        if (request.getParameter("compiler") != null) {
+            String selectedCompiler = request.getParameter("compiler");
+            if (lang.equals("cpp")) {
+                compiler = selectedCompiler.equals("clang") ? "clang++" : "g++";
+            } else {
+                compiler = selectedCompiler.equals("clang") ? "clang" : "gcc";
+            }
+        }
+        
+        String standarOption = lang.equals("cpp") ? "-std=c++20" : "-std=c11"; // Default standard
 
         if (action.equals("assembly") || action.equals("both")) {
             // Generate assembly code
@@ -65,7 +74,7 @@
                 asmFile
             });
 
-            //Error output
+            // Error output
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(asmGen.getErrorStream()));
             StringBuilder errorOutput = new StringBuilder();
             String line;

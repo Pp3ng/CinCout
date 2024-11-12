@@ -1,4 +1,15 @@
 const themes = {
+    "neo": {
+        name: "Neo",
+        bg: "#ffffff",
+        bgSecondary: "#eeeeee",
+        text: "#2e383c",
+        textSecondary: "#719899",
+        accent: "#4271ae",
+        accentHover: "#8959a8",
+        border: "#e0e0e0",
+        cdnUrl: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/neo.min.css"
+    },
     "nord": {
         name: "Nord",
         bg: "#2e3440",
@@ -64,6 +75,17 @@ const themes = {
         accentHover: "#98971a",
         border: "#504945",
         cdnUrl: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/gruvbox-dark.min.css"
+    },
+    "seti": {
+        name: "Seti",
+        bg: "#151718",
+        bgSecondary: "#1d1f20",
+        text: "#cfd2d1",
+        textSecondary: "#6d8086",
+        accent: "#55b5db",
+        accentHover: "#55dbbe",
+        border: "#0e1112",
+        cdnUrl: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/seti.min.css"
     }
 };
 
@@ -110,7 +132,7 @@ function initializeThemeSelector() {
         themeSelect.appendChild(option);
     });
 
-    const savedTheme = localStorage.getItem('preferred-theme') || 'nord';
+    const savedTheme = localStorage.getItem('preferred-theme') || 'neo';
     themeSelect.value = savedTheme;
 
     applyTheme(savedTheme);

@@ -1,14 +1,3 @@
-/* Root CSS variables for theme colors */
-:root {
-    --bg-primary: #2e3440;
-    --bg-secondary: #3b4252;
-    --text-primary: #eceff4;
-    --text-secondary: #d8dee9;
-    --accent: #5e81ac;
-    --accent-hover: #81a1c1;
-    --border: #4c566a;
-}
-
 /* Base body styles */
 body {
     margin: 0;

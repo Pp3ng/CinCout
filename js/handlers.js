@@ -120,6 +120,29 @@ document.getElementById("viewAssembly").onclick = function () {
         });
 };
 
+document.getElementById("styleCheck").onclick = function () {
+    const code = editor.getValue();
+    const lang = document.getElementById("language").value;
+
+    document.getElementById("outputTab").click();
+    document.getElementById("output").textContent = "Running cppcheck...";
+
+    fetch('jsp/styleCheck.jsp', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'code=' + encodeURIComponent(code) +
+            '&lang=' + encodeURIComponent(lang)
+    })
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("output").textContent = data;
+        })
+        .catch(error => {
+            document.getElementById("output").textContent = "Error: " + error;
+        });
+};
 
 // Clear button click handler
 document.getElementById("clear").onclick = function () {

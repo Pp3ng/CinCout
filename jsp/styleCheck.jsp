@@ -25,8 +25,7 @@
     tmpDirFile.setReadable(true, false);
     tmpDirFile.setExecutable(true, false);
 
-    String inFile = tmpDir + "input.c";
-    String outFile = tmpDir + "output.c";
+    String inFile = tmpDir + "input.cpp";
 
     try {
         // Create input file
@@ -41,37 +40,48 @@
         writer.write(code);
         writer.close();
 
-        // Run clang-format
-        Process format = Runtime.getRuntime().exec(new String[]{
-            "clang-format",
-            "-style=WebKit",
-            inFile,
-            "-i"
+        // Run cppcheck with text output and suppress missing includes
+        Process cppcheck = Runtime.getRuntime().exec(new String[]{
+            "cppcheck",
+            "--enable=all",           // Enable all checks
+            "--suppress=missingInclude", // Suppress missing header file warnings
+            inFile
         });
-        
-        // Check for errors
-        BufferedReader errorReader = new BufferedReader(new InputStreamReader(format.getErrorStream()));
-        StringBuilder errorOutput = new StringBuilder();
+
+        // Read cppcheck output (plain text)
+        BufferedReader reader = new BufferedReader(new InputStreamReader(cppcheck.getErrorStream()));
+        StringBuilder output = new StringBuilder();
         String line;
-        while ((line = errorReader.readLine()) != null) {
-            errorOutput.append(line).append("\n");
-        }
-
-        int exitCode = format.waitFor();
-        if (exitCode != 0) {
-            out.println("Format Error:\n" + errorOutput.toString());
-            return;
-        }
-
-        // Read formatted code
-        BufferedReader reader = new BufferedReader(new FileReader(inFile));
-        StringBuilder formatted = new StringBuilder();
+        boolean hasOutput = false;
         while ((line = reader.readLine()) != null) {
-            formatted.append(line).append("\n");
+            // Remove file path
+            if (line.contains(":")) {
+                String[] parts = line.split(":");
+                if (parts.length >= 4) {
+                    StringBuilder newLine = new StringBuilder();
+                    newLine.append(parts[1]).append(":"); // Row
+                    newLine.append(parts[2]).append(": "); // Col
+                    // Error message
+                    for (int i = 3; i < parts.length; i++) {
+                        newLine.append(parts[i]);
+                        if (i < parts.length - 1) {
+                            newLine.append(":");
+                        }
+                    }
+                    output.append(newLine).append("\n");
+                    hasOutput = true;
+                }
+            }
         }
         reader.close();
 
-        out.println(formatted.toString());
+        int exitCode = cppcheck.waitFor();
+
+        if (!hasOutput) {
+            out.println("No issues found.");
+        } else {
+            out.println(output.toString());
+        }
 
     } catch (Exception e) {
         out.println("Error: " + e.getMessage());
@@ -80,11 +90,10 @@
         // Clean up
         try {
             new File(inFile).delete();
-            new File(outFile).delete();
 
             File temDirFile = new File(application.getRealPath("/") + "tmp/" +
             request.getSession().getId() + "/");
-            if(temDirFile.exists()){
+            if (temDirFile.exists()) {
                 temDirFile.delete();
             }
         } catch (Exception e) {

@@ -19,7 +19,7 @@ document.addEventListener('keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         const code = editor.getValue();
-        const blob = new Blob([code], { type: 'text/plain' });
+        const blob = new Blob([code], {type: 'text/plain'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'code.' + (document.getElementById('language').value === 'cpp' ? 'cpp' : 'c');
@@ -45,5 +45,11 @@ document.addEventListener('keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'f') {
         e.preventDefault();
         document.getElementById("format").click();
+    }
+
+    // Ctrl+Alt+C or Cmd+Alt+C to check code style
+    if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'c') {
+        e.preventDefault();
+        document.getElementById("styleCheck").click();
     }
 });

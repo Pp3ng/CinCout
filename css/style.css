@@ -16,6 +16,7 @@ body {
 /* Header styles */
 .header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
@@ -23,6 +24,15 @@ body {
     padding: 15px 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    gap: 15px;
+}
+
+/* Title and shortcuts container */
+.title-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 /* GitHub icon styles */
@@ -42,6 +52,7 @@ body {
     gap: 15px;
     align-items: center;
     height: 32px;
+    flex-wrap: wrap;
 }
 
 /* Editor layout */
@@ -220,41 +231,12 @@ button.active {
     background-color: var(--accent-hover);
 }
 
-/* Responsive design */
-@media (max-width: 1200px) {
-    .editor-container {
-        grid-template-columns: 1fr;
-        height: auto;
-        min-height: unset;
-    }
-
-    .panel {
-        min-height: 500px;
-    }
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    background: var(--bg-secondary);
-    padding: 15px 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.title-shortcuts {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
+/* Shortcuts panel styles */
 .shortcuts-panel {
     position: relative;
-    background-color: var(--bg-secondary, #3b4252);
-    color: var(--text-primary, #eceff4);
-    border: 1px solid var(--border, #4c566a);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -266,8 +248,8 @@ button.active {
     position: absolute;
     top: 100%;
     left: 0;
-    background-color: var(--bg-secondary, #3b4252);
-    border: 1px solid var(--border, #4c566a);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 15px;
     z-index: 1000;
@@ -296,11 +278,11 @@ button.active {
 }
 
 .shortcuts-content kbd {
-    background-color: var(--bg-primary, #2e3440);
-    border: 1px solid var(--border, #4c566a);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border);
     border-radius: 3px;
     box-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 2px 0 0 rgba(255, 255, 255, .7) inset;
-    color: var(--text-secondary, #d8dee9);
+    color: var(--text-secondary);
     display: inline-block;
     font-size: .85em;
     font-weight: 700;
@@ -310,8 +292,8 @@ button.active {
 }
 
 #toggle-shortcuts {
-    background-color: var(--accent, #5e81ac);
-    color: var(--text-primary, #eceff4);
+    background-color: var(--accent);
+    color: var(--text-primary);
     border: none;
     padding: 5px 10px;
     border-radius: 4px;
@@ -321,7 +303,7 @@ button.active {
 }
 
 #toggle-shortcuts:hover {
-    background-color: var(--accent-hover, #81a1c1);
+    background-color: var(--accent-hover);
 }
 
 /* Dropdown styles */
@@ -384,4 +366,109 @@ button.active {
 
 .dropdown:hover .dropbtn {
     background: var(--accent-hover);
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .editor-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: unset;
+    }
+
+    .panel {
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 0;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+
+    .title-shortcuts {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .controls {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        height: auto;
+        justify-content: flex-start;
+    }
+
+    .controls::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .controls::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+        border-radius: 2px;
+    }
+
+    .controls::-webkit-scrollbar-thumb {
+        background: var(--accent);
+        border-radius: 2px;
+    }
+
+    .dropdown-content {
+        position: fixed;
+        top: auto;
+        left: 20px;
+        right: 20px;
+        width: auto;
+        max-width: calc(100% - 40px);
+    }
+
+    .shortcuts-content {
+        position: fixed;
+        top: auto;
+        left: 20px;
+        right: 20px;
+        width: auto;
+        max-width: calc(100% - 40px);
+    }
+
+    .shortcuts-panel {
+        max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 10px;
+    }
+
+    .title-shortcuts {
+        gap: 10px;
+    }
+
+    .controls {
+        gap: 10px;
+    }
+
+    select {
+        min-width: 100px;
+    }
+
+    button {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .toggle-container {
+        font-size: 13px;
+    }
 }

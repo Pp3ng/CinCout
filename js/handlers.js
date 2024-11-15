@@ -156,3 +156,34 @@ window.addEventListener('resize', function () {
     assemblyView.refresh();
 });
 
+//Button ripple effect
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", function(event) {
+            const button = event.currentTarget;
+            
+            //Remove existing ripples
+            const ripples = button.getElementsByClassName("ripple");
+            Array.from(ripples).forEach(ripple => ripple.remove());
+            
+            //Create a new ripple
+            const circle = document.createElement("span");
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+            
+            //Set position of ripple
+            const rect = button.getBoundingClientRect();
+            const x = event.clientX - rect.left - radius;
+            const y = event.clientY - rect.top - radius;
+            
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${x}px`;
+            circle.style.top = `${y}px`;
+            circle.classList.add("ripple");
+            
+            button.appendChild(circle);
+            
+            circle.addEventListener("animationend", () => circle.remove());
+        });
+    });
+});

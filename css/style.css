@@ -472,3 +472,28 @@ button.active {
         font-size: 13px;
     }
 }
+
+body, 
+.panel, 
+.header,
+.CodeMirror,
+button,
+select,
+.dropdown-content,
+.shortcuts-content {
+    transition: all 0.3s ease-in-out;
+}
+
+.CodeMirror {
+    transition: background-color 0.3s ease-in-out,
+                color 0.3s ease-in-out,
+                border-color 0.3s ease-in-out;
+}
+
+.CodeMirror-gutters,
+.CodeMirror-linenumber,
+.CodeMirror-cursor,
+.CodeMirror-selected,
+.CodeMirror-line {
+    transition: all 0.3s ease-in-out;
+}

@@ -104,20 +104,35 @@ function applyTheme(themeName) {
     const theme = themes[themeName];
     if (!theme) return;
 
+    //transition class
+    document.body.classList.add('theme-transitioning');
+
+    //load theme css
     loadThemeCSS(theme);
 
-    document.documentElement.style.setProperty('--bg-primary', theme.bg);
-    document.documentElement.style.setProperty('--bg-secondary', theme.bgSecondary);
-    document.documentElement.style.setProperty('--text-primary', theme.text);
-    document.documentElement.style.setProperty('--text-secondary', theme.textSecondary);
-    document.documentElement.style.setProperty('--accent', theme.accent);
-    document.documentElement.style.setProperty('--accent-hover', theme.accentHover);
-    document.documentElement.style.setProperty('--border', theme.border);
+    //smooth transition
+    requestAnimationFrame(() => {
+        //set css variables
+        document.documentElement.style.setProperty('--bg-primary', theme.bg);
+        document.documentElement.style.setProperty('--bg-secondary', theme.bgSecondary);
+        document.documentElement.style.setProperty('--text-primary', theme.text);
+        document.documentElement.style.setProperty('--text-secondary', theme.textSecondary);
+        document.documentElement.style.setProperty('--accent', theme.accent);
+        document.documentElement.style.setProperty('--accent-hover', theme.accentHover);
+        document.documentElement.style.setProperty('--border', theme.border);
 
-    editor.setOption('theme', themeName);
-    assemblyView.setOption('theme', themeName);
+        //update codemirror theme
+        editor.setOption('theme', themeName);
+        assemblyView.setOption('theme', themeName);
 
-    localStorage.setItem('preferred-theme', themeName);
+        //save preferred theme
+        localStorage.setItem('preferred-theme', themeName);
+
+        //remove transition class
+        setTimeout(() => {
+            document.body.classList.remove('theme-transitioning');
+        }, 300);
+    });
 }
 
 function initializeThemeSelector() {

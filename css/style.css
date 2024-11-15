@@ -165,15 +165,53 @@ button svg {
 
 /* Select dropdown styles */
 select {
+    appearance: none;
     background: var(--bg-primary);
     color: var(--text-primary);
-    border: 1px solid var(--border);
-    padding: 6px 12px;
-    border-radius: 4px;
+    border: 2px solid var(--border);
+    padding: 8px 35px 8px 12px;
+    border-radius: 6px;
     font-size: 14px;
     cursor: pointer;
-    min-width: 120px;
-    height: 32px;
+    min-width: 130px;
+    height: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    transition: all 0.2s ease;
+}
+
+select:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-hover);
+    animation: selectHover 0.3s ease;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
+}
+
+select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 12px;
+}
+
+@keyframes selectHover {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
 }
 
 /* Toggle container styles */

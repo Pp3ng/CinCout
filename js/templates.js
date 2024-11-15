@@ -36,7 +36,7 @@ int main(int argc, const char* argv[])
     printf("Fibonacci of %d is %d\\n", n, fibonacci(n));
     return 0;
 }`,
-        "Dynamic Array Sum": `#include <stdio.h>
+        "Dynamic Memory": `#include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, const char* argv[])
@@ -72,7 +72,7 @@ int main(int argc, const char* argv[])
 
     return 0;
 }`,
-        "Pthread": `#include <stdio.h>
+        "Pthread Example": `#include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
 
@@ -209,7 +209,7 @@ int main(int argc, const char* argv[])
     res->greet();
     return 0;
 }`,
-        "Lambda Function": `#include <iostream>
+        "Lambda Example": `#include <iostream>
 #include <vector>
 #include <algorithm>
 
@@ -222,7 +222,7 @@ int main(int argc, const char* argv[])
     std::cout << std::endl;
     return 0;
 }`,
-        "Template Function": `#include <iostream>
+        "Template Example": `#include <iostream>
 
 template<typename T>
 T add(T a, T b)
@@ -232,10 +232,11 @@ T add(T a, T b)
 
 int main(int argc, const char* argv[])
 {
-    std::cout << "Sum of 5.5 and 4.5: " << add(5.5, 4.5) << std::endl;
+    std::cout << "Sum of 5 and 4: " << add(5, 4) << std::endl;
+    std::cout << "Sum of 5.6 and 4.5: " << add(5.6, 4.5) << std::endl;
     return 0;
 }`,
-        "Polymorphism": `#include <iostream>
+        "Virtual Function": `#include <iostream>
 
 class Animal {
 public:
@@ -260,7 +261,7 @@ int main(int argc, const char* argv[])
     delete animal;
     return 0;
 }`,
-        "Algorithm": `#include <iostream>
+        "STL Algorithm": `#include <iostream>
 #include <vector>
 #include <algorithm>
 
@@ -273,7 +274,7 @@ int main(int argc, const char* argv[])
     std::cout << "Target " << (found ? "found" : "not found") << " in array." << std::endl;
     return 0;
 }`,
-        "Set Operations": `#include <iostream>
+        "Set Container": `#include <iostream>
 #include <set>
 
 int main(int argc, const char* argv[])
@@ -295,7 +296,7 @@ int main(int argc, const char* argv[])
     }
     return 0;
 }`,
-        "Ranges and Views": `#include <iostream>
+        "Ranges Operations": `#include <iostream>
 #include <ranges>
 #include <vector>
 

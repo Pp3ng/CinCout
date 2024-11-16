@@ -10,6 +10,67 @@
         out.println("Error: No code provided");
         return;
     }
+    // Security check for dangerous system calls and operations
+    String[] dangerousCalls = {
+        // Process manipulation
+        "fork", "vfork", "clone", "exec", "system", "popen", 
+        "spawn", "posix_spawn", "daemon", "setpgrp", "setsid",
+    
+        // Network operations
+        "socket", "connect", "bind", "listen", "accept", 
+        "recv", "send", "sendto", "recvfrom", "gethostbyname",
+        "getaddrinfo", "inet_addr", "inet_ntoa", "socketpair",
+        "setsockopt", "getsockopt", "shutdown",
+    
+        // File system operations
+        "unlink", "remove", "rename", "symlink", "link",
+        "mkdir", "rmdir", "chmod", "chown", "truncate",
+        "open", "creat", "mknod", "mkfifo", "mount", "umount",
+        "chroot", "pivot_root", "sync", "fsync",
+    
+        // Process control and signals
+        "ptrace", "kill", "raise", "abort", "signal",
+        "sigaction", "sigsuspend", "sigwait", "setuid",
+        "setgid", "setgroups", "capabilities", "reboot",
+        "sysctl", "nice", "setpriority", "setrlimit",
+    
+        // Shell commands
+        "system", "popen", "execl", "execlp", "execle",
+        "execv", "execvp", "execvpe", "`", "shell",
+        "dlopen", "dlsym", "dlclose",
+    
+        // Memory manipulation
+        "asm", "__asm", "__asm__", "inline", "__builtin",
+        "mmap", "mprotect", "shmat", "shmctl", "shmget",
+        "semget", "semctl", "semop", "msgget", "msgsnd",
+        "msgrcv", "msgctl",
+    
+        // Dangerous standard library functions
+        "gets", "scanf", "getwd", "mktemp", "tmpnam",
+        "setenv", "putenv", "alloca", "longjmp", "setjmp",
+        "atexit", "_exit", "quick_exit", "at_quick_exit"
+    };
+
+    // Check for dangerous function calls
+    for (String call : dangerousCalls) {
+        if (code.contains(call + "(")) {
+            out.println("Error: Restricted function call: " + call);
+            return;
+        }
+    }
+
+    // Check maximum code length
+    if (code.length() > 50000) {
+        out.println("Error: Code exceeds maximum length of 50,000 characters");
+        return;
+    }
+
+    // Check for maximum number of lines
+    int lineCount = code.split("\n").length;
+    if (lineCount > 1000) {
+        out.println("Error: Code exceeds maximum of 1,000 lines");
+        return;
+    }
 
     // Get user session ID
     String sessionId = request.getSession().getId();

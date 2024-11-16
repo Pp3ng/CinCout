@@ -52,4 +52,10 @@ document.addEventListener('keydown', function (e) {
         e.preventDefault();
         document.getElementById("styleCheck").click();
     }
+
+    // Ctrl+Alt+L or Cmd+Alt+L to check memory
+    if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'l') {
+        e.preventDefault();
+        document.getElementById("memcheck").click();
+    }
 });

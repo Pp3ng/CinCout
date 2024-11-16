@@ -63,6 +63,31 @@ document.getElementById("compile").onclick = function () {
         });
 };
 
+//Memcheck button click handler
+document.getElementById("memcheck").onclick = function () {
+    const code = editor.getValue();
+    const lang = document.getElementById("language").value;
+
+    document.getElementById("outputTab").click();
+    document.getElementById("output").textContent = "Running memory check...";
+
+    fetch('jsp/memcheck.jsp', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'code=' + encodeURIComponent(code) +
+            '&lang=' + encodeURIComponent(lang)
+    })
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("output").textContent = data;
+        })
+        .catch(error => {
+            document.getElementById("output").textContent = "Error: " + error;
+        });
+};
+
 document.getElementById("format").onclick = function () {
     const code = editor.getValue();
     const cursor = editor.getCursor();

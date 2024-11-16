@@ -63,12 +63,13 @@
                 <div class="shortcuts-content">
                     <ul>
                         <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Compile and Run</li>
-                        <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> View Assembly</li>
                         <li><kbd>Ctrl</kbd> + <kbd>L</kbd> Clear Output</li>
                         <li><kbd>Ctrl</kbd> + <kbd>S</kbd> Save Code</li>
                         <li><kbd>Ctrl</kbd> + <kbd>O</kbd> Open Code File</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> View Assembly</li>
                         <li><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd> Format Code</li>
                         <li><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd> Check Style</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd> Memory Check</li>
                     </ul>
                 </div>
             </div>
@@ -109,7 +110,6 @@
     <div class="editor-container">
         <div class="panel">
             <div class="panel-header">
-                <div class="panel-title">Code Editor</div>
                 <div class="button-container">
                     <button id="styleCheck">
                         <i class="fas fa-check"></i> Style Check
@@ -122,6 +122,9 @@
                     </button>
                     <button id="viewAssembly">
                         <i class="fas fa-cogs"></i> View Assembly
+                    </button>
+                    <button id="memcheck">
+                        <i class="fas fa-memory"></i> Memory Check
                     </button>
                 </div>
             </div>
@@ -147,7 +150,6 @@
     </div>
 </div>
 
-</div>
 
 <script src="js/themes.js"></script>
 <script src="js/editor.js"></script>

@@ -22,21 +22,25 @@ http://120.26.168.212:8080/webCpp/
 
 # Shortcut Keys 🔑
 
-- **Compile and Run**: `Ctrl/Cmd + Enter` to compile and run the code.
-- **Show Assembly Code**: `Ctrl/Cmd + Shift + A` to display the assembly code.
-- **Clear Output**: `Ctrl/Cmd + L` to clear the output window.
-- **Save to Local Storage**: `Ctrl/Cmd + S` to save the current code.
+- **Compile and Run**: `Ctrl/Cmd + Enter` to compile and run code.
+- **Show Assembly Code**: `Ctrl/Cmd + Shift + A` to display assembly code.
+- **Clear Output**: `Ctrl/Cmd + L` to clear output window.
+- **Save to Local Storage**: `Ctrl/Cmd + S` to save current code.
 - **Load from Local Storage**: `Ctrl/Cmd + O` to load previously saved code.
-- **Format Code**: `Ctrl/Cmd + Alt + F` to format the code for better readability.
+- **Format Code**: `Ctrl/Cmd + Alt + F` to format code for better readability.
+- **Style Check** : `Ctrl/Cmd + Alt + C` to check code style.
+- **Memory Check** : `Ctrl/Cmd + Alt + L` to check memory leak.
 
 # Themes 🎨
 
+- **Neo**: A modern theme with a futuristic design and vibrant colors.
 - **Nord**: A polar night-inspired color palette that’s easy on the eyes.
 - **Dracula**: A dark theme with vibrant colors for a striking contrast.
 - **Monokai**: A classic dark theme with bright accents, popular among developers.
 - **Material**: A material design-inspired theme that offers a modern aesthetic.
 - **Ayu-dark**: A soothing dark theme with soft colors.
 - **Gruvbox-dark**: A retro groove style with a comfortable color palette.
+- **seti**: A vibrant theme with a dark background and colorful accents.
 
 ---
 
@@ -48,7 +52,7 @@ First, install the required packages:
 
 ```bash
 sudo apt update
-sudo apt install openjdk-11-jdk tomcat9 gcc g++ clang-format
+sudo apt install openjdk-11-jdk tomcat9 gcc g++ clang clang-format valgrind
 ```
 
 ## Project Setup
@@ -103,6 +107,10 @@ grant codeBase "file:${catalina.home}/webapps/code-editor/-" {
     permission java.io.FilePermission "/var/lib/tomcat9/webapps/code-editor/tmp/*", "read,write,delete,execute";
     permission java.io.FilePermission "/usr/bin/gcc", "execute";
     permission java.io.FilePermission "/usr/bin/g++", "execute";
+    permission java.io.FilePermission "/usr/bin/clang", "execute";
+    permission java.io.FilePermission "/usr/bin/clang++", "execute";
+    permission java.io.FilePermission "/usr/bin/clang-format", "execute";
+    permission java.io.FilePermission "/usr/bin/valgrind", "execute";
     permission java.lang.RuntimePermission "createClassLoader";
     permission java.lang.RuntimePermission "getClassLoader";
     permission java.lang.RuntimePermission "setContextClassLoader";
@@ -137,21 +145,3 @@ Open in web browser:
 ```
 http://your_server_ip:8080/code-editor/
 ```
-
-### Debugging Commands
-
-```bash
-# Check Tomcat process
-ps aux | grep tomcat
-
-# Verify file permissions
-ls -la /var/lib/tomcat9/webapps/code-editor/
-
-# Test compilers
-sudo -u tomcat gcc --version
-sudo -u tomcat g++ --version
-
-# Check logs
-tail -f /var/lib/tomcat9/logs/catalina.out
-```
-

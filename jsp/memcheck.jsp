@@ -68,13 +68,28 @@
 
         BufferedReader logReader = new BufferedReader(new FileReader(valgrindLog));
         StringBuilder report = new StringBuilder();
-        while ((line = logReader.readLine()) != null) {
-            report.append(line).append("\n");
+        boolean startReading = false;
+
+        while((line = logReader.readLine()) != null) {
+            if (line.contains("HEAP SUMMARY:")) {
+                startReading = true;
+            }
+
+            if(startReading && !line.trim().isEmpty()) {
+                report.append(line).append("\n");
+            }
         }
         logReader.close();
 
-        out.println("Memory Analysis Report:\n");
-        out.println(report.toString());
+        String result = report.toString();
+        String[] lines = result.split("\n");
+        StringBuilder filteredReport = new StringBuilder();
+
+        for(String l : lines) {
+            if(!l.trim().contains("For lists of"))
+                filteredReport.append(l).append("\n");
+        }
+        out.println(filteredReport.toString().trim());
 
     } catch (Exception e) {
         out.println("Error: " + e.getMessage());

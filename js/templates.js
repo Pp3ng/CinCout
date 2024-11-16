@@ -485,120 +485,89 @@ int main(int argc, const char* argv[])
     free_tree(root);
     return 0;
 }`,
-        "Fork and Network": `#include <stdio.h>
+        "Dijkstra Algorithm": `#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-#include <time.h>
+#include <limits.h>
+#include <stdbool.h>
 
-void handle_error(const char* msg)
+// Number of vertices in the graph
+#define V 9
+
+// Find the vertex with minimum distance value
+int find_min_distance(const int dist[], const bool visited[])
 {
-    perror(msg);
-    exit(1);
+    int min = INT_MAX;
+    int min_index = 0;
+    
+    for (int v = 0; v < V; v++) {
+        if (!visited[v] && dist[v] < min) {
+            min = dist[v];
+            min_index = v;
+        }
+    }
+    return min_index;
 }
 
-char* generate_socket_path()
+// Print shortest path distances
+void print_distances(const int dist[])
 {
-    static char path[128];
-    snprintf(path, sizeof(path), "/tmp/ipc_socket_%d_%ld", getpid(), time(NULL));
-    return path;
+    printf("Vertex      Distance\\n");
+    printf("-------------------\\n");
+    for (int i = 0; i < V; i++) {
+        printf("%-6d      %d\\n", i, dist[i]);
+    }
 }
 
-void child_process(int sock)
+// Find shortest paths from source to all vertices
+void dijkstra(const int graph[V][V], int src)
 {
-    char buffer[1024];
+    int dist[V];     // Shortest distance from source
+    bool visited[V]; // Track visited vertices
     
-    // Receive message from parent
-    ssize_t bytes_received = recv(sock, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received < 0) handle_error("Child receive failed");
-    
-    buffer[bytes_received] = '\\0';
-    printf("Child received: %s\\n", buffer);
-    
-    // Send response to parent
-    const char* response = "Hello, parent process!";
-    if (send(sock, response, strlen(response), 0) < 0) {
-        handle_error("Child send failed");
+    // Initialize all distances as infinite
+    for (int i = 0; i < V; i++) {
+        dist[i] = INT_MAX;
+        visited[i] = false;
     }
     
-    close(sock);
-}
-
-void parent_process(int sock)
-{
-    // Send message to child
-    const char* message = "Hello, child process!";
-    if (send(sock, message, strlen(message), 0) < 0) {
-        handle_error("Parent send failed");
+    // Distance to source is always 0
+    dist[src] = 0;
+    
+    // Find shortest path for all vertices
+    for (int count = 0; count < V - 1; count++) {
+        int u = find_min_distance(dist, visited);
+        visited[u] = true;
+        
+        // Update dist[] for adjacent vertices
+        for (int v = 0; v < V; v++) {
+            if (!visited[v] && graph[u][v] && 
+                dist[u] != INT_MAX && 
+                dist[u] + graph[u][v] < dist[v]) {
+                dist[v] = dist[u] + graph[u][v];
+            }
+        }
     }
     
-    // Receive child's response
-    char buffer[1024];
-    ssize_t bytes_received = recv(sock, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received < 0) handle_error("Parent receive failed");
-    
-    buffer[bytes_received] = '\\0';
-    printf("Parent received: %s\\n", buffer);
-    
-    close(sock);
+    print_distances(dist);
 }
 
 int main(int argc, const char* argv[])
 {
-    char* socket_path = generate_socket_path();
-    unlink(socket_path);  // Remove old socket file if exists
+    // Example graph represented as adjacency matrix
+    int graph[V][V] = {
+        {0, 4, 0, 0, 0, 0, 0, 8, 0},
+        {4, 0, 8, 0, 0, 0, 0, 11, 0},
+        {0, 8, 0, 7, 0, 4, 0, 0, 2},
+        {0, 0, 7, 0, 9, 14, 0, 0, 0},
+        {0, 0, 0, 9, 0, 10, 0, 0, 0},
+        {0, 0, 4, 14, 10, 0, 2, 0, 0},
+        {0, 0, 0, 0, 0, 2, 0, 1, 6},
+        {8, 11, 0, 0, 0, 0, 1, 0, 7},
+        {0, 0, 2, 0, 0, 0, 6, 7, 0}
+    };
     
-    // Create Unix domain socket
-    int server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (server_sock < 0) handle_error("Socket creation failed");
-    
-    // Setup server address
-    struct sockaddr_un server_addr = {0};
-    server_addr.sun_family = AF_UNIX;
-    strncpy(server_addr.sun_path, socket_path, sizeof(server_addr.sun_path) - 1);
-    
-    // Bind socket
-    if (bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        handle_error("Bind failed");
-    }
-    
-    // Listen for connections
-    if (listen(server_sock, 1) < 0) handle_error("Listen failed");
-    
-    pid_t pid = fork();
-    if (pid < 0) {
-        handle_error("Fork failed");
-    }
-    
-    if (pid == 0) {  // Child process
-        // Connect to server
-        int client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
-        if (client_sock < 0) handle_error("Client socket creation failed");
-        
-        struct sockaddr_un client_addr = {0};
-        client_addr.sun_family = AF_UNIX;
-        strncpy(client_addr.sun_path, socket_path, sizeof(client_addr.sun_path) - 1);
-        
-        if (connect(client_sock, (struct sockaddr*)&client_addr, sizeof(client_addr)) < 0) {
-            handle_error("Connect failed");
-        }
-        
-        child_process(client_sock);
-        exit(0);
-    } else {  // Parent process
-        // Accept client connection
-        int client_sock = accept(server_sock, NULL, NULL);
-        if (client_sock < 0) handle_error("Accept failed");
-        
-        parent_process(client_sock);
-        wait(NULL);  // Wait for child to finish
-        
-        unlink(socket_path);  // Clean up socket file
-    }
-    
+    printf("Finding shortest paths from vertex 0:\\n\\n");
+    dijkstra(graph, 0);
     return 0;
 }`
     },

@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/plain; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.io.*,java.util.*" %>
+<%@ page import="java.io.*,java.util.*,java.util.concurrent.TimeUnit" %>
 <%
     // Get submitted code, language and action type
     String code = request.getParameter("code");
@@ -77,9 +77,9 @@
             // Error output
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(asmGen.getErrorStream()));
             StringBuilder errorOutput = new StringBuilder();
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                errorOutput.append(line).append("\n");
+            String line1;
+            while ((line1 = errorReader.readLine()) != null) {
+                errorOutput.append(line1).append("\n");
             }
 
             int exitCode = asmGen.waitFor();
@@ -102,9 +102,9 @@
             // Error output
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(compile.getErrorStream()));
             StringBuilder errorOutput = new StringBuilder();
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                errorOutput.append(line).append("\n");
+            String line2;
+            while ((line2 = errorReader.readLine()) != null) {
+                errorOutput.append(line2).append("\n");
             }
             
             int exitCode = compile.waitFor();
@@ -113,15 +113,59 @@
                 return;
             }
 
-            // Execute the compiled program and output the result
+            // Execute the compiled program with resource limits
             if (exitCode == 0) {
-                Process execute = Runtime.getRuntime().exec(outputFile);
-                BufferedReader outputReader = new BufferedReader(new InputStreamReader(execute.getInputStream()));
+                String[] command = {
+                    "/bin/bash",
+                    "-c",
+                    String.format(
+                        "ulimit -v 102400 && " +    // Virtual memory limit (100MB)
+                        "ulimit -m 102400 && " +    // Max memory limit (100MB)
+                        "ulimit -t 10 && " +        // CPU time limit (10 seconds)
+                        "ulimit -s 8192 && " +      // Stack size limit (8MB)
+                        "%s 2>&1",                  // Execute program and redirect stderr to stdout
+                        outputFile
+                    )
+                };
+
+                ProcessBuilder processBuilder = new ProcessBuilder(command);
+                processBuilder.redirectErrorStream(true);
+                Process execute = processBuilder.start();
+
+                // Read program output with timeout
+                BufferedReader outputReader = new BufferedReader(
+                    new InputStreamReader(execute.getInputStream())
+                );
                 StringBuilder programOutput = new StringBuilder();
-                while ((line = outputReader.readLine()) != null) {
-                    programOutput.append(line).append("\n");
+                String line3;
+                
+                boolean completed = execute.waitFor(10, TimeUnit.SECONDS);
+                if (!completed) {
+                    execute.destroyForcibly();
+                    out.println("Error: Program execution timed out (10 seconds)");
+                    return;
                 }
-                out.println(programOutput.toString());
+
+                while ((line3 = outputReader.readLine()) != null) {
+                    programOutput.append(line3).append("\n");
+                }
+
+                int exitValue = execute.exitValue();
+                String output = programOutput.toString();
+
+                if (exitValue != 0) {
+                    if (output.contains("bad_alloc") || output.contains("out of memory")) {
+                        out.println("Error: Program exceeded memory limit (100MB)");
+                    } else if (output.contains("Killed") || exitValue == 137 || exitValue == 9) {
+                        out.println("Error: Program killed (exceeded memory limit)");
+                    } else if (exitValue == 124 || exitValue == 142) {
+                        out.println("Error: Program execution timed out (10 seconds)");
+                    } else {
+                        out.println("Program output (exit code " + exitValue + "):\n" + output);
+                    }
+                } else {
+                    out.println(output);
+                }
             }
         }
 
@@ -131,9 +175,9 @@
             if (asmFileObj.exists()) {
                 BufferedReader asmReader = new BufferedReader(new FileReader(asmFile));
                 StringBuilder asmOutput = new StringBuilder();
-                String line;
-                while ((line = asmReader.readLine()) != null) {
-                    asmOutput.append(line).append("\n");
+                String line4;
+                while ((line4 = asmReader.readLine()) != null) {
+                    asmOutput.append(line4).append("\n");
                 }
                 asmReader.close();
                 out.println(asmOutput.toString());

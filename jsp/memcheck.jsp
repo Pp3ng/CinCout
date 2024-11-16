@@ -56,10 +56,10 @@
 
         Process valgrind = Runtime.getRuntime().exec(new String[]{
             "valgrind",
-            "--tool=memcheck",
-            "--leak-check=full",
-            "--show-leak-kinds=all",
-            "--track-origins=yes",
+            "--tool=memcheck",  // Use memcheck tool
+            "--leak-check=full",// Enable full leak check
+            "--show-leak-kinds=all",// Show all kinds of leaks
+            "--track-origins=yes",// Enable origin tracking
             "--log-file=" + valgrindLog,
             outputFile
         });

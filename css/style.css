@@ -567,3 +567,89 @@ select,
 .CodeMirror-line {
     transition: all 0.3s ease-in-out;
 }
+
+.highlighted-output,
+.memcheck-output,
+.style-check-output,
+.error-output,
+.default-output {
+    margin: 0;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+}
+
+.loading {
+    padding: 20px;
+    text-align: center;
+    color: var(--accent);
+    font-style: italic;
+}
+
+.loading:after {
+    content: '...';
+    animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60% { content: '...'; }
+    80%, 100% { content: ''; }
+}
+
+.error-text {
+    color: #ff5555;
+    font-weight: bold;
+}
+
+.warning-text {
+    color: #f1fa8c;
+    font-weight: bold;
+}
+
+.memory-text {
+    color: #50fa7b;
+}
+
+.file-path {
+    color: #8be9fd;
+}
+
+.line-number {
+    color: #bd93f9;
+}
+
+.error-output {
+    background-color: rgba(255, 85, 85, 0.1);
+    border-left: 3px solid #ff5555;
+}
+
+.memcheck-output {
+    background-color: rgba(80, 250, 123, 0.1);
+    border-left: 3px solid #50fa7b;
+}
+
+.style-check-output {
+    background-color: rgba(189, 147, 249, 0.1);
+    border-left: 3px solid #bd93f9;
+}
+
+#output::-webkit-scrollbar {
+    width: 8px;
+}
+
+#output::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+#output::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+#output::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}

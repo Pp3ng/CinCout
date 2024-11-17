@@ -42,7 +42,7 @@ document.getElementById("compile").onclick = function () {
     const output = document.getElementById("output");
 
     document.getElementById("outputTab").click();
-    output.textContent = "Compiling...";
+    output.innerHTML = "<div class='loading'>Compiling...</div>";
 
     fetch('jsp/compile.jsp', {
         method: 'POST',
@@ -56,10 +56,10 @@ document.getElementById("compile").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            output.textContent = data;
+            output.innerHTML = `<pre class="highlighted-output">${formatOutput(data)}</pre>`;
         })
         .catch(error => {
-            output.textContent = "Error: " + error;
+            output.innerHTML = `<pre class="error-output">Error: ${error}</pre>`;
         });
 };
 
@@ -69,7 +69,7 @@ document.getElementById("memcheck").onclick = function () {
     const lang = document.getElementById("language").value;
 
     document.getElementById("outputTab").click();
-    document.getElementById("output").textContent = "Running memory check...";
+    document.getElementById("output").innerHTML = "<div class='loading'>Running memory check...</div>";
 
     fetch('jsp/memcheck.jsp', {
         method: 'POST',
@@ -81,10 +81,10 @@ document.getElementById("memcheck").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            document.getElementById("output").textContent = data;
+            document.getElementById("output").innerHTML = `<pre class="memcheck-output">${formatOutput(data)}</pre>`;
         })
         .catch(error => {
-            document.getElementById("output").textContent = "Error: " + error;
+            document.getElementById("output").innerHTML = `<pre class="error-output">Error: ${error}</pre>`;
         });
 };
 
@@ -150,7 +150,7 @@ document.getElementById("styleCheck").onclick = function () {
     const lang = document.getElementById("language").value;
 
     document.getElementById("outputTab").click();
-    document.getElementById("output").textContent = "Running cppcheck...";
+    document.getElementById("output").innerHTML = "<div class='loading'>Running cppcheck...</div>";
 
     fetch('jsp/styleCheck.jsp', {
         method: 'POST',
@@ -162,16 +162,16 @@ document.getElementById("styleCheck").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            document.getElementById("output").textContent = data;
+            document.getElementById("output").innerHTML = `<pre class="style-check-output">${formatOutput(data)}</pre>`;
         })
         .catch(error => {
-            document.getElementById("output").textContent = "Error: " + error;
+            document.getElementById("output").innerHTML = `<pre class="error-output">Error: ${error}</pre>`;
         });
 };
 
 // Clear button click handler
 document.getElementById("clear").onclick = function () {
-    document.getElementById("output").textContent = "// Program output will appear here";
+    document.getElementById("output").innerHTML = `<pre class="default-output">// Program output will appear here</pre>`;
     assemblyView.setValue("");
 };
 
@@ -212,3 +212,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+function formatOutput(text) {
+    text = text.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;');
+               
+    text = text.replace(/error:/gi, '<span class="error-text">error:</span>');
+    text = text.replace(/warning:/gi, '<span class="warning-text">warning:</span>');
+    
+    text = text.replace(/(allocs|freed|frees|leaks|bytes|blocks)/g, '<span class="memory-text">$1</span>');
+    
+    text = text.replace(/(\w+\.[ch](?:pp)?):(\d+):/g, '<span class="file-path">$1</span>:<span class="line-number">$2</span>:');
+    
+    return text;
+}

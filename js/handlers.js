@@ -162,7 +162,16 @@ document.getElementById("styleCheck").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            document.getElementById("output").innerHTML = `<pre class="style-check-output">${formatOutput(data)}</pre>`;
+            const lines = data.split('\n');
+            const formattedLines = lines.map(line => {
+                if (line.trim()) {
+                    return `<div class="style-block">${formatOutput(line)}</div>`;
+                }
+                return '';
+            }).filter(line => line);
+            
+            document.getElementById("output").innerHTML = 
+                `<pre class="style-check-output">${formattedLines.join('\n')}</pre>`;
         })
         .catch(error => {
             document.getElementById("output").innerHTML = `<pre class="error-output">Error: ${error}</pre>`;

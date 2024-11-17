@@ -635,21 +635,3 @@ select,
     background-color: rgba(189, 147, 249, 0.1);
     border-left: 3px solid #bd93f9;
 }
-
-#output::-webkit-scrollbar {
-    width: 8px;
-}
-
-#output::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-}
-
-#output::-webkit-scrollbar-thumb {
-    background: var(--accent);
-    border-radius: 4px;
-}
-
-#output::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-hover);
-}

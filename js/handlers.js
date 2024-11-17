@@ -56,10 +56,18 @@ document.getElementById("compile").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            output.innerHTML = `<pre class="highlighted-output">${formatOutput(data)}</pre>`;
+            let formattedData = data
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/error:/gi, '<span class="error-text">error:</span>')
+                .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
+                .replace(/(\w+\.[ch](?:pp)?):(\d+):/g, '<span class="file-path">$1</span>:<span class="line-number">$2</span>:');
+            
+            output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formattedData}</div>`;
         })
         .catch(error => {
-            output.innerHTML = `<pre class="error-output">Error: ${error}</pre>`;
+            output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
         });
 };
 
@@ -81,10 +89,10 @@ document.getElementById("memcheck").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            document.getElementById("output").innerHTML = `<pre class="memcheck-output">${formatOutput(data)}</pre>`;
+            document.getElementById("output").innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
         })
         .catch(error => {
-            document.getElementById("output").innerHTML = `<pre class="error-output">Error: ${error}</pre>`;
+            document.getElementById("output").innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
         });
 };
 
@@ -165,16 +173,16 @@ document.getElementById("styleCheck").onclick = function () {
             const lines = data.split('\n');
             const formattedLines = lines.map(line => {
                 if (line.trim()) {
-                    return `<div class="style-block">${formatOutput(line)}</div>`;
+                    return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${formatOutput(line)}</div>`;
                 }
                 return '';
             }).filter(line => line);
             
             document.getElementById("output").innerHTML = 
-                `<pre class="style-check-output">${formattedLines.join('\n')}</pre>`;
+                `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join('\n')}</div>`;
         })
         .catch(error => {
-            document.getElementById("output").innerHTML = `<pre class="error-output">Error: ${error}</pre>`;
+            document.getElementById("output").innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
         });
 };
 

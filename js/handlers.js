@@ -34,6 +34,11 @@ document.getElementById("assemblyTab").addEventListener("click", function () {
     document.getElementById('outputTab').classList.remove('active');
 });
 
+//Remove all path information from compiler output
+function sanitizeCompilerOutput(output) {
+    return output.replace(/[^:\s]+\.(?:cpp|c|h|hpp):/g, '');
+}
+
 // Compile button click handler
 document.getElementById("compile").onclick = function () {
     const code = editor.getValue();
@@ -56,7 +61,8 @@ document.getElementById("compile").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            let formattedData = data
+            const sanitizedData = sanitizeCompilerOutput(data);
+            let formattedData = sanitizedData
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
@@ -89,7 +95,8 @@ document.getElementById("memcheck").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            document.getElementById("output").innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
+            const sanitizedData = sanitizeCompilerOutput(data);
+            document.getElementById("output").innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(sanitizedData)}</div>`;
         })
         .catch(error => {
             document.getElementById("output").innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
@@ -146,7 +153,8 @@ document.getElementById("viewAssembly").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            assemblyView.setValue(data);
+            const sanitizedData = sanitizeCompilerOutput(data);
+            assemblyView.setValue(sanitizedData);
         })
         .catch(error => {
             assemblyView.setValue("Error: " + error);
@@ -239,8 +247,6 @@ function formatOutput(text) {
     text = text.replace(/warning:/gi, '<span class="warning-text">warning:</span>');
     
     text = text.replace(/(allocs|freed|frees|leaks|bytes|blocks)/g, '<span class="memory-text">$1</span>');
-    
-    text = text.replace(/(\w+\.[ch](?:pp)?):(\d+):/g, '<span class="file-path">$1</span>:<span class="line-number">$2</span>:');
     
     return text;
 }

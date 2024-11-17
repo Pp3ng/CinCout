@@ -615,6 +615,12 @@ select,
 
 .line-number {
     color: #bd93f9;
+    font-weight: bold;
+}
+
+.column-number {
+    color: #8be9fd;
+    font-weight: bold;
 }
 
 .error-output {

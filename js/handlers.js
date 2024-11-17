@@ -62,15 +62,7 @@ document.getElementById("compile").onclick = function () {
         .then(response => response.text())
         .then(data => {
             const sanitizedData = sanitizeCompilerOutput(data);
-            let formattedData = sanitizedData
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/error:/gi, '<span class="error-text">error:</span>')
-                .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
-                .replace(/(\w+\.[ch](?:pp)?):(\d+):/g, '<span class="file-path">$1</span>:<span class="line-number">$2</span>:');
-            
-            output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formattedData}</div>`;
+            output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(sanitizedData)}</div>`;
         })
         .catch(error => {
             output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
@@ -245,7 +237,7 @@ function formatOutput(text) {
                
     text = text.replace(/error:/gi, '<span class="error-text">error:</span>');
     text = text.replace(/warning:/gi, '<span class="warning-text">warning:</span>');
-    
+    text = text.replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
     text = text.replace(/(allocs|freed|frees|leaks|bytes|blocks)/g, '<span class="memory-text">$1</span>');
     
     return text;

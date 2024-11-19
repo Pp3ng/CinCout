@@ -8,7 +8,7 @@ This project is a web-based code editor and compiler for C/C++ programs. It allo
 
 # Try it(no guarantee always available due to myself's server)
 
-http://120.26.168.212:8080/webCpp/
+http://116.62.132.169:9527/webCpp/
 
 ---
 
@@ -52,7 +52,7 @@ First, install the required packages:
 
 ```bash
 sudo apt update
-sudo apt install openjdk-11-jdk tomcat9 gcc g++ clang clang-format valgrind
+sudo apt install openjdk-11-jdk tomcat9 gcc g++ clang clang-format valgrind cppcheck
 ```
 
 ## Project Setup
@@ -64,13 +64,12 @@ Create the necessary directories in Tomcat's webapps folder:
 git clone https://github.com/Pp3ng/webCpp.git
 
 # Move the project to Tomcat's webapps folder
-mv webCpp /var/lib/tomcat9/webapps/
+mv webCpp /var/lib/tomcat9/webapps/webCpp
 
 # Change directory
 cd /var/lib/tomcat9/webapps/webCpp
 
 # Create required subdirectories
-sudo mkdir WEB-INF
 sudo mkdir tmp
 ```
 
@@ -126,6 +125,8 @@ Restart Tomcat to apply changes:
 sudo systemctl restart tomcat9
 ```
 
+then you can visit http://localhost:8080/webCpp/ and enjoy it.
+
 ## Verification
 
 ### 1. Check Service Status
@@ -136,12 +137,4 @@ sudo systemctl status tomcat9
 
 # View logs
 sudo tail -f /var/lib/tomcat9/logs/catalina.out
-```
-
-### 2. Test Access
-
-Open in web browser:
-
-```
-http://your_server_ip:8080/code-editor/
 ```

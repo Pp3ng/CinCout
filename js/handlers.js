@@ -131,7 +131,19 @@ document.getElementById("viewAssembly").onclick = function () {
     const compiler = document.getElementById("compiler").value;
 
     document.getElementById("assemblyTab").click();
-    assemblyView.setValue("Generating assembly code...");
+
+    //create loading div
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading';
+    loadingDiv.textContent = 'Generating assembly code';
+
+    //get assembly div and its CodeMirror container
+    const assemblyDiv = document.getElementById("assembly");
+    const cmContainer = assemblyDiv.querySelector('.CodeMirror');
+
+    // insert loadingDiv before cmContainer
+    assemblyDiv.insertBefore(loadingDiv, cmContainer);
+    assemblyView.setValue(''); // clear previous assembly code
 
     fetch('jsp/compile.jsp', {
         method: 'POST',
@@ -146,9 +158,11 @@ document.getElementById("viewAssembly").onclick = function () {
         .then(response => response.text())
         .then(data => {
             const sanitizedData = sanitizeCompilerOutput(data);
+            loadingDiv.remove();
             assemblyView.setValue(sanitizedData);
         })
         .catch(error => {
+            loadingDiv.remove();
             assemblyView.setValue("Error: " + error);
         });
 };
@@ -177,8 +191,8 @@ document.getElementById("styleCheck").onclick = function () {
                 }
                 return '';
             }).filter(line => line);
-            
-            document.getElementById("output").innerHTML = 
+
+            document.getElementById("output").innerHTML =
                 `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join('\n')}</div>`;
         })
         .catch(error => {
@@ -201,30 +215,30 @@ window.addEventListener('resize', function () {
 //Button ripple effect
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll("button").forEach(button => {
-        button.addEventListener("click", function(event) {
+        button.addEventListener("click", function (event) {
             const button = event.currentTarget;
-            
+
             //Remove existing ripples
             const ripples = button.getElementsByClassName("ripple");
             Array.from(ripples).forEach(ripple => ripple.remove());
-            
+
             //Create a new ripple
             const circle = document.createElement("span");
             const diameter = Math.max(button.clientWidth, button.clientHeight);
             const radius = diameter / 2;
-            
+
             //Set position of ripple
             const rect = button.getBoundingClientRect();
             const x = event.clientX - rect.left - radius;
             const y = event.clientY - rect.top - radius;
-            
+
             circle.style.width = circle.style.height = `${diameter}px`;
             circle.style.left = `${x}px`;
             circle.style.top = `${y}px`;
             circle.classList.add("ripple");
-            
+
             button.appendChild(circle);
-            
+
             circle.addEventListener("animationend", () => circle.remove());
         });
     });
@@ -232,13 +246,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function formatOutput(text) {
     text = text.replace(/&/g, '&amp;')
-               .replace(/</g, '&lt;')
-               .replace(/>/g, '&gt;');
-               
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
     text = text.replace(/error:/gi, '<span class="error-text">error:</span>');
     text = text.replace(/warning:/gi, '<span class="warning-text">warning:</span>');
     text = text.replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
     text = text.replace(/(allocs|freed|frees|leaks|bytes|blocks)/g, '<span class="memory-text">$1</span>');
-    
+
     return text;
 }

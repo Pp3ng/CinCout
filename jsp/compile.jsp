@@ -1,5 +1,14 @@
 <%@ page language="java" contentType="text/plain; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.io.*,java.util.*,java.util.concurrent.TimeUnit" %>
+
+<%!
+    private String sanitizeOutput(String output){
+        if (output == null) {
+            return "";
+        }
+        return output.replaceAll("[^:\\s]+\\.(cpp|c|h|hpp):", "");
+    }
+%>
 <%
     // Get submitted code, language and action type
     String code = request.getParameter("code");
@@ -145,7 +154,7 @@
 
             int exitCode = asmGen.waitFor();
             if (exitCode != 0) {
-                out.println("Compilation Error:\n" + errorOutput.toString());
+                out.println("Compilation Error:\n" + sanitizeOutput(errorOutput.toString()));
                 return;
             }
         }
@@ -170,7 +179,7 @@
             
             int exitCode = compile.waitFor();
             if (exitCode != 0) {
-                out.println("Compilation Error:\n" + errorOutput.toString());
+                out.println("Compilation Error:\n" + sanitizeOutput(errorOutput.toString()));
                 return;
             }
 

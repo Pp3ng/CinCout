@@ -34,10 +34,6 @@ document.getElementById("assemblyTab").addEventListener("click", function () {
     document.getElementById('outputTab').classList.remove('active');
 });
 
-//Remove all path information from compiler output
-function sanitizeCompilerOutput(output) {
-    return output.replace(/[^:\s]+\.(?:cpp|c|h|hpp):/g, '');
-}
 
 // Compile button click handler
 document.getElementById("compile").onclick = function () {
@@ -61,8 +57,7 @@ document.getElementById("compile").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            const sanitizedData = sanitizeCompilerOutput(data);
-            output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(sanitizedData)}</div>`;
+            output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
         })
         .catch(error => {
             output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
@@ -87,8 +82,7 @@ document.getElementById("memcheck").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            const sanitizedData = sanitizeCompilerOutput(data);
-            document.getElementById("output").innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(sanitizedData)}</div>`;
+            document.getElementById("output").innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
         })
         .catch(error => {
             document.getElementById("output").innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
@@ -157,9 +151,8 @@ document.getElementById("viewAssembly").onclick = function () {
     })
         .then(response => response.text())
         .then(data => {
-            const sanitizedData = sanitizeCompilerOutput(data);
             loadingDiv.remove();
-            assemblyView.setValue(sanitizedData);
+            assemblyView.setValue(data);
         })
         .catch(error => {
             loadingDiv.remove();

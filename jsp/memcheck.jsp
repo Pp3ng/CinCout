@@ -1,5 +1,13 @@
 <%@ page language="java" contentType="text/plain; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.io.*,java.util.*" %>
+<%!
+    private String sanitizeOutput(String output){
+        if (output == null) {
+            return "";
+        }
+        return output.replaceAll("[^:\\s]+\\.(cpp|c|h|hpp):", "");
+    }
+%>
 <%
     String code = request.getParameter("code");
     String lang = request.getParameter("lang");
@@ -50,7 +58,7 @@
 
         int exitCode = compile.waitFor();
         if (exitCode != 0) {
-            out.println("Compilation Error:\n" + errorOutput.toString());
+            out.println("Compilation Error:\n" + sanitizeOutput(errorOutput.toString()));
             return;
         }
 

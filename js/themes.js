@@ -112,23 +112,25 @@ function applyTheme(themeName) {
 
     //smooth transition
     requestAnimationFrame(() => {
-        //set css variables
-        document.documentElement.style.setProperty('--bg-primary', theme.bg);
-        document.documentElement.style.setProperty('--bg-secondary', theme.bgSecondary);
-        document.documentElement.style.setProperty('--text-primary', theme.text);
-        document.documentElement.style.setProperty('--text-secondary', theme.textSecondary);
-        document.documentElement.style.setProperty('--accent', theme.accent);
-        document.documentElement.style.setProperty('--accent-hover', theme.accentHover);
-        document.documentElement.style.setProperty('--border', theme.border);
+        const root = document.documentElement;
+        const {bg, bgSecondary, text, textSecondary, accent, accentHover, border} = theme;
 
-        //update codemirror theme
+        //Set property
+        root.style.setProperty('--bg-primary', bg);
+        root.style.setProperty('--bg-secondary', bgSecondary);
+        root.style.setProperty('--text-primary', text);
+        root.style.setProperty('--text-secondary', textSecondary);
+        root.style.setProperty('--accent', accent);
+        root.style.setProperty('--accent-hover', accentHover);
+        root.style.setProperty('--border', border);
+
+        //Update theme
         editor.setOption('theme', themeName);
         assemblyView.setOption('theme', themeName);
 
-        //save preferred theme
+        //Storage in local
         localStorage.setItem('preferred-theme', themeName);
 
-        //remove transition class
         setTimeout(() => {
             document.body.classList.remove('theme-transitioning');
         }, 300);

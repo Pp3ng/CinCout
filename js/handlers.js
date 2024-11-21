@@ -245,14 +245,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function formatOutput(text) {
-    text = text.replace(/&/g, '&amp;')
+    return text
+        .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-    text = text.replace(/error:/gi, '<span class="error-text">error:</span>');
-    text = text.replace(/warning:/gi, '<span class="warning-text">warning:</span>');
-    text = text.replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
-    text = text.replace(/(allocs|freed|frees|leaks|bytes|blocks)/g, '<span class="memory-text">$1</span>');
-
-    return text;
+        .replace(/>/g, '&gt;')
+        .replace(/error:/gi, '<span class="error-text">error:</span>')
+        .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
+        .replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:')
+        .replace(/(allocs|freed|frees|leaks|bytes|blocks)/g, '<span class="memory-text">$1</span>');
 }

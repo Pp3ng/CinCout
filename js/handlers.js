@@ -80,13 +80,15 @@ document.getElementById("memcheck").onclick = function () {
         body: 'code=' + encodeURIComponent(code) +
             '&lang=' + encodeURIComponent(lang)
     })
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById("output").innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
-        })
-        .catch(error => {
-            document.getElementById("output").innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-        });
+    .then(response => response.text())
+    .then(data => {
+        document.getElementById("output").innerHTML = 
+            `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
+    })
+    .catch(error => {
+        document.getElementById("output").innerHTML = 
+            `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+    });
 };
 
 document.getElementById("format").onclick = function () {
@@ -238,12 +240,26 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function formatOutput(text) {
-    return text
+    text = text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/error:/gi, '<span class="error-text">error:</span>')
         .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
-        .replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:')
-        .replace(/(allocs|freed|frees|leaks|bytes|blocks)/g, '<span class="memory-text">$1</span>');
+        .replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
+
+    if (text.includes('HEAP SUMMARY') || text.includes('LEAK SUMMARY')) {
+        text = text
+            .replace(/==\d+== /g, '')
+            .replace(/\s+from\s+/g, ' from ')
+            .replace(/in \/.*?\/([^\/]+)\)/g, 'in $1)')
+            .replace(/^\s*\n/gm, '')
+            .replace(/\n\s*\n/g, '\n');
+
+        text = text
+            .replace(/(\d+ bytes? in \d+ blocks? are definitely lost.*?)(?=\s*at|$)/g, '<div class="memcheck-leak">$1</div>')
+            .replace(/at (0x[0-9A-F]+): ([^(]+) \((.*?)\)/gi, '<div class="memcheck-location">→ $2</div>')
+    }
+
+    return text;
 }

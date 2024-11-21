@@ -1,14 +1,13 @@
 const themes = {
-    "neo": {
-        name: "Neo",
+    "default": {
+        name: "Default",
         bg: "#ffffff",
-        bgSecondary: "#eeeeee",
-        text: "#2e383c",
-        textSecondary: "#719899",
-        accent: "#4271ae",
-        accentHover: "#8959a8",
-        border: "#e0e0e0",
-        cdnUrl: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/neo.min.css"
+        bgSecondary: "#f7f7f7",
+        text: "#000000",
+        textSecondary: "#999999",
+        accent: "#0066cc",
+        accentHover: "#0052a3",
+        border: "#d1d1d1"
     },
     "nord": {
         name: "Nord",
@@ -149,7 +148,7 @@ function initializeThemeSelector() {
         themeSelect.appendChild(option);
     });
 
-    const savedTheme = localStorage.getItem('preferred-theme') || 'neo';
+    const savedTheme = localStorage.getItem('preferred-theme') || 'default';
     themeSelect.value = savedTheme;
 
     applyTheme(savedTheme);

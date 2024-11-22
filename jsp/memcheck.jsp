@@ -1,6 +1,24 @@
 <%@ page language="java" contentType="text/plain; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.io.*,java.util.*" %>
 <%!
+    private String formatMemcheckOutput(String text) {
+        if (text == null) return "";
+        //Remove valgrind prefix and extra spaces
+        text = text.replaceAll("==\\d+== ", "")
+                  .replaceAll("\\s+from\\s+", " from ")
+                  .replaceAll("in \\/.*?\\/([^\\/]+)\\)", "in $1)")
+                  .replaceAll("^\\s*\\n", "")
+                  .replaceAll("\\n\\s*\\n", "\n")
+        //program.c:10 -> ###LINE:10###
+                  .replaceAll("\\((?:program\\.c|program\\.cpp):(\\d+)\\)", 
+                             "###LINE:$1###")
+        //Mark memory leaks
+                  .replaceAll("(\\d+ bytes? in \\d+ blocks? are definitely lost.*?)(?=\\s*at|$)",
+                             "###LEAK:$1###");
+        return text;
+    }
+%>
+<%!
     private String sanitizeOutput(String output){
         if (output == null) {
             return "";
@@ -83,22 +101,15 @@
                 startReading = true;
             }
 
-            if(startReading && !line.trim().isEmpty()) {
-                report.append(line).append("\n");
+            if(startReading && !line.trim().isEmpty() && !line.contains("For lists of")) {
+                if (report.length() > 0) {
+                    report.append("\n");
+                }
+                report.append(line);
             }
         }
         logReader.close();
-
-        String result = report.toString();
-        String[] lines = result.split("\n");
-        StringBuilder filteredReport = new StringBuilder();
-
-        for(String l : lines) {
-            if(!l.trim().contains("For lists of"))
-                filteredReport.append(l).append("\n");
-        }
-        out.println(filteredReport.toString().trim());
-
+        out.println(formatMemcheckOutput((report.toString())));
     } catch (Exception e) {
         out.println("Error: " + e.getMessage());
         e.printStackTrace(new PrintWriter(out));

@@ -623,11 +623,6 @@ select,
     background: rgba(255, 85, 85, 0.1);
 }
 
-.memcheck-location {
-    padding-left: 12px;
-    color: #bd93f9;
-}
-
 .line-number {
     color: #bd93f9;
     font-weight: bold;

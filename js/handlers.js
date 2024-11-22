@@ -250,15 +250,10 @@ function formatOutput(text) {
 
     if (text.includes('HEAP SUMMARY') || text.includes('LEAK SUMMARY')) {
         text = text
-            .replace(/==\d+== /g, '')
-            .replace(/\s+from\s+/g, ' from ')
-            .replace(/in \/.*?\/([^\/]+)\)/g, 'in $1)')
-            .replace(/^\s*\n/gm, '')
-            .replace(/\n\s*\n/g, '\n');
-
-        text = text
-            .replace(/(\d+ bytes? in \d+ blocks? are definitely lost.*?)(?=\s*at|$)/g, '<div class="memcheck-leak">$1</div>')
-            .replace(/at (0x[0-9A-F]+): ([^(]+) \((.*?)\)/gi, '<div class="memcheck-location">→ $2</div>')
+            .replace(/###LINE:(\d+)###/g, '(line: <span class="line-number">$1</span>)')
+            .replace(/###LEAK:(.*?)###/g, '<div class="memcheck-leak">$1</div>')
+            .trim()// Remove leading and trailing whitespace
+            .replace(/\n{2,}/g, '\n'); // Remove multiple newlines
     }
 
     return text;

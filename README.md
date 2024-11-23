@@ -44,6 +44,71 @@ http://116.62.132.169:9527/webCpp/
 
 ---
 
+## Architecture
+
+The following diagram illustrates the architecture of the project:
+
+```
+[Browser]                                              [Server]
+   |                                                      |
+   |  HTTP/HTTPS Request                                  |
+   | ------------------------------------------------>    |
+   |  POST /compile.jsp                                   |
+   |  Content-Type: application/x-www-form-urlencoded     |
+   |  code=...&lang=...&compiler=...&optimization=...     |
+   |                                                      |
+   |                                                      |
+   |  HTTP/HTTPS Response                                 |
+   | <------------------------------------------------    |
+   |  Content-Type: text/plain                            |
+   |  Compilation output / Error messages                 |
+   |                                                      |
++------------+     +-----------------+     +---------------+
+|            |     |                 |     |               |
+| CodeMirror |<--->| JavaScript API  |<--->| JSP Backend   |
+|   Editor   |     | Processing Layer|     | Services      |
+|            |     |                 |     |               |
++------------+     +-----------------+     +---------------+
+     |                    |                        |
+     |                    |                        |
+     v                    v                        v
++------------+     +-----------------+     +-----------------+
+| Code Input |     | Request Router  |     | Session Manager |
+| Syntax     |     | Parameter       |     | Temp File       |
+| Highlight  |     | Processing      |     | Creation        |
++------------+     +-----------------+     +-----------------+
+                           |                        |
+                           v                        v
+                   +-----------------+     +-----------------+
+                   | Compile Request |     | GCC/Clang       |
+                   | Format Request  |     | clang-format    |
+                   | Memory Check    |     | Valgrind        |
+                   | Style Check     |     | cppcheck        |
+                   +-----------------+     +-----------------+
+                           |                        |
+                           v                        v
+                   +-----------------+     +-----------------+
+                   | Result Parser   |     | Output Handler  |
+                   | Error Formatter |     | Temp File       |
+                   | HTML Renderer   |     | Cleanup         |
+                   +-----------------+     +-----------------+
+                           |                        |
+                           v                        v
+                   +------------------------------------- ---+
+                   |           Result Display                |
+                   | +----------------+  +----------------+  |
+                   | | Program Output |  | Assembly Code  |  |
+                   | +----------------+  +----------------+  |
+                   | | Error Messages |  | Memory Check   |  |
+                   | +----------------+  +----------------+  |
+                   +------------------------------------- ---+
+
+Data Flow:
+code/params -----> Frontend API -----> JSP Processing -----> Compile/Analysis Tools
+                                                                |
+Result Display <---- Frontend Render <---- Result Parse <------ +
+```
+
 # setup guide
 
 ## Prerequisites

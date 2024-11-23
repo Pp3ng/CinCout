@@ -59,7 +59,8 @@ document.getElementById("compile").onclick = function () {
     })
     .then(response => response.text())
     .then(data => {
-        output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
+        const trimmedData = data.trim();
+        output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(trimmedData)}</div>`;
     })
     .catch(error => {
         output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
@@ -162,7 +163,8 @@ document.getElementById("viewAssembly").onclick = function () {
     .then(response => response.text())
     .then(data => {
         loadingDiv.remove();
-        assemblyView.setValue(data);
+        const trimmedData = data.trim();
+        assemblyView.setValue(trimmedData);
     })
     .catch(error => {
         loadingDiv.remove();

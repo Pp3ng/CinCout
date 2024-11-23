@@ -8,8 +8,16 @@ let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     tabSize: 4,
     indentWithTabs: true,
     lineWrapping: true,
+    foldGutter: true,
+    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
     extraKeys: {
-        "Ctrl-Space": "autocomplete"
+        "Ctrl-Space": "autocomplete",
+        "Ctrl-Q": function (cm) {
+            cm.foldCode(cm.getCursor());
+        }
+    },
+    foldOptions: {
+        widget: '...'
     }
 });
 

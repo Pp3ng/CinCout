@@ -40,6 +40,7 @@ document.getElementById("compile").onclick = function () {
     const code = editor.getValue();
     const lang = document.getElementById("language").value;
     const compiler = document.getElementById("compiler").value;
+    const optimization = document.getElementById("optimization").value;
     const output = document.getElementById("output");
 
     document.getElementById("outputTab").click();
@@ -53,21 +54,24 @@ document.getElementById("compile").onclick = function () {
         body: 'code=' + encodeURIComponent(code) +
             '&lang=' + encodeURIComponent(lang) +
             '&compiler=' + encodeURIComponent(compiler) +
+            '&optimization=' + encodeURIComponent(optimization) +
             '&action=compile'
     })
-        .then(response => response.text())
-        .then(data => {
-            output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
-        })
-        .catch(error => {
-            output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-        });
+    .then(response => response.text())
+    .then(data => {
+        output.innerHTML = `<div class="highlighted-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
+    })
+    .catch(error => {
+        output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+    });
 };
 
 //Memcheck button click handler
 document.getElementById("memcheck").onclick = function () {
     const code = editor.getValue();
     const lang = document.getElementById("language").value;
+    const compiler = document.getElementById("compiler").value;
+    const optimization = document.getElementById("optimization").value;
 
     document.getElementById("outputTab").click();
     document.getElementById("output").innerHTML = "<div class='loading'>Running memory check...</div>";
@@ -78,7 +82,9 @@ document.getElementById("memcheck").onclick = function () {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: 'code=' + encodeURIComponent(code) +
-            '&lang=' + encodeURIComponent(lang)
+            '&lang=' + encodeURIComponent(lang) +
+            '&compiler=' + encodeURIComponent(compiler) +
+            '&optimization=' + encodeURIComponent(optimization)
     })
     .then(response => response.text())
     .then(data => {
@@ -125,21 +131,22 @@ document.getElementById("viewAssembly").onclick = function () {
     const code = editor.getValue();
     const lang = document.getElementById("language").value;
     const compiler = document.getElementById("compiler").value;
+    const optimization = document.getElementById("optimization").value;
 
     document.getElementById("assemblyTab").click();
 
-    //create loading div
+    // Create a loading div
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'loading';
     loadingDiv.textContent = 'Generating assembly code';
 
-    //get assembly div and its CodeMirror container
+    //Get assembly div and its CodeMirroe container
     const assemblyDiv = document.getElementById("assembly");
     const cmContainer = assemblyDiv.querySelector('.CodeMirror');
 
-    // insert loadingDiv before cmContainer
+    // Insert loadingDiv before cmcontainer
     assemblyDiv.insertBefore(loadingDiv, cmContainer);
-    assemblyView.setValue(''); // clear previous assembly code
+    assemblyView.setValue('');
 
     fetch('jsp/compile.jsp', {
         method: 'POST',
@@ -149,17 +156,18 @@ document.getElementById("viewAssembly").onclick = function () {
         body: 'code=' + encodeURIComponent(code) +
             '&lang=' + encodeURIComponent(lang) +
             '&compiler=' + encodeURIComponent(compiler) +
+            '&optimization=' + encodeURIComponent(optimization) +
             '&action=assembly'
     })
-        .then(response => response.text())
-        .then(data => {
-            loadingDiv.remove();
-            assemblyView.setValue(data);
-        })
-        .catch(error => {
-            loadingDiv.remove();
-            assemblyView.setValue("Error: " + error);
-        });
+    .then(response => response.text())
+    .then(data => {
+        loadingDiv.remove();
+        assemblyView.setValue(data);
+    })
+    .catch(error => {
+        loadingDiv.remove();
+        assemblyView.setValue("Error: " + error);
+    });
 };
 
 document.getElementById("styleCheck").onclick = function () {

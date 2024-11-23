@@ -129,6 +129,13 @@
         }
         
         String standarOption = lang.equals("cpp") ? "-std=c++20" : "-std=c11"; // Default standard
+        String optimizationOption = "-O0"; // Default optimization level
+
+        // Choose optimization level
+        if(request.getParameter("optimization") != null){
+            optimizationOption = request.getParameter("optimization");
+        }
+
 
         if (action.equals("assembly") || action.equals("both")) {
             // Generate assembly code
@@ -137,7 +144,7 @@
                 "-S",                // Generate assembly
                 "-masm=intel",       // Use Intel syntax
                 "-fno-asynchronous-unwind-tables", // Cleaner assembly output
-                "-O0",              // No optimization for clearer output
+                optimizationOption,  // Optimization level
                 standarOption,
                 sourceFile,
                 "-o",
@@ -164,6 +171,7 @@
             Process compile = Runtime.getRuntime().exec(new String[]{
                 compiler,
                 standarOption,
+                optimizationOption,
                 sourceFile,
                 "-o",
                 outputFile

@@ -55,13 +55,30 @@
         writer.write(code);
         writer.close();
 
-        String compiler = lang.equals("cpp") ? "g++" : "gcc";
-        String standardOption = lang.equals("cpp") ? "-std=c++20" : "-std=c11";
+        // Choose compiler based on language and selected compiler
+        String compiler = "gcc"; // Default compiler
+        if (request.getParameter("compiler") != null) {
+            String selectedCompiler = request.getParameter("compiler");
+            if (lang.equals("cpp")) {
+                compiler = selectedCompiler.equals("clang") ? "clang++" : "g++";
+            } else {
+                compiler = selectedCompiler.equals("clang") ? "clang" : "gcc";
+            }
+        }
+        
+        String standardOption = lang.equals("cpp") ? "-std=c++20" : "-std=c11"; // Default standard
+        String optimizationOption = "-O0"; // Default optimization level
+
+        // Choose optimization level
+        if(request.getParameter("optimization") != null){
+            optimizationOption = request.getParameter("optimization");
+        }
 
         Process compile = Runtime.getRuntime().exec(new String[]{
             compiler,
-            "-g",
+            "-g",       // Debug information
             standardOption,
+            optimizationOption,
             sourceFile,
             "-o",
             outputFile

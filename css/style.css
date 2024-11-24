@@ -35,6 +35,15 @@ body {
     flex-wrap: wrap;
 }
 
+.title-shortcuts h1 {
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2em;
+    margin: 0;
+}
+
 /* GitHub icon styles */
 .github-icon {
     width: 32px;

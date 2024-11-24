@@ -14,33 +14,51 @@ http://116.62.132.169:9527/webCpp/
 
 # Features ✨
 
-- **Syntax Highlighting**: Enhance code readability with different colors for keywords, strings, and comments.
-- **Vim Keybindings**: Enable Vim-style navigation and editing for users familiar with Vim.
-- **Show Assembly Code**: Provide an option to view the generated assembly code for the written code.
-- **Save and Load Code**: Allow users to save their code snippets to local storage and load them when needed.
-- **Multiple Themes**: Offer a variety of themes for personalized aesthetics.
+| Category              | Feature             | Description                              | Implementation  |
+| --------------------- | ------------------- | ---------------------------------------- | --------------- |
+| **Editor Core**       | Syntax Highlighting | Language-specific highlighting for C/C++ | `editor.js`     |
+|                       | Code Folding        | Collapsible code blocks                  | `editor.js`     |
+|                       | Auto Brackets       | Automatic closing of brackets            | `editor.js`     |
+|                       | Font Size Control   | Ctrl + Mouse Wheel to adjust             | `editor.js`     |
+| **Compilation**       | Multiple Compilers  | Support for GCC and Clang                | `compile.jsp`   |
+|                       | Optimization Levels | -O0 to -O3 and -Os options               | `memcheck.jsp`  |
+|                       | Assembly View       | View generated assembly code             | `editor.js`     |
+| **Code Analysis**     | Style Checking      | Static code analysis with cppcheck       | `handlers.js`   |
+|                       | Memory Check        | Memory leak detection                    | `memcheck.jsp`  |
+|                       | Code Formatting     | Automatic code formatting                | `format.jsp`    |
+| **UI/UX**             | Multiple Themes     | 8 different color themes                 | `css/style.css` |
+|                       | Responsive Design   | Mobile-friendly layout                   | `css/style.css` |
+|                       | Custom Scrollbars   | Themed scrollbar design                  | `css/style.css` |
+| **Templates**         | Code Examples       | Built-in code templates                  | `templates.js`  |
+|                       | Language Support    | Both C and C++ templates                 | `templates.js`  |
+| **Development Tools** | External Resources  | Links to documentation                   | `index.html`    |
+|                       | GitHub Integration  | Source code access                       | `index.html`    |
 
 # Shortcut Keys 🔑
 
-- **Compile and Run**: `Ctrl/Cmd + Enter` to compile and run code.
-- **Show Assembly Code**: `Ctrl/Cmd + Shift + A` to display assembly code.
-- **Clear Output**: `Ctrl/Cmd + L` to clear output window.
-- **Save to Local Storage**: `Ctrl/Cmd + S` to save current code.
-- **Load from Local Storage**: `Ctrl/Cmd + O` to load previously saved code.
-- **Format Code**: `Ctrl/Cmd + Alt + F` to format code for better readability.
-- **Style Check** : `Ctrl/Cmd + Alt + C` to check code style.
-- **Memory Check** : `Ctrl/Cmd + Alt + L` to check memory leak.
+| Action             | Windows/Linux    | macOS           |
+| ------------------ | ---------------- | --------------- |
+| Compile and Run    | Ctrl + Enter     | Cmd + Enter     |
+| Show Assembly Code | Ctrl + Shift + A | Cmd + Shift + A |
+| Clear Output       | Ctrl + L         | Cmd + L         |
+| Save Code          | Ctrl + S         | Cmd + S         |
+| Load Code          | Ctrl + O         | Cmd + O         |
+| Format Code        | Ctrl + Alt + F   | Cmd + Alt + F   |
+| Style Check        | Ctrl + Alt + C   | Cmd + Alt + C   |
+| Memory Check       | Ctrl + Alt + L   | Cmd + Alt + L   |
 
 # Themes 🎨
 
-- **Neo**: A modern theme with a futuristic design and vibrant colors.
-- **Nord**: A polar night-inspired color palette that’s easy on the eyes.
-- **Dracula**: A dark theme with vibrant colors for a striking contrast.
-- **Monokai**: A classic dark theme with bright accents, popular among developers.
-- **Material**: A material design-inspired theme that offers a modern aesthetic.
-- **Ayu-dark**: A soothing dark theme with soft colors.
-- **Gruvbox-dark**: A retro groove style with a comfortable color palette.
-- **seti**: A vibrant theme with a dark background and colorful accents.
+| Theme        | Description                                            |
+| ------------ | ------------------------------------------------------ |
+| Default      | Clean and minimalist design with balanced contrast     |
+| Nord         | Arctic-inspired color scheme with cool, soothing tones |
+| Dracula      | Dark theme with vivid, high-contrast colors            |
+| Monokai      | Classic dark theme favored by developers               |
+| Material     | Modern design following Material guidelines            |
+| Ayu Dark     | Soft dark theme with warm accents                      |
+| Gruvbox Dark | Retro-style theme with earthy colors                   |
+| Seti         | Modern dark theme with bright accent colors            |
 
 ---
 

@@ -40,6 +40,7 @@ body {
     width: 32px;
     height: 32px;
     transition: opacity 0.3s;
+    flex-shrink: 0;
 }
 
 .github-icon:hover {
@@ -51,8 +52,9 @@ body {
     display: flex;
     gap: 15px;
     align-items: center;
-    height: 32px;
+    height: auto;
     flex-wrap: wrap;
+    min-width: 0;
 }
 
 /* Editor layout */
@@ -82,10 +84,12 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 40px;
+    height: auto;
+    min-height: 40px;
     margin-bottom: 10px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
+    overflow-x: auto;
 }
 
 /* Panel title styles */
@@ -112,7 +116,8 @@ body {
     display: flex;
     gap: 10px;
     align-items: center;
-    height: 32px;
+    flex-wrap: wrap;
+    padding: 5px 0;
 }
 
 /* Button styles */
@@ -120,7 +125,7 @@ button {
     background: var(--accent);
     color: var(--text-primary);
     border: none;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
@@ -130,8 +135,9 @@ button {
     gap: 6px;
     height: 32px;
     white-space: nowrap;
-    position:relative;
-    overflow:hidden;
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
 }
 
 .ripple {
@@ -174,25 +180,38 @@ select {
     border-radius: 6px;
     font-size: 14px;
     cursor: pointer;
-    min-width: 130px;
+    min-width: 0;
+    width: 130px;
     height: 36px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 12px;
     transition: all 0.2s ease;
-}
-
-select#template {
-    width: 180px;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
 }
 
-@media (max-width: 480px) {
+select#template {
+    width: 180px;
+}
+
+select#optimization {
+    width: 160px;
+}
+
+@media (max-width: 1200px) {
+    select {
+        width: 110px;
+    }
+
     select#template {
-        width: 160px;
+        width: 140px;
+    }
+
+    select#optimization {
+        width: 130px;
     }
 }
 
@@ -235,13 +254,14 @@ select option {
     align-items: center;
     gap: 8px;
     height: 32px;
+    flex-shrink: 0;
 }
 
 /* Toggle switch styles */
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 50px;
+    width: 46px;
     height: 24px;
 }
 
@@ -259,9 +279,10 @@ select option {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--border);
-    transition: .4s;
+    background-color: var(--bg-primary);
+    transition: .3s;
     border-radius: 24px;
+    border: 2px solid var(--border);
 }
 
 .slider:before {
@@ -270,9 +291,9 @@ select option {
     height: 16px;
     width: 16px;
     left: 4px;
-    bottom: 4px;
+    bottom: 2px;
     background-color: var(--text-primary);
-    transition: .4s;
+    transition: .3s;
     border-radius: 50%;
 }
 
@@ -281,7 +302,7 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-    transform: translateX(26px);
+    transform: translateX(20px);
 }
 
 /* Output and assembly view styles */
@@ -515,6 +536,41 @@ button.active {
     .shortcuts-panel {
         max-width: none;
     }
+
+    .panel-header {
+        padding-bottom: 5px;
+    }
+
+    .button-container {
+        gap: 8px;
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 5px;
+    }
+
+    .button-container::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .button-container::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+        border-radius: 2px;
+    }
+
+    .button-container::-webkit-scrollbar-thumb {
+        background: var(--accent);
+        border-radius: 2px;
+    }
+
+    button {
+        padding: 4px 10px;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    button i {
+        font-size: 12px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -541,6 +597,18 @@ button.active {
 
     .toggle-container {
         font-size: 13px;
+    }
+
+    button span {
+        display: none;
+    }
+
+    button {
+        padding: 4px 8px;
+    }
+
+    button i {
+        margin: 0;
     }
 }
 body, 

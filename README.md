@@ -209,15 +209,3 @@ sudo systemctl restart tomcat9
 ```
 
 then you can visit http://localhost:8080/webCpp/ and enjoy it.
-
-## Verification
-
-### 1. Check Service Status
-
-```bash
-# Check Tomcat status
-sudo systemctl status tomcat9
-
-# View logs
-sudo tail -f /var/lib/tomcat9/logs/catalina.out
-```

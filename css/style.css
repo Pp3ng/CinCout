@@ -1,4 +1,4 @@
-/* Base body styles */
+/* Base styles */
 body {
     margin: 0;
     padding: 20px;
@@ -7,7 +7,6 @@ body {
     font-family: system-ui, -apple-system, sans-serif;
 }
 
-/* Main container */
 .container {
     max-width: 1600px;
     margin: 0 auto;
@@ -27,7 +26,6 @@ body {
     gap: 15px;
 }
 
-/* Title and shortcuts container */
 .title-shortcuts {
     display: flex;
     align-items: center;
@@ -44,7 +42,6 @@ body {
     margin: 0;
 }
 
-/* GitHub icon styles */
 .github-icon {
     width: 32px;
     height: 32px;
@@ -56,7 +53,7 @@ body {
     opacity: 0.8;
 }
 
-/* Controls container */
+/* Controls styles */
 .controls {
     display: flex;
     gap: 15px;
@@ -88,7 +85,6 @@ body {
     overflow: hidden;
 }
 
-/* Panel header styles */
 .panel-header {
     display: flex;
     justify-content: space-between;
@@ -101,7 +97,6 @@ body {
     overflow-x: auto;
 }
 
-/* Panel title styles */
 .panel-title {
     font-size: 16px;
     font-weight: bold;
@@ -110,7 +105,7 @@ body {
     height: 32px;
 }
 
-/* CodeMirror editor styles */
+/* CodeMirror styles */
 .CodeMirror {
     height: calc(100% - 60px);
     border-radius: 4px;
@@ -120,7 +115,7 @@ body {
     transition: font-size 0.1s ease;
 }
 
-/* Button container styles */
+/* Button styles */
 .button-container {
     display: flex;
     gap: 10px;
@@ -129,7 +124,6 @@ body {
     padding: 5px 0;
 }
 
-/* Button styles */
 button {
     background: var(--accent);
     color: var(--text-primary);
@@ -150,22 +144,6 @@ button {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
-.ripple {
-    position: absolute;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.4);
-    transform: scale(0);
-    animation: ripple-animation 0.6s linear;
-    pointer-events: none;
-}
-
-@keyframes ripple-animation {
-    to {
-        transform: scale(4);
-        opacity: 0;
-    }
-}
-
 button:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -184,7 +162,28 @@ button svg {
     height: 16px;
 }
 
-/* Select dropdown styles */
+button.active {
+    background-color: var(--accent-hover);
+}
+
+/* Ripple effect */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4);
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    pointer-events: none;
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Select styles */
 select {
     appearance: none;
     background: var(--bg-primary);
@@ -214,21 +213,6 @@ select#template {
 select#optimization {
     width: 160px;
 }
-
-@media (max-width: 1200px) {
-    select {
-        width: 110px;
-    }
-
-    select#template {
-        width: 140px;
-    }
-
-    select#optimization {
-        width: 130px;
-    }
-}
-
 
 select:hover {
     border-color: var(--accent);
@@ -262,7 +246,7 @@ select option {
     }
 }
 
-/* Toggle container styles */
+/* Toggle styles */
 .toggle-container {
     display: flex;
     align-items: center;
@@ -271,7 +255,6 @@ select option {
     flex-shrink: 0;
 }
 
-/* Toggle switch styles */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -285,7 +268,6 @@ select option {
     height: 0;
 }
 
-/* Toggle slider styles */
 .slider {
     position: absolute;
     cursor: pointer;
@@ -311,15 +293,15 @@ select option {
     border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--accent);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(20px);
 }
 
-/* Output and assembly view styles */
+/* Output and assembly styles */
 #output,
 #assembly {
     background: var(--bg-primary);
@@ -330,11 +312,6 @@ input:checked + .slider:before {
     flex: 1;
     font-size: 14px;
     overflow: auto;
-}
-
-/* Active button state */
-button.active {
-    background-color: var(--accent-hover);
 }
 
 /* Shortcuts panel styles */
@@ -475,7 +452,169 @@ button.active {
     background: var(--accent-hover);
 }
 
-/* Responsive design */
+/* Output styles */
+.highlighted-output,
+.memcheck-output,
+.style-check-output,
+.error-output,
+.default-output {
+    margin: 0;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+}
+
+.loading {
+    padding: 20px;
+    text-align: center;
+    color: var(--accent);
+    font-style: italic;
+}
+
+.loading:after {
+    content: '...';
+    animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+
+    0%,
+    20% {
+        content: '.';
+    }
+
+    40% {
+        content: '..';
+    }
+
+    60% {
+        content: '...';
+    }
+
+    80%,
+    100% {
+        content: '';
+    }
+}
+
+.error-text {
+    color: #ff5555;
+    font-weight: bold;
+}
+
+.warning-text {
+    color: #f1fa8c;
+    font-weight: bold;
+}
+
+.memcheck-block {
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    margin: 2px 0;
+    line-height: 1.4;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.memcheck-leak {
+    border-left: 3px solid #ff5555;
+    background: rgba(255, 85, 85, 0.1);
+}
+
+.line-number {
+    color: #bd93f9;
+    font-weight: bold;
+}
+
+.column-number {
+    color: #8be9fd;
+    font-weight: bold;
+}
+
+.error-output {
+    background-color: rgba(255, 85, 85, 0.1);
+    border-left: 3px solid #ff5555;
+}
+
+.memcheck-output {
+    background-color: rgba(80, 250, 123, 0.1);
+    border-left: 3px solid #50fa7b;
+}
+
+.style-check-output {
+    background-color: rgba(189, 147, 249, 0.1);
+    border-left: 3px solid #bd93f9;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}
+
+/* CodeMirror folding styles */
+.CodeMirror-foldgutter {
+    width: 1.2em;
+}
+
+.CodeMirror-foldgutter-open,
+.CodeMirror-foldgutter-folded {
+    cursor: pointer;
+}
+
+.CodeMirror-foldgutter-open:after {
+    content: "\25BE";
+}
+
+.CodeMirror-foldgutter-folded:after {
+    content: "\25B8";
+}
+
+.CodeMirror-foldmarker {
+    color: var(--accent);
+    text-shadow: none;
+    font-family: arial;
+    line-height: .3;
+    cursor: pointer;
+    padding: 0 4px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+/* Specific button styles */
+button#compile {
+    background: #2ecc71;
+}
+
+button#compile:hover {
+    background: #27ae60;
+}
+
+button#clear {
+    background: #e74c3c;
+}
+
+button#clear:hover {
+    background: #c0392b;
+}
+
+/* Responsive styles */
 @media (max-width: 1200px) {
     .editor-container {
         grid-template-columns: 1fr;
@@ -485,6 +624,18 @@ button.active {
 
     .panel {
         min-height: 500px;
+    }
+
+    select {
+        width: 110px;
+    }
+
+    select#template {
+        width: 140px;
+    }
+
+    select#optimization {
+        width: 130px;
     }
 }
 
@@ -530,15 +681,7 @@ button.active {
         border-radius: 2px;
     }
 
-    .dropdown-content {
-        position: fixed;
-        top: auto;
-        left: 20px;
-        right: 20px;
-        width: auto;
-        max-width: calc(100% - 40px);
-    }
-
+    .dropdown-content,
     .shortcuts-content {
         position: fixed;
         top: auto;
@@ -626,8 +769,10 @@ button.active {
         margin: 0;
     }
 }
-body, 
-.panel, 
+
+/* Transitions */
+body,
+.panel,
 .header,
 .CodeMirror,
 button,
@@ -639,8 +784,8 @@ select,
 
 .CodeMirror {
     transition: background-color 0.3s ease-in-out,
-                color 0.3s ease-in-out,
-                border-color 0.3s ease-in-out;
+        color 0.3s ease-in-out,
+        border-color 0.3s ease-in-out;
 }
 
 .CodeMirror-gutters,
@@ -649,147 +794,4 @@ select,
 .CodeMirror-selected,
 .CodeMirror-line {
     transition: all 0.3s ease-in-out;
-}
-
-.highlighted-output,
-.memcheck-output,
-.style-check-output,
-.error-output,
-.default-output {
-    margin: 0;
-    padding: 10px;
-    border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace;
-    line-height: 1.5;
-}
-
-.loading {
-    padding: 20px;
-    text-align: center;
-    color: var(--accent);
-    font-style: italic;
-}
-
-.loading:after {
-    content: '...';
-    animation: dots 1.5s steps(5, end) infinite;
-}
-
-@keyframes dots {
-    0%, 20% { content: '.'; }
-    40% { content: '..'; }
-    60% { content: '...'; }
-    80%, 100% { content: ''; }
-}
-
-.error-text {
-    color: #ff5555;
-    font-weight: bold;
-}
-
-.warning-text {
-    color: #f1fa8c;
-    font-weight: bold;
-}
-
-.memcheck-block {
-    font-family: 'JetBrains Mono', monospace;
-    padding: 2px 8px;
-    margin: 2px 0;
-    line-height: 1.4;
-    font-size: 16px;
-    color: var(--text-primary);
-}
-
-.memcheck-leak {
-    border-left: 3px solid #ff5555;
-    background: rgba(255, 85, 85, 0.1);
-}
-
-.line-number {
-    color: #bd93f9;
-    font-weight: bold;
-}
-
-.column-number {
-    color: #8be9fd;
-    font-weight: bold;
-}
-
-.error-output {
-    background-color: rgba(255, 85, 85, 0.1);
-    border-left: 3px solid #ff5555;
-}
-
-.memcheck-output {
-    background-color: rgba(80, 250, 123, 0.1);
-    border-left: 3px solid #50fa7b;
-}
-
-.style-check-output {
-    background-color: rgba(189, 147, 249, 0.1);
-    border-left: 3px solid #bd93f9;
-}
-
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--accent);
-    border-radius: 4px;
-    transition: background 0.3s;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-hover);
-}
-
-.CodeMirror-foldgutter {
-    width: 1.2em;
-}
-
-.CodeMirror-foldgutter-open,
-.CodeMirror-foldgutter-folded {
-    cursor: pointer;
-}
-
-.CodeMirror-foldgutter-open:after {
-    content: "\25BE";
-}
-
-.CodeMirror-foldgutter-folded:after {
-    content: "\25B8";
-}
-
-.CodeMirror-foldmarker {
-    color: var(--accent);
-    text-shadow: none;
-    font-family: arial;
-    line-height: .3;
-    cursor: pointer;
-    padding: 0 4px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-}
-button#compile {
-    background: #2ecc71;
-}
-
-button#compile:hover {
-    background: #27ae60;
-}
-
-button#clear {
-    background: #e74c3c;
-}
-
-button#clear:hover {
-    background: #c0392b;
 }

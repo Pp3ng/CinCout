@@ -85,6 +85,7 @@ body {
     overflow: hidden;
 }
 
+/* Panel header styles */
 .panel-header {
     display: flex;
     justify-content: space-between;
@@ -92,8 +93,9 @@ body {
     height: auto;
     min-height: 40px;
     margin-bottom: 10px;
-    padding-bottom: 10px;
+    padding: 10px;
     border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary);
     overflow-x: auto;
 }
 
@@ -115,29 +117,34 @@ body {
     transition: font-size 0.1s ease;
 }
 
-/* Button styles */
+/* Button container styles */
 .button-container {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
+    flex-wrap: wrap;
+    padding: 5px 0;
 }
 
 /* Base button styles */
 button {
-    position: relative;
-    overflow: hidden;
+    background: var(--accent);
+    color: var(--text-primary);
     border: none;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    color: var(--text-primary);
+    gap: 6px;
+    height: 32px;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 /* Button variants */
@@ -163,8 +170,9 @@ button {
 
 /* Hover effects */
 button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: var(--accent-hover);
     filter: brightness(110%);
 }
 
@@ -761,6 +769,15 @@ button#clear:hover {
     }
 
     .panel-header {
+        padding: 8px;
+    }
+
+    .button-container {
+        gap: 6px;
+        padding: 4px;
+    }
+
+    .panel-header {
         padding-bottom: 5px;
     }
 
@@ -828,6 +845,8 @@ button#clear:hover {
 
     button {
         padding: 4px 8px;
+        width: 32px;
+        justify-content: center;
     }
 
     button i {

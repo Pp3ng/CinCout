@@ -8,7 +8,7 @@ This project is a web-based code editor and compiler for C/C++ programs. It allo
 
 # Try it(no guarantee always available due to myself's server)
 
-http://116.62.132.169:9527/webCpp/
+http://121.41.94.212:8080
 
 ---
 

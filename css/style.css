@@ -118,36 +118,68 @@ body {
 /* Button styles */
 .button-container {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
-    flex-wrap: wrap;
-    padding: 5px 0;
 }
 
+/* Base button styles */
 button {
-    background: var(--accent);
-    color: var(--text-primary);
+    position: relative;
+    overflow: hidden;
     border: none;
-    padding: 6px 12px;
+    padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 6px;
-    height: 32px;
-    white-space: nowrap;
-    position: relative;
-    overflow: hidden;
-    min-width: 0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
 }
 
+/* Button variants */
+.primary-btn {
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+}
+
+.secondary-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+}
+
+.action-btn {
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+    opacity: 0.9;
+}
+
+.success-btn {
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+    opacity: 0.95;
+}
+
+.danger-btn {
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+    opacity: 0.85;
+}
+
+.tab-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+}
+
+.tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Hover effects */
 button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     filter: brightness(110%);
 }
 
@@ -157,13 +189,13 @@ button:active {
     filter: brightness(90%);
 }
 
-button svg {
-    width: 16px;
-    height: 16px;
+/* Icon animation */
+button i {
+    transition: transform 0.3s ease;
 }
 
-button.active {
-    background-color: var(--accent-hover);
+button:hover i {
+    transform: scale(1.2);
 }
 
 /* Ripple effect */
@@ -181,6 +213,74 @@ button.active {
         transform: scale(4);
         opacity: 0;
     }
+}
+
+/* Tooltip */
+button[title] {
+    position: relative;
+}
+
+button[title]::before {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+button[title]:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* Loading state */
+button.loading {
+    position: relative;
+    cursor: wait;
+}
+
+button.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: button-loading-spinner 0.8s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+/* Disabled state */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 /* Select styles */

@@ -150,21 +150,6 @@ button {
     border: 1px solid var(--border);
 }
 
-.action-btn {
-    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
-    opacity: 0.9;
-}
-
-.run-btn {
-    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
-    opacity: 0.95;
-}
-
-.clear-btn {
-    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
-    opacity: 0.85;
-}
-
 .tab-btn {
     background: var(--bg-secondary);
     border: 1px solid var(--border);
@@ -472,7 +457,8 @@ input:checked+.slider:before {
     display: inline-block;
 }
 
-.header-btn {
+.header-btn,
+.action-btn {
     background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
     color: var(--text-primary);
@@ -489,12 +475,14 @@ input:checked+.slider:before {
     white-space: nowrap;
 }
 
-.header-btn:hover {
+.header-btn:hover,
+.action-btn:hover {
     background: var(--accent-hover);
     transform: translateY(-1px);
 }
 
-.header-btn:active {
+.header-btn:active,
+.action-btn:active {
     transform: translateY(0);
 }
 

@@ -155,12 +155,12 @@ button {
     opacity: 0.9;
 }
 
-.success-btn {
+.run-btn {
     background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     opacity: 0.95;
 }
 
-.danger-btn {
+.clear-btn {
     background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     opacity: 0.85;
 }
@@ -220,30 +220,7 @@ button[title] {
     position: relative;
 }
 
-button[title]::before {
-    content: attr(title);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-8px);
-    padding: 4px 8px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    font-size: 12px;
-    border-radius: 4px;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-}
 
-button[title]:hover::before {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(-4px);
-}
 
 /* Loading state */
 button.loading {
@@ -440,7 +417,7 @@ input:checked+.slider:before {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.shortcuts-panel.show .shortcuts-content {
+.shortcuts-panel:hover .shortcuts-content {
     display: block;
 }
 
@@ -496,7 +473,7 @@ input:checked+.slider:before {
 }
 
 .header-btn {
-    background: var(--accent);
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
     color: var(--text-primary);
     border: none;

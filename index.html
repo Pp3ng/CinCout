@@ -51,7 +51,7 @@
                 <i class="devicon-c-plain"></i> <i class="devicon-cplusplus-plain"></i>
             </h1>
             <div class="dropdown">
-                <button id="learn-cpp-btn" class="header-btn" title="Access C/C++ Learning Resources">
+                <button id="learn-cpp-btn" class="header-btn">
                     <i class="fas fa-book"></i> Learn C/C++
                 </button>
                 <div class="dropdown-content">
@@ -63,7 +63,7 @@
                 </div>
             </div>
             <div id="shortcuts-panel" class="shortcuts-panel">
-                <button id="toggle-shortcuts" class="header-btn" title="View Keyboard Shortcuts">
+                <button id="toggle-shortcuts" class="header-btn">
                     <i class="fas fa-keyboard"></i> Keyboard Shortcuts
                 </button>
                 <div class="shortcuts-content">
@@ -126,19 +126,19 @@
         <div class="panel">
             <div class="panel-header">
                 <div class="button-container">
-                    <button id="styleCheck" class="action-btn" title="Check Code Style">
+                    <button id="styleCheck" class="action-btn">
                         <i class="fas fa-check"></i> Style Check
                     </button>
-                    <button id="format" class="action-btn" title="Format Code">
+                    <button id="format" class="action-btn">
                         <i class="fas fa-align-left"></i> Format
                     </button>
-                    <button id="compile" class="success-btn" title="Compile and Run Code">
+                    <button id="compile" class="run-btn">
                         <i class="fas fa-play"></i> Compile & Run
                     </button>
-                    <button id="viewAssembly" class="action-btn" title="View Assembly Code">
+                    <button id="viewAssembly" class="action-btn">
                         <i class="fas fa-cogs"></i> View Assembly
                     </button>
-                    <button id="memcheck" class="action-btn" title="Check Memory Usage">
+                    <button id="memcheck" class="action-btn">
                         <i class="fas fa-memory"></i> Memory Check
                     </button>
                 </div>
@@ -148,14 +148,14 @@
         <div class="panel">
             <div class="panel-header">
                 <div class="button-container">
-                    <button id="outputTab" class="tab-btn active" title="View Program Output">
+                    <button id="outputTab" class="tab-btn active">
                         <i class="fas fa-terminal"></i> Output
                     </button>
-                    <button id="assemblyTab" class="tab-btn" title="View Assembly Output">
+                    <button id="assemblyTab" class="tab-btn">
                         <i class="fas fa-cogs"></i> Assembly
                     </button>
                 </div>
-                <button id="clear" class="danger-btn" title="Clear Output">
+                <button id="clear" class="clear-btn">
                     <i class="fas fa-trash-alt"></i> Clear
                 </button>
             </div>
@@ -172,30 +172,7 @@
 <script src="js/shortcuts.js"></script>
 <script src="js/templates.js"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const panel = document.getElementById('shortcuts-panel');
-        const toggleButton = document.getElementById('toggle-shortcuts');
 
-        toggleButton.addEventListener('click', function (e) {
-            e.stopPropagation();
-            panel.classList.toggle('show');
-        });
-
-        document.addEventListener('click', function (e) {
-            if (!panel.contains(e.target)) {
-                panel.classList.remove('show');
-            }
-        });
-
-        Object.values(themes).forEach(theme => {
-            loadThemeCSS(theme);
-        });
-
-        initializeThemeSelector();
-    });
-
-</script>
 
 </body>
 

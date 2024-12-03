@@ -157,3 +157,12 @@ function initializeThemeSelector() {
         applyTheme(e.target.value);
     });
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    Object.values(themes).forEach(theme => {
+        loadThemeCSS(theme);
+    });
+
+    initializeThemeSelector();
+});

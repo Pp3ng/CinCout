@@ -172,7 +172,7 @@ button {
 }
 
 .tab-btn.active {
-    background: var(--accent);
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     border-color: var(--accent);
 }
 
@@ -495,7 +495,7 @@ input:checked+.slider:before {
     display: inline-block;
 }
 
-.dropbtn {
+.header-btn {
     background: var(--accent);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
     color: var(--text-primary);
@@ -512,12 +512,12 @@ input:checked+.slider:before {
     white-space: nowrap;
 }
 
-.dropbtn:hover {
+.header-btn:hover {
     background: var(--accent-hover);
     transform: translateY(-1px);
 }
 
-.dropbtn:active {
+.header-btn:active {
     transform: translateY(0);
 }
 

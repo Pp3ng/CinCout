@@ -28,6 +28,8 @@ let assemblyView = CodeMirror(document.getElementById("assembly"), {
     lineWrapping: true
 });
 
+assemblyView.setSize(null, "100%");
+
 //Init font size
 let fontSize = 14;
 

@@ -96,7 +96,7 @@ body {
     padding: 10px;
     border-bottom: 1px solid var(--border);
     background: var(--bg-secondary);
-    overflow-x: auto;
+    overflow: hidden; /* Ensure no scroll bar appears */
 }
 
 .panel-title {

@@ -128,7 +128,7 @@ body {
 
 /* Base button styles */
 button {
-    background: var(--accent);
+    background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     color: var(--text-primary);
     border: none;
     padding: 6px 12px;
@@ -172,14 +172,13 @@ button {
 button:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    background: var(--accent-hover);
-    filter: brightness(110%);
+    filter: brightness(1.1);
 }
 
 button:active {
     transform: translateY(1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    filter: brightness(90%);
+    filter: brightness(0.95);
 }
 
 /* Icon animation */
@@ -475,7 +474,7 @@ input:checked+.slider:before {
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -485,8 +484,8 @@ input:checked+.slider:before {
 
 .header-btn:hover,
 .action-btn:hover {
-    background: var(--accent-hover);
     transform: translateY(-1px);
+    filter: brightness(1.1);
 }
 
 .header-btn:active,
@@ -672,19 +671,19 @@ input:checked+.slider:before {
 
 /* Specific button styles */
 button#compile {
-    background: #2ecc71;
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
 }
 
 button#compile:hover {
-    background: #27ae60;
+    filter: brightness(1.1);
 }
 
 button#clear {
-    background: #e74c3c;
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
 }
 
 button#clear:hover {
-    background: #c0392b;
+    filter: brightness(1.1);
 }
 
 /* Responsive styles */

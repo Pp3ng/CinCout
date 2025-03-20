@@ -11,10 +11,7 @@ let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     foldGutter: true,
     gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
     extraKeys: {
-        "Ctrl-Space": "autocomplete",
-        "Ctrl-Q": function (cm) {
-            cm.foldCode(cm.getCursor());
-        }
+        "Ctrl-Space": "autocomplete"
     },
     foldOptions: {
         widget: '...'

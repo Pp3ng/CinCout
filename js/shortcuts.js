@@ -1,14 +1,11 @@
 // Keyboard shortcuts
 document.addEventListener('keydown', function (e) {
+    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
     // Ctrl+Enter or Cmd+Enter to compile and run
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         document.getElementById("compile").click();
-    }
-    // Ctrl+Shift+A or Cmd+Shift+A to view assembly
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
-        e.preventDefault();
-        document.getElementById("viewAssembly").click();
     }
     // Ctrl+L or Cmd+L to clear output
     if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
@@ -41,21 +38,56 @@ document.addEventListener('keydown', function (e) {
         };
         input.click();
     }
-    //Ctrl+Alt+F or Cmd+Alt+F to format code
-    if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'f') {
+    // Ctrl+K or Cmd+K to toggle code folding
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        document.getElementById("format").click();
+        editor.foldCode(editor.getCursor());
     }
 
-    // Ctrl+Alt+C or Cmd+Alt+C to check code style
-    if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'c') {
-        e.preventDefault();
-        document.getElementById("styleCheck").click();
-    }
-
-    // Ctrl+Alt+L or Cmd+Alt+L to check memory
-    if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'l') {
-        e.preventDefault();
-        document.getElementById("memcheck").click();
+    // Handle number shortcuts based on platform
+    if (isMac) {
+        // Mac: Control + number
+        if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+            switch (e.key) {
+                case '1':
+                    e.preventDefault();
+                    document.getElementById("viewAssembly").click();
+                    break;
+                case '2':
+                    e.preventDefault();
+                    document.getElementById("format").click();
+                    break;
+                case '3':
+                    e.preventDefault();
+                    document.getElementById("styleCheck").click();
+                    break;
+                case '4':
+                    e.preventDefault();
+                    document.getElementById("memcheck").click();
+                    break;
+            }
+        }
+    } else {
+        // Windows/Linux: Alt + number
+        if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+            switch (e.key) {
+                case '1':
+                    e.preventDefault();
+                    document.getElementById("viewAssembly").click();
+                    break;
+                case '2':
+                    e.preventDefault();
+                    document.getElementById("format").click();
+                    break;
+                case '3':
+                    e.preventDefault();
+                    document.getElementById("styleCheck").click();
+                    break;
+                case '4':
+                    e.preventDefault();
+                    document.getElementById("memcheck").click();
+                    break;
+            }
+        }
     }
 });

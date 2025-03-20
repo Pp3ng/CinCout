@@ -1,10 +1,11 @@
 /* Base styles */
 body {
     margin: 0;
-    padding: 20px;
+    padding: 18px;
     background: var(--bg-primary);
     color: var(--text-primary);
     font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.9em;
 }
 
 .container {
@@ -18,18 +19,18 @@ body {
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     background: var(--bg-secondary);
-    padding: 15px 20px;
-    border-radius: 8px;
+    padding: 13.5px 18px;
+    border-radius: 7px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    gap: 15px;
+    gap: 13.5px;
 }
 
 .title-shortcuts {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 13.5px;
     flex-wrap: wrap;
 }
 
@@ -38,13 +39,13 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    font-size: 2em;
+    font-size: 1.8em;
     margin: 0;
 }
 
 .github-icon {
-    width: 32px;
-    height: 32px;
+    width: 29px;
+    height: 29px;
     transition: opacity 0.3s;
     flex-shrink: 0;
 }
@@ -56,7 +57,7 @@ body {
 /* Controls styles */
 .controls {
     display: flex;
-    gap: 15px;
+    gap: 13.5px;
     align-items: center;
     height: auto;
     flex-wrap: wrap;
@@ -67,21 +68,21 @@ body {
 .editor-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    height: calc(100vh - 140px);
-    min-height: 500px;
+    gap: 18px;
+    height: calc(100vh - 126px);
+    min-height: 450px;
 }
 
 /* Panel styles */
 .panel {
     background: var(--bg-secondary);
-    border-radius: 8px;
-    padding: 15px;
+    border-radius: 7px;
+    padding: 13.5px;
     display: flex;
     flex-direction: column;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     height: 100%;
-    max-height: calc(100vh - 140px);
+    max-height: calc(100vh - 126px);
     overflow: hidden;
 }
 
@@ -91,27 +92,27 @@ body {
     justify-content: space-between;
     align-items: center;
     height: auto;
-    min-height: 40px;
-    margin-bottom: 10px;
-    padding: 10px;
+    min-height: 36px;
+    margin-bottom: 9px;
+    padding: 9px;
     border-bottom: 1px solid var(--border);
     background: var(--bg-secondary);
-    overflow: hidden; /* Ensure no scroll bar appears */
+    overflow: hidden;
 }
 
 .panel-title {
-    font-size: 16px;
+    font-size: 14.4px;
     font-weight: bold;
     margin: 0;
-    line-height: 32px;
-    height: 32px;
+    line-height: 29px;
+    height: 29px;
 }
 
 /* CodeMirror styles */
 .CodeMirror {
-    height: calc(100% - 60px);
+    height: calc(100% - 54px);
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 12.6px;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     overflow-y: hidden;
     transition: font-size 0.1s ease;
@@ -120,10 +121,10 @@ body {
 /* Button container styles */
 .button-container {
     display: flex;
-    gap: 10px;
+    gap: 9px;
     align-items: center;
     flex-wrap: wrap;
-    padding: 5px 0;
+    padding: 4.5px 0;
 }
 
 /* Base button styles */
@@ -131,15 +132,15 @@ button {
     background: linear-gradient(45deg, var(--accent), var(--accent-hover));
     color: var(--text-primary);
     border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
+    padding: 5.4px 10.8px;
+    border-radius: 5.4px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12.6px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
-    gap: 6px;
-    height: 32px;
+    gap: 5.4px;
+    height: 29px;
     white-space: nowrap;
     position: relative;
     overflow: hidden;
@@ -212,8 +213,6 @@ button[title] {
     position: relative;
 }
 
-
-
 /* Loading state */
 button.loading {
     position: relative;
@@ -258,17 +257,17 @@ select {
     background: var(--bg-primary);
     color: var(--text-primary);
     border: 2px solid var(--border);
-    padding: 8px 35px 8px 12px;
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 7.2px 31.5px 7.2px 10.8px;
+    border-radius: 5.4px;
+    font-size: 12.6px;
     cursor: pointer;
     min-width: 0;
-    width: 130px;
-    height: 36px;
+    width: 117px;
+    height: 32.4px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 12px;
+    background-position: right 10.8px center;
+    background-size: 10.8px;
     transition: all 0.2s ease;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -276,11 +275,11 @@ select {
 }
 
 select#template {
-    width: 180px;
+    width: 162px;
 }
 
 select#optimization {
-    width: 160px;
+    width: 144px;
 }
 
 select:hover {
@@ -319,16 +318,16 @@ select option {
 .toggle-container {
     display: flex;
     align-items: center;
-    gap: 8px;
-    height: 32px;
+    gap: 7.2px;
+    height: 29px;
     flex-shrink: 0;
 }
 
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 46px;
-    height: 24px;
+    width: 41.4px;
+    height: 21.6px;
 }
 
 .toggle-switch input {
@@ -353,10 +352,10 @@ select option {
 .slider:before {
     position: absolute;
     content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 2px;
+    height: 14.4px;
+    width: 14.4px;
+    left: 3.6px;
+    bottom: 1.8px;
     background-color: var(--text-primary);
     transition: .3s;
     border-radius: 50%;
@@ -367,19 +366,19 @@ input:checked+.slider {
 }
 
 input:checked+.slider:before {
-    transform: translateX(20px);
+    transform: translateX(18px);
 }
 
 /* Output and assembly styles */
 #output,
 #assembly {
     background: var(--bg-primary);
-    padding: 15px;
+    padding: 13.5px;
     border-radius: 4px;
     font-family: 'JetBrains Mono', monospace;
     white-space: pre-wrap;
     flex: 1;
-    font-size: 14px;
+    font-size: 12.6px;
     overflow: auto;
 }
 
@@ -389,10 +388,10 @@ input:checked+.slider:before {
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 7.2px;
+    font-size: 12.6px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    max-width: 300px;
+    max-width: 270px;
 }
 
 .shortcuts-content {
@@ -402,10 +401,10 @@ input:checked+.slider:before {
     left: 0;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 15px;
+    border-radius: 7.2px;
+    padding: 13.5px;
     z-index: 1000;
-    min-width: 250px;
+    min-width: 225px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -415,18 +414,18 @@ input:checked+.slider:before {
 
 .shortcuts-content h3 {
     margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 16px;
+    margin-bottom: 9px;
+    font-size: 14.4px;
 }
 
 .shortcuts-content ul {
     list-style-type: none;
     padding: 0;
-    margin: 0 0 15px 0;
+    margin: 0 0 13.5px 0;
 }
 
 .shortcuts-content li {
-    margin-bottom: 8px;
+    margin-bottom: 7.2px;
 }
 
 .shortcuts-content kbd {
@@ -447,10 +446,10 @@ input:checked+.slider:before {
     background-color: var(--accent);
     color: var(--text-primary);
     border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
+    padding: 4.5px 9px;
+    border-radius: 3.6px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 10.8px;
     transition: background-color 0.3s;
 }
 
@@ -470,15 +469,15 @@ input:checked+.slider:before {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
     color: var(--text-primary);
     border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 7.2px 14.4px;
+    border-radius: 3.6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12.6px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
-    gap: 6px;
-    height: 32px;
+    gap: 5.4px;
+    height: 29px;
     white-space: nowrap;
 }
 
@@ -497,16 +496,16 @@ input:checked+.slider:before {
     display: none;
     position: absolute;
     background: var(--bg-secondary);
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    min-width: 144px;
+    box-shadow: 0px 7.2px 14.4px 0px rgba(0, 0, 0, 0.2);
     z-index: 1;
-    border-radius: 4px;
+    border-radius: 3.6px;
     overflow: hidden;
 }
 
 .dropdown-content a {
     color: var(--text-primary);
-    padding: 12px 16px;
+    padding: 10.8px 14.4px;
     text-decoration: none;
     display: block;
     transition: background 0.2s;
@@ -531,14 +530,14 @@ input:checked+.slider:before {
 .error-output,
 .default-output {
     margin: 0;
-    padding: 10px;
-    border-radius: 4px;
+    padding: 9px;
+    border-radius: 3.6px;
     font-family: 'JetBrains Mono', monospace;
     line-height: 1.5;
 }
 
 .loading {
-    padding: 20px;
+    padding: 18px;
     text-align: center;
     color: var(--accent);
     font-style: italic;
@@ -550,7 +549,6 @@ input:checked+.slider:before {
 }
 
 @keyframes dots {
-
     0%,
     20% {
         content: '.';
@@ -621,18 +619,18 @@ input:checked+.slider:before {
 
 /* Scrollbar styles */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 7.2px;
+    height: 7.2px;
 }
 
 ::-webkit-scrollbar-track {
     background: var(--bg-secondary);
-    border-radius: 4px;
+    border-radius: 3.6px;
 }
 
 ::-webkit-scrollbar-thumb {
     background: var(--accent);
-    border-radius: 4px;
+    border-radius: 3.6px;
     transition: background 0.3s;
 }
 
@@ -695,25 +693,25 @@ button#clear:hover {
     }
 
     .panel {
-        min-height: 500px;
+        min-height: 450px;
     }
 
     select {
-        width: 110px;
+        width: 99px;
     }
 
     select#template {
-        width: 140px;
+        width: 126px;
     }
 
     select#optimization {
-        width: 130px;
+        width: 117px;
     }
 }
 
 @media (max-width: 768px) {
     body {
-        padding: 10px;
+        padding: 9px;
     }
 
     .container {
@@ -723,7 +721,7 @@ button#clear:hover {
     .header {
         flex-direction: column;
         align-items: flex-start;
-        padding: 15px;
+        padding: 13.5px;
     }
 
     .title-shortcuts {
@@ -740,27 +738,27 @@ button#clear:hover {
     }
 
     .controls::-webkit-scrollbar {
-        height: 4px;
+        height: 3.6px;
     }
 
     .controls::-webkit-scrollbar-track {
         background: var(--bg-primary);
-        border-radius: 2px;
+        border-radius: 1.8px;
     }
 
     .controls::-webkit-scrollbar-thumb {
         background: var(--accent);
-        border-radius: 2px;
+        border-radius: 1.8px;
     }
 
     .dropdown-content,
     .shortcuts-content {
         position: fixed;
         top: auto;
-        left: 20px;
-        right: 20px;
+        left: 18px;
+        right: 18px;
         width: auto;
-        max-width: calc(100% - 40px);
+        max-width: calc(100% - 36px);
     }
 
     .shortcuts-panel {
@@ -768,74 +766,74 @@ button#clear:hover {
     }
 
     .panel-header {
-        padding: 8px;
+        padding: 7.2px;
     }
 
     .button-container {
-        gap: 6px;
-        padding: 4px;
+        gap: 5.4px;
+        padding: 3.6px;
     }
 
     .panel-header {
-        padding-bottom: 5px;
+        padding-bottom: 4.5px;
     }
 
     .button-container {
-        gap: 8px;
+        gap: 7.2px;
         width: 100%;
         overflow-x: auto;
-        padding-bottom: 5px;
+        padding-bottom: 4.5px;
     }
 
     .button-container::-webkit-scrollbar {
-        height: 4px;
+        height: 3.6px;
     }
 
     .button-container::-webkit-scrollbar-track {
         background: var(--bg-primary);
-        border-radius: 2px;
+        border-radius: 1.8px;
     }
 
     .button-container::-webkit-scrollbar-thumb {
         background: var(--accent);
-        border-radius: 2px;
+        border-radius: 1.8px;
     }
 
     button {
-        padding: 4px 10px;
-        font-size: 13px;
+        padding: 3.6px 9px;
+        font-size: 11.7px;
         flex-shrink: 0;
     }
 
     button i {
-        font-size: 12px;
+        font-size: 10.8px;
     }
 }
 
 @media (max-width: 480px) {
     .header {
-        padding: 10px;
+        padding: 9px;
     }
 
     .title-shortcuts {
-        gap: 10px;
+        gap: 9px;
     }
 
     .controls {
-        gap: 10px;
+        gap: 9px;
     }
 
     select {
-        min-width: 100px;
+        min-width: 90px;
     }
 
     button {
-        padding: 8px 12px;
-        font-size: 13px;
+        padding: 7.2px 10.8px;
+        font-size: 11.7px;
     }
 
     .toggle-container {
-        font-size: 13px;
+        font-size: 11.7px;
     }
 
     button span {
@@ -843,8 +841,8 @@ button#clear:hover {
     }
 
     button {
-        padding: 4px 8px;
-        width: 32px;
+        padding: 3.6px 7.2px;
+        width: 29px;
         justify-content: center;
     }
 

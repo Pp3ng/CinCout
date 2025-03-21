@@ -44,7 +44,12 @@
         Process cppcheck = Runtime.getRuntime().exec(new String[]{
             "cppcheck",
             "--enable=all",           // Enable all checks
-            "--suppress=missingInclude", // Suppress missing header file warnings
+            "--suppress=missingInclude",  // Suppress missing header file warnings
+            "--suppress=missingIncludeSystem", // Suppress missing system header warnings
+            "--suppress=unmatchedSuppression", // Suppress unmatched suppression warnings
+            "--suppress=checkersReport",   // Suppress checkers report message
+            "--inline-suppr",         // Enable inline suppressions in the source code
+            "--verbose",              // Show more detailed output about suppressions
             inFile
         });
 
@@ -54,6 +59,11 @@
         String line;
         boolean hasOutput = false;
         while ((line = reader.readLine()) != null) {
+            // Skip checkers report lines
+            if (line.contains("[checkersReport]") || line.contains("missingIncludeSystem") || line.contains("unmatchedSuppression")) {
+                continue;
+            }
+            
             // Remove file path
             if (line.contains(":")) {
                 String[] parts = line.split(":");

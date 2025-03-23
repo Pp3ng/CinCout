@@ -85,6 +85,17 @@ const themes = {
         accentHover: "#55dbbe",
         border: "#0e1112",
         cdnUrl: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/seti.min.css"
+    },
+    "panda-syntax": {
+        name: "Panda Syntax",
+        bg: "#292a2b",
+        bgSecondary: "#31353a",
+        text: "#e6e6e6",
+        textSecondary: "#9595a2",
+        accent: "#19f9d8",
+        accentHover: "#ffb86c",
+        border: "#42424c",
+        cdnUrl: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/panda-syntax.min.css"
     }
 };
 

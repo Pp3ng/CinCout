@@ -36,16 +36,17 @@ http://39.105.45.170:8080/
 
 # Shortcut Keys 🔑
 
-| Action             | Windows/Linux    | macOS           |
-| ------------------ | ---------------- | --------------- |
-| Compile and Run    | Ctrl + Enter     | Cmd + Enter     |
-| Show Assembly Code | Ctrl + Shift + A | Cmd + Shift + A |
-| Clear Output       | Ctrl + L         | Cmd + L         |
-| Save Code          | Ctrl + S         | Cmd + S         |
-| Load Code          | Ctrl + O         | Cmd + O         |
-| Format Code        | Ctrl + Alt + F   | Cmd + Alt + F   |
-| Style Check        | Ctrl + Alt + C   | Cmd + Alt + C   |
-| Memory Check       | Ctrl + Alt + L   | Cmd + Alt + L   |
+| Action           | Windows/Linux | macOS      |
+| ---------------- | ------------- | ---------- |
+| Compile and Run  | Ctrl + Enter  | ⌘ + Return |
+| Clear Output     | Ctrl + L      | ⌘ + L      |
+| Save Code        | Ctrl + S      | ⌘ + S      |
+| Open Code File   | Ctrl + O      | ⌘ + O      |
+| Toggle Code Fold | Ctrl + K      | ⌘ + K      |
+| View Assembly    | Alt + 1       | ^ + 1      |
+| Format Code      | Alt + 2       | ^ + 2      |
+| Style Check      | Alt + 3       | ^ + 3      |
+| Memory Check     | Alt + 4       | ^ + 4      |
 
 # Themes 🎨
 
@@ -59,6 +60,7 @@ http://39.105.45.170:8080/
 | Ayu Dark     | Soft dark theme with warm accents                      |
 | Gruvbox Dark | Retro-style theme with earthy colors                   |
 | Seti         | Modern dark theme with bright accent colors            |
+| Panda Syntax | Friendly dark theme with pastel accents                |
 
 ---
 

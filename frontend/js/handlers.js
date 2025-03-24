@@ -46,16 +46,18 @@ document.getElementById("compile").onclick = function () {
     document.getElementById("outputTab").click();
     output.innerHTML = "<div class='loading'>Compiling...</div>";
 
-    fetch('jsp/compile.jsp', {
+    fetch('/api/compile', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
-        body: 'code=' + encodeURIComponent(code) +
-            '&lang=' + encodeURIComponent(lang) +
-            '&compiler=' + encodeURIComponent(compiler) +
-            '&optimization=' + encodeURIComponent(optimization) +
-            '&action=compile'
+        body: JSON.stringify({
+            code: code,
+            lang: lang,
+            compiler: compiler,
+            optimization: optimization,
+            action: 'compile'
+        })
     })
     .then(response => response.text())
     .then(data => {
@@ -77,15 +79,17 @@ document.getElementById("memcheck").onclick = function () {
     document.getElementById("outputTab").click();
     document.getElementById("output").innerHTML = "<div class='loading'>Running memory check...</div>";
 
-    fetch('jsp/memcheck.jsp', {
+    fetch('/api/memcheck', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
-        body: 'code=' + encodeURIComponent(code) +
-            '&lang=' + encodeURIComponent(lang) +
-            '&compiler=' + encodeURIComponent(compiler) +
-            '&optimization=' + encodeURIComponent(optimization)
+        body: JSON.stringify({
+            code: code,
+            lang: lang,
+            compiler: compiler,
+            optimization: optimization
+        })
     })
     .then(response => response.text())
     .then(data => {
@@ -104,27 +108,29 @@ document.getElementById("format").onclick = function () {
 
     const lang = document.getElementById("language").value;
 
-    fetch('jsp/format.jsp', {
+    fetch('/api/format', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
-        body: 'code=' + encodeURIComponent(code) +
-            '&lang=' + encodeURIComponent(lang)
-    })
-        .then(response => response.text())
-        .then(data => {
-            // Remove leading and trailing newlines
-            const formattedData = data.replace(/^\n+/, '').replace(/\n+$/, '');
-            const scrollInfo = editor.getScrollInfo();
-            editor.setValue(formattedData);
-            editor.setCursor(cursor);
-            editor.scrollTo(scrollInfo.left, scrollInfo.top);
-            editor.refresh();
+        body: JSON.stringify({
+            code: code,
+            lang: lang
         })
-        .catch(error => {
-            console.error("Format error:", error);
-        });
+    })
+    .then(response => response.text())
+    .then(data => {
+        // Remove leading and trailing newlines
+        const formattedData = data.replace(/^\n+/, '').replace(/\n+$/, '');
+        const scrollInfo = editor.getScrollInfo();
+        editor.setValue(formattedData);
+        editor.setCursor(cursor);
+        editor.scrollTo(scrollInfo.left, scrollInfo.top);
+        editor.refresh();
+    })
+    .catch(error => {
+        console.error("Format error:", error);
+    });
 };
 
 // View assembly button click handler
@@ -141,7 +147,7 @@ document.getElementById("viewAssembly").onclick = function () {
     loadingDiv.className = 'loading';
     loadingDiv.textContent = 'Generating assembly code';
 
-    //Get assembly div and its CodeMirroe container
+    //Get assembly div and its CodeMirror container
     const assemblyDiv = document.getElementById("assembly");
     const cmContainer = assemblyDiv.querySelector('.CodeMirror');
 
@@ -149,16 +155,18 @@ document.getElementById("viewAssembly").onclick = function () {
     assemblyDiv.insertBefore(loadingDiv, cmContainer);
     assemblyView.setValue('');
 
-    fetch('jsp/compile.jsp', {
+    fetch('/api/compile', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
-        body: 'code=' + encodeURIComponent(code) +
-            '&lang=' + encodeURIComponent(lang) +
-            '&compiler=' + encodeURIComponent(compiler) +
-            '&optimization=' + encodeURIComponent(optimization) +
-            '&action=assembly'
+        body: JSON.stringify({
+            code: code,
+            lang: lang,
+            compiler: compiler,
+            optimization: optimization,
+            action: 'assembly'
+        })
     })
     .then(response => response.text())
     .then(data => {
@@ -179,30 +187,32 @@ document.getElementById("styleCheck").onclick = function () {
     document.getElementById("outputTab").click();
     document.getElementById("output").innerHTML = "<div class='loading'>Running cppcheck...</div>";
 
-    fetch('jsp/styleCheck.jsp', {
+    fetch('/api/styleCheck', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
-        body: 'code=' + encodeURIComponent(code) +
-            '&lang=' + encodeURIComponent(lang)
-    })
-        .then(response => response.text())
-        .then(data => {
-            const lines = data.split('\n');
-            const formattedLines = lines.map(line => {
-                if (line.trim()) {
-                    return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${formatOutput(line)}</div>`;
-                }
-                return '';
-            }).filter(line => line);
-
-            document.getElementById("output").innerHTML =
-                `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join('\n')}</div>`;
+        body: JSON.stringify({
+            code: code,
+            lang: lang
         })
-        .catch(error => {
-            document.getElementById("output").innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-        });
+    })
+    .then(response => response.text())
+    .then(data => {
+        const lines = data.split('\n');
+        const formattedLines = lines.map(line => {
+            if (line.trim()) {
+                return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${formatOutput(line)}</div>`;
+            }
+            return '';
+        }).filter(line => line);
+
+        document.getElementById("output").innerHTML =
+            `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join('\n')}</div>`;
+    })
+    .catch(error => {
+        document.getElementById("output").innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+    });
 };
 
 // Clear button click handler

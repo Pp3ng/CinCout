@@ -1,0 +1,83 @@
+@startuml Architecture
+
+' Define actors and components
+actor "Browser" as Browser
+rectangle "Frontend" {
+  component "CodeMirror Editor" as Editor
+  component "Request Processing" as FrontProc
+  component "Result Display" as Display
+}
+
+rectangle "Backend (Node.js)" {
+  component "Express Server" as Express
+  component "API Routes" as Routes
+  component "Temp File Manager" as TempMgr
+  
+  package "Services" {
+    component "Compilation Service" as CompileService
+    component "Memory Check Service" as MemcheckService
+    component "Format Service" as FormatService
+    component "Style Check Service" as StyleService
+  }
+  
+  component "Utility Functions" as Utils
+}
+
+rectangle "External Tools" {
+  component "GCC/G++" as GCC
+  component "Clang/Clang++" as Clang
+  component "Valgrind" as Valgrind
+  component "clang-format" as ClangFormat
+  component "cppcheck" as Cppcheck
+}
+
+database "Temporary Files" as TempFiles
+
+' Define relationships
+Browser --> Editor : Input code
+Editor --> FrontProc : Submit for processing
+FrontProc --> Express : HTTP POST /api/compile\n(JSON payload)
+Express --> Routes
+Routes --> CompileService : Compilation request
+Routes --> MemcheckService : Memory check request
+Routes --> FormatService : Format request
+Routes --> StyleService : Style check request
+
+CompileService --> TempMgr : Create temp files
+MemcheckService --> TempMgr : Create temp files
+FormatService --> TempMgr : Create temp files
+StyleService --> TempMgr : Create temp files
+
+TempMgr --> TempFiles : Write code
+TempMgr --> Utils : Helper functions
+
+CompileService --> GCC : Execute
+CompileService --> Clang : Execute
+MemcheckService --> Valgrind : Execute
+FormatService --> ClangFormat : Execute
+StyleService --> Cppcheck : Execute
+
+GCC --> TempFiles : Read/Write
+Clang --> TempFiles : Read/Write
+Valgrind --> TempFiles : Read/Write
+ClangFormat --> TempFiles : Read/Write
+Cppcheck --> TempFiles : Read/Write
+
+CompileService --> FrontProc : Return results
+MemcheckService --> FrontProc : Return results
+FormatService --> FrontProc : Return results
+StyleService --> FrontProc : Return results
+
+FrontProc --> Display : Present results
+Display --> Browser : Show output
+
+TempMgr ..> TempFiles : Auto-cleanup\nafter request
+
+note bottom of TempMgr
+  No session management:
+  - Each request creates isolated temporary files
+  - tmp module handles automatic cleanup
+  - Stateless design supports multiple concurrent users
+end note
+
+@enduml

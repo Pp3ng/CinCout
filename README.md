@@ -1,38 +1,42 @@
-# WEB c/c++ code editor and compiler
+# WEB C/C++ Code Editor and Compiler
 
-This project is a web-based code editor and compiler for C/C++ programs. It allows users to write, compile, and run code directly in the browser. The application is built using JavaServer Pages (JSP) and runs on Apache Tomcat.
+This project is a web-based code editor and compiler for C/C++ programs. It allows users to write, compile, and run code directly in the browser. The application is built using Node.js and Express.
 
-# sample
+---
 
-![sample](sample.png)
+# Screenshots 📷
 
-# Try it(no guarantee always available due to myself's server)
+![sample](RM-assets/sample.png)
 
-http://39.105.45.170:8080/
+# Try it (no guarantee always available due to myself's server)
+
+http://39.105.45.170:9527/
 
 ---
 
 # Features ✨
 
-| Category              | Feature             | Description                              | Implementation  |
-| --------------------- | ------------------- | ---------------------------------------- | --------------- |
-| **Editor Core**       | Syntax Highlighting | Language-specific highlighting for C/C++ | `editor.js`     |
-|                       | Code Folding        | Collapsible code blocks                  | `editor.js`     |
-|                       | Auto Brackets       | Automatic closing of brackets            | `editor.js`     |
-|                       | Font Size Control   | Ctrl + Mouse Wheel to adjust             | `editor.js`     |
-| **Compilation**       | Multiple Compilers  | Support for GCC and Clang                | `compile.jsp`   |
-|                       | Optimization Levels | -O0 to -O3 and -Os options               | `memcheck.jsp`  |
-|                       | Assembly View       | View generated assembly code             | `editor.js`     |
-| **Code Analysis**     | Style Checking      | Static code analysis with cppcheck       | `handlers.js`   |
-|                       | Memory Check        | Memory leak detection                    | `memcheck.jsp`  |
-|                       | Code Formatting     | Automatic code formatting                | `format.jsp`    |
-| **UI/UX**             | Multiple Themes     | 8 different color themes                 | `css/style.css` |
-|                       | Responsive Design   | Mobile-friendly layout                   | `css/style.css` |
-|                       | Custom Scrollbars   | Themed scrollbar design                  | `css/style.css` |
-| **Templates**         | Code Examples       | Built-in code templates                  | `templates.js`  |
-|                       | Language Support    | Both C and C++ templates                 | `templates.js`  |
-| **Development Tools** | External Resources  | Links to documentation                   | `index.html`    |
-|                       | GitHub Integration  | Source code access                       | `index.html`    |
+| Category              | Feature             | Description                              | Implementation                 |
+| --------------------- | ------------------- | ---------------------------------------- | ------------------------------ |
+| **Editor Core**       | Syntax Highlighting | Language-specific highlighting for C/C++ | `frontend/js/editor.js`        |
+|                       | Code Folding        | Collapsible code blocks                  | `frontend/js/editor.js`        |
+|                       | Auto Brackets       | Automatic closing of brackets            | `frontend/js/editor.js`        |
+|                       | Font Size Control   | Ctrl + Mouse Wheel to adjust             | `frontend/js/editor.js`        |
+| **Compilation**       | Multiple Compilers  | Support for GCC and Clang                | `backend/routes/compile.js`    |
+|                       | Optimization Levels | -O0 to -O3 and -Os options               | `backend/routes/compile.js`    |
+|                       | Assembly View       | View generated assembly code             | `backend/routes/compile.js`    |
+| **Code Analysis**     | Style Checking      | Static code analysis with cppcheck       | `backend/routes/styleCheck.js` |
+|                       | Memory Check        | Memory leak detection                    | `backend/routes/memcheck.js`   |
+|                       | Code Formatting     | Automatic code formatting                | `backend/routes/format.js`     |
+| **UI/UX**             | Multiple Themes     | 8 different color themes                 | `frontend/css/style.css`       |
+|                       | Responsive Design   | Mobile-friendly layout                   | `frontend/css/style.css`       |
+|                       | Custom Scrollbars   | Themed scrollbar design                  | `frontend/css/style.css`       |
+| **Templates**         | Code Examples       | Built-in code templates                  | `frontend/js/templates.js`     |
+|                       | Language Support    | Both C and C++ templates                 | `frontend/js/templates.js`     |
+| **Development Tools** | External Resources  | Links to documentation                   | `frontend/index.html`          |
+|                       | GitHub Integration  | Source code access                       | `frontend/index.html`          |
+
+---
 
 # Shortcut Keys 🔑
 
@@ -47,6 +51,8 @@ http://39.105.45.170:8080/
 | Format Code      | Alt + 2       | ^ + 2      |
 | Style Check      | Alt + 3       | ^ + 3      |
 | Memory Check     | Alt + 4       | ^ + 4      |
+
+---
 
 # Themes 🎨
 
@@ -64,150 +70,66 @@ http://39.105.45.170:8080/
 
 ---
 
-## Architecture
+# Architecture
 
-The following diagram illustrates the architecture of the project:
+![architecture](RM-assets/Architecture.png)
 
-```
-[Browser]                                              [Server]
-   |                                                      |
-   |  HTTP/HTTPS Request                                  |
-   | ------------------------------------------------>    |
-   |  POST /compile.jsp                                   |
-   |  Content-Type: application/x-www-form-urlencoded     |
-   |  code=...&lang=...&compiler=...&optimization=...     |
-   |                                                      |
-   |                                                      |
-   |  HTTP/HTTPS Response                                 |
-   | <------------------------------------------------    |
-   |  Content-Type: text/plain                            |
-   |  Compilation output / Error messages                 |
-   |                                                      |
-+------------+     +-----------------+     +---------------+
-|            |     |                 |     |               |
-| CodeMirror |<--->| JavaScript API  |<--->| JSP Backend   |
-|   Editor   |     | Processing Layer|     | Services      |
-|            |     |                 |     |               |
-+------------+     +-----------------+     +---------------+
-     |                    |                        |
-     |                    |                        |
-     v                    v                        v
-+------------+     +-----------------+     +-----------------+
-| Code Input |     | Request Router  |     | Session Manager |
-| Syntax     |     | Parameter       |     | Temp File       |
-| Highlight  |     | Processing      |     | Creation        |
-+------------+     +-----------------+     +-----------------+
-                           |                        |
-                           v                        v
-                   +-----------------+     +-----------------+
-                   | Compile Request |     | GCC/Clang       |
-                   | Format Request  |     | clang-format    |
-                   | Memory Check    |     | Valgrind        |
-                   | Style Check     |     | cppcheck        |
-                   +-----------------+     +-----------------+
-                           |                        |
-                           v                        v
-                   +-----------------+     +-----------------+
-                   | Result Parser   |     | Output Handler  |
-                   | Error Formatter |     | Temp File       |
-                   | HTML Renderer   |     | Cleanup         |
-                   +-----------------+     +-----------------+
-                           |                        |
-                           v                        v
-                   +------------------------------------- ---+
-                   |           Result Display                |
-                   | +----------------+  +----------------+  |
-                   | | Program Output |  | Assembly Code  |  |
-                   | +----------------+  +----------------+  |
-                   | | Error Messages |  | Memory Check   |  |
-                   | +----------------+  +----------------+  |
-                   +------------------------------------- ---+
+---
 
-Data Flow:
-code/params -----> Frontend API -----> JSP Processing -----> Compile/Analysis Tools
-                                                                |
-Result Display <---- Frontend Render <---- Result Parse <------ +
-```
-
-# setup guide
+# Setup Guide
 
 ## Prerequisites
 
 First, install the required packages:
 
 ```bash
+# For Debian/Ubuntu
 sudo apt update
-sudo apt install openjdk-11-jdk tomcat9 gcc g++ clang clang-format valgrind cppcheck
+sudo apt install nodejs npm gcc g++ clang clang-format valgrind cppcheck
 ```
 
 ## Project Setup
 
-Create the necessary directories in Tomcat's webapps folder:
+1. Clone the repository and install dependencies:
 
 ```bash
 # Clone the repository
 git clone https://github.com/Pp3ng/webCpp.git
 
-# Move the project to Tomcat's webapps folder
-mv webCpp /var/lib/tomcat9/webapps/webCpp
-
 # Change directory
-cd /var/lib/tomcat9/webapps/webCpp
+cd webCpp
 
-# Create required subdirectories
-sudo mkdir tmp
+# Install dependencies
+npm install
 ```
 
-### 2. Set File Permissions
-
-Configure the correct permissions for the project:
+2. Start the application:
 
 ```bash
-# Change ownership
-sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/webCpp
-# Change permissions
-sudo chmod -R 755 /var/lib/tomcat9/webapps/webCpp
-# Create tmp directory
-sudo mkdir -p /var/lib/tomcat9/webapps/webCpp/tmp
-# Change ownership and permissions
-sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/webCpp/tmp
-# Change permissions
-sudo chmod -R 777 /var/lib/tomcat9/webapps/webCpp/tmp
+# Start the server
+node backend/server.js
 ```
 
-### 3. Configure Tomcat Security
+3. Access the application at http://localhost:9527
 
-Add necessary permissions to Tomcat's security policy:
+## Run as a Background Service (Optional)
+
+To keep the application running in the background:
 
 ```bash
-# Edit the policy file
-sudo vim /var/lib/tomcat9/conf/catalina.properties
+# Run in background
+nohup node backend/server.js > output.log 2>&1 &
 ```
 
-Add these lines at the end of the file:
-
-```
-grant codeBase "file:${catalina.home}/webapps/code-editor/-" {
-    permission java.io.FilePermission "/var/lib/tomcat9/webapps/code-editor/tmp/*", "read,write,delete,execute";
-    permission java.io.FilePermission "/usr/bin/gcc", "execute";
-    permission java.io.FilePermission "/usr/bin/g++", "execute";
-    permission java.io.FilePermission "/usr/bin/clang", "execute";
-    permission java.io.FilePermission "/usr/bin/clang++", "execute";
-    permission java.io.FilePermission "/usr/bin/clang-format", "execute";
-    permission java.io.FilePermission "/usr/bin/valgrind", "execute";
-    permission java.lang.RuntimePermission "createClassLoader";
-    permission java.lang.RuntimePermission "getClassLoader";
-    permission java.lang.RuntimePermission "setContextClassLoader";
-    permission java.lang.RuntimePermission "exitVM.0";
-};
-```
-
-### 4. Start the Service
-
-Restart Tomcat to apply changes:
+To check the running process:
 
 ```bash
-sudo systemctl restart tomcat9
+ps aux | grep node
 ```
 
-then you can visit http://localhost:8080/webCpp/ and enjoy it.
+To stop the application:
+
+```bash
+# Replace <process_id> with the actual process ID
+kill <process_id>
+```

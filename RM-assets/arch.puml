@@ -2,6 +2,10 @@
 
 ' Define actors and components
 actor "Browser" as Browser
+rectangle "Server Infrastructure" {
+  component "Nginx (Reverse Proxy)" as Nginx
+}
+
 rectangle "Frontend" {
   component "CodeMirror Editor" as Editor
   component "Request Processing" as FrontProc
@@ -34,6 +38,8 @@ rectangle "External Tools" {
 database "Temporary Files" as TempFiles
 
 ' Define relationships
+Browser --> Nginx : HTTP/HTTPS requests
+Nginx --> Express : Proxy requests to port 9527
 Browser --> Editor : Input code
 Editor --> FrontProc : Submit for processing
 FrontProc --> Express : HTTP POST /api/compile\n(JSON payload)
@@ -78,6 +84,15 @@ note bottom of TempMgr
   - Each request creates isolated temporary files
   - tmp module handles automatic cleanup
   - Stateless design supports multiple concurrent users
+end note
+
+note right of Nginx
+  Production Configuration:
+  - Handles HTTP/HTTPS requests
+  - SSL termination
+  - Load balancing (if needed)
+  - Security layer
+  - Serves static content efficiently
 end note
 
 @enduml

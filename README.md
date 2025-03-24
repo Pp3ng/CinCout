@@ -114,22 +114,111 @@ node backend/server.js
 
 ## Run as a Background Service (Optional)
 
-To keep the application running in the background:
+### Using PM2 to Manage the Application
+
+1. Install PM2:
 
 ```bash
-# Run in background
-nohup node backend/server.js > output.log 2>&1 &
+# Install PM2 globally
+npm install pm2 -g
 ```
 
-To check the running process:
+2. Start the application with PM2:
 
 ```bash
-ps aux | grep node
+# Start the application
+pm2 start backend/server.js --name "webCpp"
+
+# Set up startup script to run on server boot
+pm2 startup
+pm2 save
 ```
 
-To stop the application:
+3. Common PM2 commands:
 
 ```bash
-# Replace <process_id> with the actual process ID
-kill <process_id>
+# Check application status
+pm2 status
+
+# Restart application
+pm2 restart webCpp
+
+# View logs
+pm2 logs webCpp
+
+# Stop application
+pm2 stop webCpp
+
+# Delete application from PM2
+pm2 delete webCpp
 ```
+
+### Using Nginx as a Reverse Proxy(Recommended)
+
+1. Install Nginx:
+
+```bash
+sudo apt update
+sudo apt install nginx
+```
+
+2. Create an Nginx configuration file:
+
+```bash
+sudo vi /etc/nginx/sites-available/webcpp
+```
+
+3. Add the following configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;  # Replace with your domain or server IP
+
+    location / {
+        proxy_pass http://localhost:9527;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+4. Enable the site and restart Nginx:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/webcpp /etc/nginx/sites-enabled/
+sudo nginx -t  # Test if the configuration is valid
+sudo systemctl restart nginx
+```
+
+5. Configure firewall to only allow Nginx and block direct access to port 9527:
+
+```bash
+sudo ufw allow 'Nginx Full'  # Allow HTTP and HTTPS through Nginx
+sudo ufw deny 9527           # Block direct access to the application port
+```
+
+6. Optional: Configure the application to only listen on localhost (127.0.0.1)
+
+For added security, you can modify the server.js file to only listen on localhost instead of all interfaces:
+
+```javascript
+// Find the server.listen line in backend/server.js
+// Change from:
+// server.listen(9527, () => { ... });
+// To:
+server.listen(9527, "127.0.0.1", () => {
+  console.log("Server listening on http://localhost:9527");
+});
+```
+
+This ensures application is only accessible through Nginx and not directly via port 9527 from the internet, adding an extra layer of security to deployment.
+
+---
+
+# Contributing 🤝
+
+Welcome contributions! Please fell free to fork to make any creative changes you want and make a pull request.

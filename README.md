@@ -16,27 +16,29 @@ http://39.105.45.170
 
 # Features ✨
 
-| Category              | Feature             | Description                              | Implementation                 |
-| --------------------- | ------------------- | ---------------------------------------- | ------------------------------ |
-| **Editor Core**       | Syntax Highlighting | Language-specific highlighting for C/C++ | `frontend/js/editor.js`        |
-|                       | Code Folding        | Collapsible code blocks                  | `frontend/js/editor.js`        |
-|                       | Auto Brackets       | Automatic closing of brackets            | `frontend/js/editor.js`        |
-|                       | Font Size Control   | Ctrl + Mouse Wheel to adjust             | `frontend/js/editor.js`        |
-| **Compilation**       | Multiple Compilers  | Support for GCC and Clang                | `backend/routes/compile.js`    |
-|                       | Optimization Levels | -O0 to -O3 and -Os options               | `backend/routes/compile.js`    |
-|                       | Assembly View       | View generated assembly code             | `backend/routes/compile.js`    |
-|                       | Interactive Terminal| Real-time program interaction            | `backend/routes/compile.js`    |
-| **Code Analysis**     | Style Checking      | Static code analysis with cppcheck       | `backend/routes/styleCheck.js` |
-|                       | Memory Check        | Memory leak detection                    | `backend/routes/memcheck.js`   |
-|                       | Code Formatting     | Automatic code formatting                | `backend/routes/format.js`     |
-| **UI/UX**             | Multiple Themes     | 8 different color themes                 | `frontend/css/style.css`       |
-|                       | Responsive Design   | Mobile-friendly layout                   | `frontend/css/style.css`       |
-|                       | Custom Scrollbars   | Themed scrollbar design                  | `frontend/css/style.css`       |
-|                       | Terminal Emulation  | Full terminal emulation with xterm.js    | `frontend/js/terminal.js`      |
-| **Templates**         | Code Examples       | Built-in code templates                  | `frontend/js/templates.js`     |
-|                       | Language Support    | Both C and C++ templates                 | `frontend/js/templates.js`     |
-| **Development Tools** | External Resources  | Links to documentation                   | `frontend/index.html`          |
-|                       | GitHub Integration  | Source code access                       | `frontend/index.html`          |
+| Category              | Feature              | Description                              | Implementation                    |
+| --------------------- | -------------------- | ---------------------------------------- | --------------------------------- |
+| **Editor Core**       | Syntax Highlighting  | Language-specific highlighting for C/C++ | `frontend/js/editor.js`           |
+|                       | Code Folding         | Collapsible code blocks                  | `frontend/js/editor.js`           |
+|                       | Auto Brackets        | Automatic closing of brackets            | `frontend/js/editor.js`           |
+|                       | Font Size Control    | Ctrl + Mouse Wheel to adjust             | `frontend/js/editor.js`           |
+| **Compilation**       | Multiple Compilers   | Support for GCC and Clang                | `backend/routes/compile.js`       |
+|                       | Optimization Levels  | -O0 to -O3 and -Os options               | `backend/routes/compile.js`       |
+|                       | Assembly View        | View generated assembly code             | `backend/routes/compile.js`       |
+|                       | Interactive Terminal | Real-time program interaction            | `backend/utils/sessionManager.js` |
+| **Code Analysis**     | Style Checking       | Static code analysis with cppcheck       | `backend/routes/styleCheck.js`    |
+|                       | Memory Check         | Memory leak detection                    | `backend/routes/memcheck.js`      |
+|                       | Code Formatting      | Automatic code formatting                | `backend/routes/format.js`        |
+| **UI/UX**             | Multiple Themes      | 8 different color themes                 | `frontend/css/style.css`          |
+|                       | Responsive Design    | Mobile-friendly layout                   | `frontend/css/style.css`          |
+|                       | Custom Scrollbars    | Themed scrollbar design                  | `frontend/css/style.css`          |
+|                       | Terminal Emulation   | Full terminal emulation with xterm.js    | `frontend/js/terminal.js`         |
+| **Templates**         | Code Examples        | Built-in code templates                  | `frontend/js/templates.js`        |
+|                       | Language Support     | Both C and C++ templates                 | `frontend/js/templates.js`        |
+| **Security**          | Code Validation      | Protection against dangerous calls       | `backend/utils/security.js`       |
+|                       | Resource Limits      | Memory, CPU and timeout controls         | `backend/utils/sessionManager.js` |
+| **Development Tools** | External Resources   | Links to documentation                   | `frontend/index.html`             |
+|                       | GitHub Integration   | Source code access                       | `frontend/index.html`             |
 
 ---
 

@@ -1,24 +1,27 @@
 @startuml Architecture
 
 ' Define actors and components
-actor "Browser" as Browser
-rectangle "Server Infrastructure" {
-  component "Nginx (Reverse Proxy)" as Nginx
-}
+actor "User" as User
+component "Browser" as Browser
 
 rectangle "Frontend" {
+  component "HTML/CSS/JS" as StaticFiles
   component "CodeMirror Editor" as Editor
-  component "Request Processing" as FrontProc
-  component "Result Display" as Display
   component "Xterm.js Terminal" as Terminal
+  component "Result Display" as Display
+  component "Request Processing" as FrontProc
 }
 
-rectangle "Backend (Node.js)" {
+rectangle "Backend" {
   component "Express Server" as Express
   component "WebSocket Server" as WSServer
-  component "API Routes" as Routes
-  component "Temp File Manager" as TempMgr
-  component "Session Manager" as SessionMgr
+  
+  package "API Routes (routes/)" {
+    component "Compile API" as CompileAPI
+    component "Memory Check API" as MemcheckAPI
+    component "Format API" as FormatAPI
+    component "Style Check API" as StyleAPI
+  }
   
   package "Services" {
     component "Compilation Service" as CompileService
@@ -28,7 +31,9 @@ rectangle "Backend (Node.js)" {
     component "PTY Service" as PTYService
   }
   
-  component "Utility Functions" as Utils
+  component "Temp File Manager" as TempMgr
+  component "Session Manager" as SessionMgr
+  component "Utilities (utils/)" as Utils
 }
 
 rectangle "External Tools" {
@@ -40,24 +45,66 @@ rectangle "External Tools" {
   component "Node-PTY" as NodePTY
 }
 
+rectangle "Server Infrastructure" {
+  component "Nginx (Reverse Proxy)" as Nginx
+}
+
 database "Temporary Files" as TempFiles
 database "Active Sessions" as Sessions
 
 ' Define relationships
+User --> Browser
+Browser --> StaticFiles : Loads
+Browser --> Editor : Inputs code
+Browser <--> Terminal : Interactive I/O
+
+' Frontend connections
+Editor --> FrontProc : Submit for processing
+FrontProc --> Express : HTTP POST requests
+FrontProc --> WSServer : Send code for interactive execution
+FrontProc --> Display : Present results
+
+' Nginx connections
 Browser --> Nginx : HTTP/HTTPS requests
 Browser <--> WSServer : WebSocket connection
 Nginx --> Express : Proxy requests to port 9527
 Nginx --> WSServer : Proxy WebSocket connections
-Browser --> Editor : Input code
-Editor --> FrontProc : Submit for processing
-FrontProc --> Express : HTTP POST /api/compile\n(JSON payload)
-FrontProc --> WSServer : Send code for\ninteractive execution
-Express --> Routes
-Routes --> CompileService : Compilation request
-Routes --> MemcheckService : Memory check request
-Routes --> FormatService : Format request
-Routes --> StyleService : Style check request
 
+' Backend routing
+Express --> CompileAPI : Route compile requests
+Express --> MemcheckAPI : Route memory check requests
+Express --> FormatAPI : Route format requests
+Express --> StyleAPI : Route style check requests
+
+' API to Service connections
+CompileAPI --> CompileService : Process
+MemcheckAPI --> MemcheckService : Process
+FormatAPI --> FormatService : Process
+StyleAPI --> StyleService : Process
+
+' Service connections
+CompileService --> TempMgr : Create files
+MemcheckService --> TempMgr : Create files
+FormatService --> TempMgr : Create files
+StyleService --> TempMgr : Create files
+PTYService --> TempMgr : Create files
+
+' External tool connections
+CompileService --> GCC : Execute
+CompileService --> Clang : Execute
+MemcheckService --> Valgrind : Execute
+FormatService --> ClangFormat : Execute
+StyleService --> Cppcheck : Execute
+
+' File and session management
+TempMgr --> TempFiles : Write/Read/Manage
+TempMgr --> Utils : Helper functions
+SessionMgr --> Sessions : Track active sessions
+SessionMgr --> TempMgr : Cleanup after sessions
+TempMgr ..> TempFiles : Auto-cleanup after request
+SessionMgr ..> Sessions : Auto-cleanup after disconnect
+
+' WebSocket and PTY connections
 WSServer --> SessionMgr : Create/manage sessions
 WSServer --> PTYService : Interactive execution
 PTYService --> NodePTY : Create pseudo-terminal
@@ -66,42 +113,24 @@ NodePTY --> TempFiles : Execute compiled program
 WSServer --> Terminal : Send real-time output
 Terminal --> WSServer : Send user input
 
-CompileService --> TempMgr : Create temp files
-MemcheckService --> TempMgr : Create temp files
-FormatService --> TempMgr : Create temp files
-StyleService --> TempMgr : Create temp files
-PTYService --> TempMgr : Create temp files
-
-TempMgr --> TempFiles : Write code
-TempMgr --> Utils : Helper functions
-SessionMgr --> Sessions : Track active sessions
-SessionMgr --> TempMgr : Cleanup after sessions
-
-CompileService --> GCC : Execute
-CompileService --> Clang : Execute
-MemcheckService --> Valgrind : Execute
-FormatService --> ClangFormat : Execute
-StyleService --> Cppcheck : Execute
-
-GCC --> TempFiles : Read/Write
-Clang --> TempFiles : Read/Write
-Valgrind --> TempFiles : Read/Write
-ClangFormat --> TempFiles : Read/Write
-Cppcheck --> TempFiles : Read/Write
-
+' Results
 CompileService --> FrontProc : Return results
 MemcheckService --> FrontProc : Return results
 FormatService --> FrontProc : Return results
 StyleService --> FrontProc : Return results
-
 FrontProc --> Display : Present results
 Display --> Browser : Show output
-WSServer --> Terminal : Stream terminal output
-Terminal --> Browser : Display interactive terminal
 
-TempMgr ..> TempFiles : Auto-cleanup\nafter request
-SessionMgr ..> Sessions : Auto-cleanup\nafter disconnect
+' Resource limits note
+note right of NodePTY
+  Resource limits:
+  - Memory: 100MB
+  - CPU time: 10 seconds
+  - Stack size: 8MB
+  - Auto-termination for long-running processes
+end note
 
+' Session management note
 note bottom of SessionMgr
   Session management:
   - WebSocket connections create unique sessions
@@ -110,6 +139,7 @@ note bottom of SessionMgr
   - Auto-cleanup on timeout or disconnect
 end note
 
+' Nginx note
 note right of Nginx
   Production Configuration:
   - Handles HTTP/HTTPS requests
@@ -118,14 +148,6 @@ note right of Nginx
   - Load balancing (if needed)
   - Security layer
   - Serves static content efficiently
-end note
-
-note right of NodePTY
-  Resource limits:
-  - Memory: 100MB
-  - CPU time: 10 seconds
-  - Stack size: 8MB
-  - Auto-termination for long-running processes
 end note
 
 @enduml

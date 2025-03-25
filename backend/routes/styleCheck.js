@@ -1,29 +1,35 @@
+/**
+ * Style checking router
+ */
 const express = require('express');
 const router = express.Router();
-const { exec } = require('child_process');
-const fs = require('fs-extra');
-const path = require('path');
-const tmp = require('tmp');
+const {
+  validateCode,
+  createTempDirectory,
+  writeCodeToFile,
+  executeCommand
+} = require('../utils/helpers');
 
 router.post('/', async (req, res) => {
   const { code, lang } = req.body;
   
-  if (!code || code.trim() === '') {
-    return res.status(400).send('Error: No code provided');
+  // Validate code
+  const validation = validateCode(code);
+  if (!validation.valid) {
+    return res.status(400).send(validation.message);
   }
   
   try {
     // Create temporary directory
-    const tmpDir = tmp.dirSync({ prefix: 'webCpp-', unsafeCleanup: true });
-    const inFile = path.join(tmpDir.name, 'input.cpp');
+    const tmpDir = createTempDirectory();
+    const inFile = writeCodeToFile(tmpDir.name, 'input.cpp', code);
     
-    // Write code to temporary file
-    fs.writeFileSync(inFile, code);
-    
-    // Run cppcheck
-    const cppcheckCmd = `cppcheck --enable=all --suppress=missingInclude --suppress=missingIncludeSystem --suppress=unmatchedSuppression --suppress=checkersReport --inline-suppr --verbose "${inFile}" 2>&1`;
-    
-    exec(cppcheckCmd, (error, stdout, stderr) => {
+    try {
+      // Run cppcheck
+      const cppcheckCmd = `cppcheck --enable=all --suppress=missingInclude --suppress=missingIncludeSystem --suppress=unmatchedSuppression --suppress=checkersReport --inline-suppr --verbose "${inFile}" 2>&1`;
+      
+      const { stdout } = await executeCommand(cppcheckCmd, { shell: true, failOnError: false });
+      
       let output = '';
       let hasOutput = false;
       
@@ -59,10 +65,10 @@ router.post('/', async (req, res) => {
       } else {
         res.send(output);
       }
-      
+    } finally {
       // Clean up temporary files
       tmpDir.removeCallback();
-    });
+    }
   } catch (error) {
     res.status(500).send(`Error: ${error.message || error}`);
   }

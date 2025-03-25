@@ -1,3 +1,4 @@
+// Theme definitions object
 const themes = {
     "default": {
         name: "Default",
@@ -171,151 +172,200 @@ const themes = {
     }
 };
 
-// Load theme CSS from CDN
-function loadThemeCSS(theme) {
-    const existingLink = document.querySelector(`link[href="${theme.cdnUrl}"]`);
-    if (!existingLink) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = theme.cdnUrl;
-        document.head.appendChild(link);
+/**
+ * Theme Manager class - handles all theme-related functionality
+ */
+class ThemeManager {
+    constructor() {
+        this.themeSelect = null;
+        this.currentTheme = 'default';
     }
-}
 
-// Get terminal theme - ensure this function works correctly
-function getTerminalTheme() {
-    // Get the current theme name
-    const currentTheme = document.getElementById('theme-select').value;
-    const themeData = themes[currentTheme] || themes["default"];
-    
-    // Build the theme object
-    let theme = {
-        // Use CSS variables as primary colors
-        background: getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim(),
-        foreground: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
-        cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
-        cursorAccent: getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim(),
-        selection: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() + '40', // Add transparency
+    /**
+     * Load theme CSS from CDN
+     * @param {Object} theme - Theme object containing CDN URL
+     */
+    loadThemeCSS(theme) {
+        if (!theme.cdnUrl) return;
         
-        // Basic colors - get directly from theme object
-        black: '#000000',
-        red: themeData.terminal?.red || '#ff5555',
-        green: themeData.terminal?.green || '#50fa7b',
-        yellow: themeData.terminal?.yellow || '#f1fa8c',
-        blue: themeData.terminal?.blue || '#bd93f9',
-        magenta: themeData.terminal?.magenta || '#ff79c6',
-        cyan: themeData.terminal?.cyan || '#8be9fd',
-        white: '#bfbfbf',
-        brightBlack: '#4d4d4d',
-        brightRed: '#ff6e67',
-        brightGreen: '#5af78e',
-        brightYellow: '#f4f99d',
-        brightBlue: '#caa9fa',
-        brightMagenta: '#ff92d0',
-        brightCyan: '#9aedfe',
-        brightWhite: '#e6e6e6'
-    };
-    
-    // Ensure all color values have # prefix
-    Object.keys(theme).forEach(key => {
-        if (typeof theme[key] === 'string' && theme[key].trim() !== '' && !theme[key].startsWith('#')) {
-            theme[key] = '#' + theme[key].trim();
+        const existingLink = document.querySelector(`link[href="${theme.cdnUrl}"]`);
+        if (!existingLink) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = theme.cdnUrl;
+            document.head.appendChild(link);
         }
-    });
-    
-    return theme;
-}
-
-// Modify theme application function to ensure it correctly applies terminal theme
-function applyTheme(themeName) {
-    const theme = themes[themeName];
-    if (!theme) return;
-
-    //transition class
-    document.body.classList.add('theme-transitioning');
-
-    // Load theme CSS
-    if (theme.cdnUrl) {
-        loadThemeCSS(theme);
     }
 
-    //smooth transition
-    requestAnimationFrame(() => {
-        const root = document.documentElement;
-        const {bg, bgSecondary, text, textSecondary, accent, accentHover, border} = theme;
+    /**
+     * Get terminal theme configuration based on current theme
+     * @returns {Object} Terminal theme configuration
+     */
+    getTerminalTheme() {
+        // Get the current theme data
+        const themeData = themes[this.currentTheme] || themes["default"];
+        
+        // Build the terminal theme object
+        let theme = {
+            // Use CSS variables as primary colors
+            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim(),
+            foreground: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+            cursorAccent: getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim(),
+            selection: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() + '40', // Add transparency
+            
+            // Basic colors - get directly from theme object
+            black: '#000000',
+            red: themeData.terminal?.red || '#ff5555',
+            green: themeData.terminal?.green || '#50fa7b',
+            yellow: themeData.terminal?.yellow || '#f1fa8c',
+            blue: themeData.terminal?.blue || '#bd93f9',
+            magenta: themeData.terminal?.magenta || '#ff79c6',
+            cyan: themeData.terminal?.cyan || '#8be9fd',
+            white: '#bfbfbf',
+            brightBlack: '#4d4d4d',
+            brightRed: '#ff6e67',
+            brightGreen: '#5af78e',
+            brightYellow: '#f4f99d',
+            brightBlue: '#caa9fa',
+            brightMagenta: '#ff92d0',
+            brightCyan: '#9aedfe',
+            brightWhite: '#e6e6e6'
+        };
+        
+        // Ensure all color values have # prefix
+        Object.keys(theme).forEach(key => {
+            if (typeof theme[key] === 'string' && theme[key].trim() !== '' && !theme[key].startsWith('#')) {
+                theme[key] = '#' + theme[key].trim();
+            }
+        });
+        
+        return theme;
+    }
 
-        //Set property
-        root.style.setProperty('--bg-primary', bg);
-        root.style.setProperty('--bg-secondary', bgSecondary);
-        root.style.setProperty('--text-primary', text);
-        root.style.setProperty('--text-secondary', textSecondary);
-        root.style.setProperty('--accent', accent);
-        root.style.setProperty('--accent-hover', accentHover);
-        root.style.setProperty('--border', border);
+    /**
+     * Apply theme to the application
+     * @param {string} themeName - Name of the theme to apply
+     */
+    applyTheme(themeName) {
+        const theme = themes[themeName];
+        if (!theme) return;
 
-        // Ensure editor theme exists and apply it
-        if (typeof editor !== 'undefined' && editor) {
-            editor.setOption('theme', themeName === 'default' ? 'default' : themeName);
-        }
-        if (typeof assemblyView !== 'undefined' && assemblyView) {
-            assemblyView.setOption('theme', themeName === 'default' ? 'default' : themeName);
-        }
+        this.currentTheme = themeName;
+        
+        // Add transition class for smooth theme changes
+        document.body.classList.add('theme-transitioning');
 
-        // Update terminal theme - ensure getting the latest theme configuration
-        if (typeof terminal !== 'undefined' && terminal) {
-            // Refresh computed styles before applying
-            setTimeout(() => {
-                const terminalTheme = getTerminalTheme();
-                terminal.setOption('theme', terminalTheme);
-                
-                // Force terminal to redraw
-                terminal.refresh(0, terminal.rows - 1);
-                console.log('Applied terminal theme:', terminalTheme);
-            }, 50); // Short delay to ensure CSS variables are updated
-        }
-
-        // Local storage
-        localStorage.setItem('preferred-theme', themeName);
-
-        setTimeout(() => {
-            document.body.classList.remove('theme-transitioning');
-        }, 300);
-    });
-}
-
-function initializeThemeSelector() {
-    const themeSelect = document.getElementById('theme-select');
-
-    themeSelect.innerHTML = '';
-
-    Object.keys(themes).forEach(themeKey => {
-        const option = document.createElement('option');
-        option.value = themeKey;
-        option.textContent = themes[themeKey].name;
-        themeSelect.appendChild(option);
-    });
-
-    const savedTheme = localStorage.getItem('preferred-theme') || 'default';
-    themeSelect.value = savedTheme;
-
-    applyTheme(savedTheme);
-
-    themeSelect.addEventListener('change', (e) => {
-        applyTheme(e.target.value);
-    });
-}
-
-window.getTerminalTheme = getTerminalTheme;
-window.applyTheme = applyTheme;
-
-// Initialize themes
-document.addEventListener('DOMContentLoaded', function() {
-    // Load theme CSS from CDN
-    Object.values(themes).forEach(theme => {
+        // Load theme CSS if available
         if (theme.cdnUrl) {
-            loadThemeCSS(theme);
+            this.loadThemeCSS(theme);
         }
-    });
-    
-    initializeThemeSelector();
+
+        // Apply theme in next animation frame for performance
+        requestAnimationFrame(() => {
+            const root = document.documentElement;
+            const {bg, bgSecondary, text, textSecondary, accent, accentHover, border} = theme;
+
+            // Set CSS variables
+            root.style.setProperty('--bg-primary', bg);
+            root.style.setProperty('--bg-secondary', bgSecondary);
+            root.style.setProperty('--text-primary', text);
+            root.style.setProperty('--text-secondary', textSecondary);
+            root.style.setProperty('--accent', accent);
+            root.style.setProperty('--accent-hover', accentHover);
+            root.style.setProperty('--border', border);
+
+            // Apply theme to editor if it exists
+            if (typeof editor !== 'undefined' && editor) {
+                editor.setOption('theme', themeName === 'default' ? 'default' : themeName);
+            }
+            
+            // Apply theme to assembly view if it exists
+            if (typeof assemblyView !== 'undefined' && assemblyView) {
+                assemblyView.setOption('theme', themeName === 'default' ? 'default' : themeName);
+            }
+
+            // Update terminal theme with a slight delay to ensure CSS variables are updated
+            if (typeof terminal !== 'undefined' && terminal) {
+                setTimeout(() => {
+                    const terminalTheme = this.getTerminalTheme();
+                    terminal.setOption('theme', terminalTheme);
+                    
+                    // Force terminal to redraw
+                    terminal.refresh(0, terminal.rows - 1);
+                    console.log('Applied terminal theme:', terminalTheme);
+                }, 50);
+            }
+
+            // Save preference to local storage
+            localStorage.setItem('preferred-theme', themeName);
+
+            // Remove transition class after animation
+            setTimeout(() => {
+                document.body.classList.remove('theme-transitioning');
+            }, 300);
+        });
+    }
+
+    /**
+     * Initialize theme selector dropdown
+     */
+    initializeThemeSelector() {
+        this.themeSelect = document.getElementById('theme-select');
+        if (!this.themeSelect) return;
+
+        // Clear existing options
+        this.themeSelect.innerHTML = '';
+
+        // Add theme options
+        Object.keys(themes).forEach(themeKey => {
+            const option = document.createElement('option');
+            option.value = themeKey;
+            option.textContent = themes[themeKey].name;
+            this.themeSelect.appendChild(option);
+        });
+
+        // Set selected theme from storage or default
+        const savedTheme = localStorage.getItem('preferred-theme') || 'default';
+        this.themeSelect.value = savedTheme;
+
+        // Apply the saved theme
+        this.applyTheme(savedTheme);
+
+        // Add change event listener
+        this.themeSelect.addEventListener('change', (e) => {
+            this.applyTheme(e.target.value);
+        });
+    }
+
+    /**
+     * Preload all theme CSS files
+     */
+    preloadThemeCSS() {
+        Object.values(themes).forEach(theme => {
+            if (theme.cdnUrl) {
+                this.loadThemeCSS(theme);
+            }
+        });
+    }
+
+    /**
+     * Initialize the theme system
+     */
+    initialize() {
+        this.preloadThemeCSS();
+        this.initializeThemeSelector();
+    }
+}
+
+// Create theme manager instance
+const themeManager = new ThemeManager();
+
+// Maintain compatibility with existing code
+window.getTerminalTheme = () => themeManager.getTerminalTheme();
+window.applyTheme = (themeName) => themeManager.applyTheme(themeName);
+
+// Initialize themes on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    themeManager.initialize();
 });

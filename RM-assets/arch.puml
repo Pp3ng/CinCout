@@ -10,18 +10,22 @@ rectangle "Frontend" {
   component "CodeMirror Editor" as Editor
   component "Request Processing" as FrontProc
   component "Result Display" as Display
+  component "Xterm.js Terminal" as Terminal
 }
 
 rectangle "Backend (Node.js)" {
   component "Express Server" as Express
+  component "WebSocket Server" as WSServer
   component "API Routes" as Routes
   component "Temp File Manager" as TempMgr
+  component "Session Manager" as SessionMgr
   
   package "Services" {
     component "Compilation Service" as CompileService
     component "Memory Check Service" as MemcheckService
     component "Format Service" as FormatService
     component "Style Check Service" as StyleService
+    component "PTY Service" as PTYService
   }
   
   component "Utility Functions" as Utils
@@ -33,29 +37,45 @@ rectangle "External Tools" {
   component "Valgrind" as Valgrind
   component "clang-format" as ClangFormat
   component "cppcheck" as Cppcheck
+  component "Node-PTY" as NodePTY
 }
 
 database "Temporary Files" as TempFiles
+database "Active Sessions" as Sessions
 
 ' Define relationships
 Browser --> Nginx : HTTP/HTTPS requests
+Browser <--> WSServer : WebSocket connection
 Nginx --> Express : Proxy requests to port 9527
+Nginx --> WSServer : Proxy WebSocket connections
 Browser --> Editor : Input code
 Editor --> FrontProc : Submit for processing
 FrontProc --> Express : HTTP POST /api/compile\n(JSON payload)
+FrontProc --> WSServer : Send code for\ninteractive execution
 Express --> Routes
 Routes --> CompileService : Compilation request
 Routes --> MemcheckService : Memory check request
 Routes --> FormatService : Format request
 Routes --> StyleService : Style check request
 
+WSServer --> SessionMgr : Create/manage sessions
+WSServer --> PTYService : Interactive execution
+PTYService --> NodePTY : Create pseudo-terminal
+PTYService --> Sessions : Store active terminals
+NodePTY --> TempFiles : Execute compiled program
+WSServer --> Terminal : Send real-time output
+Terminal --> WSServer : Send user input
+
 CompileService --> TempMgr : Create temp files
 MemcheckService --> TempMgr : Create temp files
 FormatService --> TempMgr : Create temp files
 StyleService --> TempMgr : Create temp files
+PTYService --> TempMgr : Create temp files
 
 TempMgr --> TempFiles : Write code
 TempMgr --> Utils : Helper functions
+SessionMgr --> Sessions : Track active sessions
+SessionMgr --> TempMgr : Cleanup after sessions
 
 CompileService --> GCC : Execute
 CompileService --> Clang : Execute
@@ -76,23 +96,36 @@ StyleService --> FrontProc : Return results
 
 FrontProc --> Display : Present results
 Display --> Browser : Show output
+WSServer --> Terminal : Stream terminal output
+Terminal --> Browser : Display interactive terminal
 
 TempMgr ..> TempFiles : Auto-cleanup\nafter request
+SessionMgr ..> Sessions : Auto-cleanup\nafter disconnect
 
-note bottom of TempMgr
-  No session management:
-  - Each request creates isolated temporary files
-  - tmp module handles automatic cleanup
-  - Stateless design supports multiple concurrent users
+note bottom of SessionMgr
+  Session management:
+  - WebSocket connections create unique sessions
+  - Each session has isolated environment
+  - Sessions track terminal processes and temp files
+  - Auto-cleanup on timeout or disconnect
 end note
 
 note right of Nginx
   Production Configuration:
   - Handles HTTP/HTTPS requests
+  - WebSocket protocol support
   - SSL termination
   - Load balancing (if needed)
   - Security layer
   - Serves static content efficiently
+end note
+
+note right of NodePTY
+  Resource limits:
+  - Memory: 100MB
+  - CPU time: 10 seconds
+  - Stack size: 8MB
+  - Auto-termination for long-running processes
 end note
 
 @enduml

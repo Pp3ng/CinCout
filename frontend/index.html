@@ -118,8 +118,11 @@
             </a>
         </div>
     </div>
-    <div class="editor-container">
-        <div class="panel">
+    
+    <!-- New layout: start with full-screen editor -->
+    <div class="main-container">
+        <!-- Editor panel (full-screen initially) -->
+        <div class="panel editor-panel">
             <div class="panel-header">
                 <div class="button-container">
                     <button id="styleCheck" class="action-btn">
@@ -141,7 +144,9 @@
             </div>
             <textarea id="code"></textarea>
         </div>
-        <div class="panel">
+        
+        <!-- Output panel (hidden initially) -->
+        <div class="panel output-panel" id="outputPanel" style="display: none;">
             <div class="panel-header">
                 <div class="button-container">
                     <button id="outputTab" class="tab-btn active">
@@ -151,9 +156,14 @@
                         <i class="fas fa-cogs"></i> Assembly
                     </button>
                 </div>
-                <button id="clear" class="action-btn">
-                    <i class="fas fa-trash-alt"></i> Clear
-                </button>
+                <div class="button-container">
+                    <button id="clear" class="action-btn">
+                        <i class="fas fa-trash-alt"></i> Clear
+                    </button>
+                    <button id="closeOutput" class="action-btn">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
             </div>
             <div id="output" style="display: block;">// Program output will appear here</div>
             <div id="assembly" style="display: none;"></div>
@@ -192,6 +202,7 @@ function generateShortcutsList() {
         { action: 'Save Code', keys: isMac ? ['⌘', 'S'] : ['Ctrl', 'S'] },
         { action: 'Open Code File', keys: isMac ? ['⌘', 'O'] : ['Ctrl', 'O'] },
         { action: 'Toggle Code Folding', keys: isMac ? ['⌘', 'K'] : ['Ctrl', 'K'] },
+        { action: 'Close Output Panel', keys: ['Esc'] },
         { action: 'View Assembly', keys: isMac ? ['^', '1'] : ['Alt', '1'] },
         { action: 'Format Code', keys: isMac ? ['^', '2'] : ['Alt', '2'] },
         { action: 'Check Style', keys: isMac ? ['^', '3'] : ['Alt', '3'] },
@@ -229,6 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="js/handlers.js"></script>
 <script src="js/shortcuts.js"></script>
 <script src="js/templates.js"></script>
+<script src="js/layout.js"></script>
 
 </body>
 

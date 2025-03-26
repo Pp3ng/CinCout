@@ -43,6 +43,15 @@ document.addEventListener('keydown', function (e) {
         e.preventDefault();
         editor.foldCode(editor.getCursor());
     }
+    
+    // Escape key to close output panel
+    if (e.key === 'Escape') {
+        const outputPanel = document.getElementById('outputPanel');
+        if (outputPanel && outputPanel.style.display !== 'none') {
+            e.preventDefault();
+            document.getElementById("closeOutput").click();
+        }
+    }
 
     // Handle number shortcuts based on platform
     if (isMac) {

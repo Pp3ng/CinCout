@@ -64,13 +64,13 @@ body {
     min-width: 0;
 }
 
-/* Editor layout */
-.editor-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+/* New layout styles for main container */
+.main-container {
+    display: flex;
     gap: 18px;
     height: calc(100vh - 126px);
     min-height: 450px;
+    position: relative;
 }
 
 /* Panel styles */
@@ -84,6 +84,25 @@ body {
     height: 100%;
     max-height: calc(100vh - 126px);
     overflow: hidden;
+}
+
+/* Editor panel - initially full width */
+.editor-panel {
+    flex: 1;
+    transition: all 0.3s ease;
+}
+
+/* Editor panel when output is visible */
+.editor-panel.with-output {
+    flex: 0.6;
+}
+
+/* Output panel - fixed width when visible */
+.output-panel {
+    flex: 0.4;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
 }
 
 /* Panel header styles */
@@ -684,129 +703,45 @@ button#clear:hover {
     filter: brightness(1.1);
 }
 
-/* Responsive styles */
+/* Media query adjustments for new layout */
 @media (max-width: 1200px) {
-    .editor-container {
-        grid-template-columns: 1fr;
+    .main-container {
+        flex-direction: column;
         height: auto;
-        min-height: unset;
     }
-
-    .panel {
-        min-height: 450px;
+    
+    .editor-panel, 
+    .editor-panel.with-output {
+        flex: none;
+        height: 50vh;
+        min-height: 300px;
     }
-
-    select {
-        width: 99px;
-    }
-
-    select#template {
-        width: 126px;
-    }
-
-    select#optimization {
-        width: 117px;
+    
+    .output-panel {
+        flex: none;
+        height: 40vh;
+        min-height: 200px;
     }
 }
 
 @media (max-width: 768px) {
-    body {
+    .main-container {
+        gap: 9px;
+    }
+    
+    .panel {
         padding: 9px;
     }
-
-    .container {
-        padding: 0;
+    
+    .editor-panel, 
+    .editor-panel.with-output {
+        height: 45vh;
+        min-height: 250px;
     }
-
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 13.5px;
-    }
-
-    .title-shortcuts {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .controls {
-        width: 100%;
-        overflow-x: auto;
-        padding-bottom: 5px;
-        height: auto;
-        justify-content: flex-start;
-    }
-
-    .controls::-webkit-scrollbar {
-        height: 3.6px;
-    }
-
-    .controls::-webkit-scrollbar-track {
-        background: var(--bg-primary);
-        border-radius: 1.8px;
-    }
-
-    .controls::-webkit-scrollbar-thumb {
-        background: var(--accent);
-        border-radius: 1.8px;
-    }
-
-    .dropdown-content,
-    .shortcuts-content {
-        position: fixed;
-        top: auto;
-        left: 18px;
-        right: 18px;
-        width: auto;
-        max-width: calc(100% - 36px);
-    }
-
-    .shortcuts-panel {
-        max-width: none;
-    }
-
-    .panel-header {
-        padding: 7.2px;
-    }
-
-    .button-container {
-        gap: 5.4px;
-        padding: 3.6px;
-    }
-
-    .panel-header {
-        padding-bottom: 4.5px;
-    }
-
-    .button-container {
-        gap: 7.2px;
-        width: 100%;
-        overflow-x: auto;
-        padding-bottom: 4.5px;
-    }
-
-    .button-container::-webkit-scrollbar {
-        height: 3.6px;
-    }
-
-    .button-container::-webkit-scrollbar-track {
-        background: var(--bg-primary);
-        border-radius: 1.8px;
-    }
-
-    .button-container::-webkit-scrollbar-thumb {
-        background: var(--accent);
-        border-radius: 1.8px;
-    }
-
-    button {
-        padding: 3.6px 9px;
-        font-size: 11.7px;
-        flex-shrink: 0;
-    }
-
-    button i {
-        font-size: 10.8px;
+    
+    .output-panel {
+        height: 35vh;
+        min-height: 150px;
     }
 }
 

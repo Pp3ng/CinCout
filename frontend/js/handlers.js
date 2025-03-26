@@ -8,7 +8,7 @@ const WebCppUI = (function() {
   // Private variables
   let socket;
   let terminal;
-  let fitAddon;
+  window.fitAddon = null; // Make fitAddon global for layout.js
   let isCompiling = false;
   let isRunning = false;
   let sessionId;
@@ -29,7 +29,8 @@ const WebCppUI = (function() {
     viewAssembly: document.getElementById("viewAssembly"),
     styleCheck: document.getElementById("styleCheck"),
     clear: document.getElementById("clear"),
-    themeSelect: document.getElementById("theme-select")
+    themeSelect: document.getElementById("theme-select"),
+    outputPanel: document.getElementById("outputPanel")
   };
   
   /**
@@ -77,7 +78,18 @@ const WebCppUI = (function() {
         isCompiling = true;
         isRunning = false;
         updateStatus('Compiling...');
+        
+        // Make sure the output panel is visible
+        domElements.outputPanel.style.display = 'flex';
+        document.querySelector('.editor-panel').classList.add('with-output');
+        domElements.outputTab.click();
+        
         domElements.output.innerHTML = '<div class="loading">Compiling</div>';
+        
+        // Refresh editor after layout change
+        if (window.editor) {
+          setTimeout(() => window.editor.refresh(), 10);
+        }
         break;
         
       case 'compile-error':
@@ -92,8 +104,19 @@ const WebCppUI = (function() {
         isCompiling = false;
         isRunning = true;
         updateStatus('Running');
+        
+        // Make sure the output panel is visible
+        domElements.outputPanel.style.display = 'flex';
+        document.querySelector('.editor-panel').classList.add('with-output');
+        domElements.outputTab.click();
+        
         // Create terminal interface
         setupTerminal();
+        
+        // Refresh editor after layout change
+        if (window.editor) {
+          setTimeout(() => window.editor.refresh(), 10);
+        }
         break;
         
       case 'output':
@@ -160,15 +183,15 @@ const WebCppUI = (function() {
     });
     
     // Create fit addon to make terminal adapt to container size
-    fitAddon = new FitAddon.FitAddon();
-    terminal.loadAddon(fitAddon);
+    window.fitAddon = new FitAddon.FitAddon();
+    terminal.loadAddon(window.fitAddon);
     
     // Open terminal in container and resize
     terminal.open(document.getElementById('terminal-container'));
     
     // Ensure theme is applied and resize
     setTimeout(() => {
-      if (fitAddon) fitAddon.fit();
+      if (window.fitAddon) window.fitAddon.fit();
       // Force terminal redraw to apply new theme
       terminal.refresh(0, terminal.rows - 1);
       console.log('Terminal setup complete');
@@ -182,7 +205,7 @@ const WebCppUI = (function() {
     
     // Listen for window resize events
     window.addEventListener('resize', () => {
-      if (fitAddon) fitAddon.fit();
+      if (window.fitAddon) window.fitAddon.fit();
     });
   }
   

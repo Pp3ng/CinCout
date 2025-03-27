@@ -11,16 +11,24 @@ const activeSessions = new Map();
  * @param {string} sessionId - ID of the session to terminate
  */
 function terminateSession(sessionId) {
+  console.log(`Terminating session ${sessionId}`);
   const session = activeSessions.get(sessionId);
   if (session) {
     try {
       if (session.pty) {
-        session.pty.kill();
+        // Force kill the process to ensure it's terminated
+        try {
+          session.pty.kill('SIGKILL');
+        } catch (e) {
+          console.error(`Error killing process for session ${sessionId}:`, e);
+        }
       }
     } catch (e) {
-      console.error(`Error killing process for session ${sessionId}:`, e);
+      console.error(`Error during process termination for session ${sessionId}:`, e);
+    } finally {
+      // Always clean up the session even if termination failed
+      cleanupSession(sessionId);
     }
-    cleanupSession(sessionId);
   }
 }
 
@@ -29,16 +37,35 @@ function terminateSession(sessionId) {
  * @param {string} sessionId - ID of the session to clean up
  */
 function cleanupSession(sessionId) {
+  console.log(`Cleaning up session ${sessionId}`);
   const session = activeSessions.get(sessionId);
   if (session) {
     if (session.tmpDir) {
       try {
+        // Force removal of temporary directory
         session.tmpDir.removeCallback();
+        console.log(`Removed temporary directory for session ${sessionId}`);
       } catch (e) {
         console.error(`Error removing temporary directory for session ${sessionId}:`, e);
+        // Try a different approach if the callback method fails
+        try {
+          const { exec } = require('child_process');
+          exec(`rm -rf "${session.tmpDir.name}"`, (err) => {
+            if (err) {
+              console.error(`Failed to forcefully remove temp dir ${session.tmpDir.name}:`, err);
+            } else {
+              console.log(`Forcefully removed temp dir ${session.tmpDir.name}`);
+            }
+          });
+        } catch (execErr) {
+          console.error(`Failed to execute rm command:`, execErr);
+        }
       }
     }
+    
+    // Always remove the session from active sessions map
     activeSessions.delete(sessionId);
+    console.log(`Removed session ${sessionId} from active sessions`);
   }
 }
 

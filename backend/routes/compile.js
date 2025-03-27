@@ -22,7 +22,7 @@ function setupWebSocketHandlers(wss) {
       try {
         const data = JSON.parse(message);
         
-        switch(data.type) {
+        switch(data.type || data.action) {
           case 'compile':
             // Compile and run code using PTY
             compileAndRunWithPTY(ws, sessionId, data.code, data.lang, data.compiler, data.optimization);
@@ -33,6 +33,17 @@ function setupWebSocketHandlers(wss) {
             const session = activeSessions.get(sessionId);
             if (session && session.pty) {
               session.pty.write(data.input + '\r');
+            }
+            break;
+            
+          case 'cleanup':
+            // Handle explicit cleanup request
+            console.log(`Received cleanup request for session ${sessionId}`);
+            if (activeSessions.has(sessionId)) {
+              terminateSession(sessionId);
+              ws.send(JSON.stringify({
+                type: 'cleanup-complete'
+              }));
             }
             break;
         }
@@ -57,6 +68,8 @@ function setupWebSocketHandlers(wss) {
 
 // Compile and run code with PTY for true terminal experience
 function compileAndRunWithPTY(ws, sessionId, code, lang, compiler, optimization) {
+  console.log(`Compile request received for session ${sessionId}`);
+  
   // Security checks
   const validation = validateCodeSecurity(code);
   if (!validation.valid) {
@@ -67,10 +80,14 @@ function compileAndRunWithPTY(ws, sessionId, code, lang, compiler, optimization)
     return;
   }
 
-  // Terminate any existing session
-  terminateSession(sessionId);
+  // Check if session already exists and terminate it
+  if (activeSessions.has(sessionId)) {
+    console.log(`Session ${sessionId} already exists, terminating first`);
+    terminateSession(sessionId);
+  }
   
   // Create temporary directory
+  console.log(`Creating temporary directory for session ${sessionId}`);
   const tmpDir = tmp.dirSync({ prefix: 'webCpp-', unsafeCleanup: true });
   const sourceExtension = lang === 'cpp' ? 'cpp' : 'c';
   const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
@@ -90,57 +107,96 @@ function compileAndRunWithPTY(ws, sessionId, code, lang, compiler, optimization)
     
     // Compile command
     const compileCmd = `${compilerCmd} ${standardOption} ${optimizationOption} "${sourceFile}" -o "${outputFile}"`;
+    console.log(`Compiling with command: ${compileCmd}`);
     
     // Execute compilation
     executeCommand(compileCmd)
       .then(() => {
         // Compilation successful, notify client
+        console.log(`Compilation successful, preparing to run session ${sessionId}`);
         ws.send(JSON.stringify({ type: 'compile-success' }));
         
         // Create PTY instance with resource limitations
-        const ptyProcess = createPtyProcess(`"${outputFile}"`, {
-          cwd: tmpDir.name
-        });
-        
-        // Store PTY process and temporary directory
-        activeSessions.set(sessionId, { 
-          pty: ptyProcess,
-          tmpDir: tmpDir
-        });
-        
-        // Handle PTY output
-        ptyProcess.onData((data) => {
+        try {
+          const ptyProcess = createPtyProcess(`"${outputFile}"`, {
+            cwd: tmpDir.name
+          });
+          
+          // Store PTY process and temporary directory
+          activeSessions.set(sessionId, { 
+            pty: ptyProcess,
+            tmpDir: tmpDir
+          });
+          
+          // Handle PTY output
+          ptyProcess.onData((data) => {
+            try {
+              ws.send(JSON.stringify({
+                type: 'output',
+                output: data
+              }));
+            } catch (e) {
+              console.error(`Error sending output for session ${sessionId}:`, e);
+            }
+          });
+          
+          // Handle PTY exit
+          ptyProcess.onExit(({ exitCode }) => {
+            console.log(`Process exited with code ${exitCode} for session ${sessionId}`);
+            
+            try {
+              ws.send(JSON.stringify({
+                type: 'exit',
+                code: exitCode
+              }));
+            } catch (e) {
+              console.error(`Error sending exit message for session ${sessionId}:`, e);
+            }
+            
+            // Add a slight delay before cleanup to prevent race conditions
+            setTimeout(() => {
+              // Clean up session and temporary files
+              if (activeSessions.has(sessionId)) {
+                console.log(`Cleaning up session ${sessionId} after exit`);
+                cleanupSession(sessionId);
+              } else {
+                console.log(`Session ${sessionId} already cleaned up`);
+              }
+            }, 100);
+          });
+
+          // Set a timeout to kill long-running processes
+          setTimeout(() => {
+            if (activeSessions.has(sessionId)) {
+              const session = activeSessions.get(sessionId);
+              if (session && session.pty) {
+                console.log(`Timeout reached for session ${sessionId}, terminating`);
+                try {
+                  ws.send(JSON.stringify({
+                    type: 'error',
+                    output: '\r\nError: Program execution timed out (10 seconds)'
+                  }));
+                } catch (e) {
+                  console.error(`Error sending timeout message for session ${sessionId}:`, e);
+                }
+                terminateSession(sessionId);
+              }
+            }
+          }, 10000);
+        } catch (ptyError) {
+          console.error(`Error creating PTY for session ${sessionId}:`, ptyError);
           ws.send(JSON.stringify({
-            type: 'output',
-            output: data
-          }));
-        });
-        
-        // Handle PTY exit
-        ptyProcess.onExit(({ exitCode }) => {
-          ws.send(JSON.stringify({
-            type: 'exit',
-            code: exitCode
+            type: 'error',
+            output: `Error executing program: ${ptyError.message}`
           }));
           
-          // Clean up session and temporary files
-          cleanupSession(sessionId);
-        });
-
-        // Set a timeout to kill long-running processes
-        setTimeout(() => {
-          const session = activeSessions.get(sessionId);
-          if (session && session.pty) {
-            ws.send(JSON.stringify({
-              type: 'error',
-              output: '\r\nError: Program execution timed out (10 seconds)'
-            }));
-            terminateSession(sessionId);
-          }
-        }, 10000);
+          // Clean up on PTY creation error
+          tmpDir.removeCallback();
+        }
       })
       .catch((error) => {
         // Compilation error
+        console.error(`Compilation error for session ${sessionId}:`, error);
         ws.send(JSON.stringify({
           type: 'compile-error',
           output: sanitizeOutput(error) || error
@@ -150,6 +206,7 @@ function compileAndRunWithPTY(ws, sessionId, code, lang, compiler, optimization)
         tmpDir.removeCallback();
       });
   } catch (error) {
+    console.error(`Error setting up compilation for session ${sessionId}:`, error);
     ws.send(JSON.stringify({
       type: 'error',
       message: 'Error setting up compilation: ' + error.message

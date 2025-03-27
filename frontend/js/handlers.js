@@ -1,8 +1,3 @@
-/**
- * WebCpp - Frontend event handlers
- * Modular implementation of UI handlers and WebSocket communication
- */
-
 // Module pattern for better organization
 const WebCppUI = (function() {
   // Private variables
@@ -30,13 +25,25 @@ const WebCppUI = (function() {
     styleCheck: document.getElementById("styleCheck"),
     clear: document.getElementById("clear"),
     themeSelect: document.getElementById("theme-select"),
-    outputPanel: document.getElementById("outputPanel")
+    outputPanel: document.getElementById("outputPanel"),
+    closeOutput: document.getElementById("closeOutput")
   };
   
   /**
    * Initialize WebSocket connection
    */
   function initWebSocket() {
+    console.log('Initializing WebSocket connection');
+    
+    // Close any existing connection
+    if (socket) {
+      try {
+        socket.close();
+      } catch (e) {
+        console.error('Error closing existing WebSocket:', e);
+      }
+    }
+    
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     socket = new WebSocket(`${protocol}//${host}`);
@@ -46,13 +53,25 @@ const WebCppUI = (function() {
       updateStatus('Ready');
     };
     
-    socket.onmessage = handleWebSocketMessage;
+    socket.onmessage = (event) => {
+      console.log('WebSocket message received:', event.data.substring(0, 100) + (event.data.length > 100 ? '...' : ''));
+      handleWebSocketMessage(event);
+    };
     
     socket.onclose = () => {
       console.log('WebSocket connection closed');
       updateStatus('Disconnected');
+      
+      // Reset state
+      isCompiling = false;
+      isRunning = false;
+      
+      // Only try to reconnect if page is still active
       setTimeout(() => {
-        initWebSocket(); // Try to reconnect
+        if (document.visibilityState === 'visible') {
+          console.log('Attempting to reconnect WebSocket');
+          initWebSocket(); // Try to reconnect
+        }
       }, 3000);
     };
     
@@ -60,6 +79,308 @@ const WebCppUI = (function() {
       console.error('WebSocket error:', error);
       updateStatus('Connection Error');
     };
+  }
+  
+  /**
+   * Initialize UI event handlers
+   */
+  function initEventHandlers() {
+    console.log('Initializing event handlers');
+    
+    // Language change handler - must be added before template events
+    domElements.language.addEventListener('change', function() {
+      console.log('Language changed to:', this.value);
+      const lang = this.value;
+      
+      // Update available templates for the selected language
+      if (typeof updateTemplates === 'function') {
+        updateTemplates();
+        
+        // Set default template
+        const templateSelect = document.getElementById('template');
+        if (templateSelect) {
+          templateSelect.value = 'Hello World';
+          // Update editor with the selected template
+          if (window.editor && templates && templates[lang] && templates[lang]['Hello World']) {
+            window.editor.setValue(templates[lang]['Hello World']);
+          }
+        }
+      }
+    });
+    
+    // Template change handler
+    if (domElements.template) {
+      domElements.template.addEventListener('change', function() {
+        console.log('Template changed to:', this.value);
+        const templateName = this.value;
+        const lang = domElements.language.value;
+        
+        // Update editor with selected template
+        if (window.editor && templates && templates[lang] && templates[lang][templateName]) {
+          window.editor.setValue(templates[lang][templateName]);
+        }
+      });
+    }
+    
+    // Compile button event
+    domElements.compile.addEventListener('click', function() {
+      console.log('Compile button clicked');
+      
+      if (isCompiling || isRunning) {
+        console.log('A process is already running, ignoring compile request');
+        return;
+      }
+      
+      const code = window.editor.getValue();
+      const lang = domElements.language.value;
+      const compiler = document.getElementById('compiler').value;
+      const optimization = document.getElementById('optimization').value;
+      
+      console.log(`Compiling ${lang} code with ${compiler} (${optimization})`);
+      
+      if (code.trim() === '') {
+        console.error('Empty code, cannot compile');
+        domElements.output.innerHTML = '<div class="error-output">Error: Code cannot be empty</div>';
+        return;
+      }
+      
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        console.log('Sending compile request via WebSocket');
+        socket.send(JSON.stringify({
+          type: 'compile',
+          code: code,
+          lang: lang,
+          compiler: compiler,
+          optimization: optimization
+        }));
+      } else {
+        console.error('WebSocket not connected, cannot compile');
+        domElements.output.innerHTML = '<div class="error-output">Error: WebSocket connection not established</div>';
+      }
+    });
+    
+    // Close output panel event - send cleanup signal to backend
+    domElements.closeOutput.addEventListener('click', function() {
+      console.log('Close output button clicked, cleaning up session');
+      
+      if (socket && socket.readyState === WebSocket.OPEN && sessionId) {
+        console.log(`Sending cleanup request for session ${sessionId}`);
+        // Send cleanup request to backend
+        socket.send(JSON.stringify({
+          action: 'cleanup',
+          sessionId: sessionId
+        }));
+        
+        // Reset state
+        isRunning = false;
+        isCompiling = false;
+      } else {
+        console.log('No active session or WebSocket to clean up');
+      }
+    });
+    
+    // View Assembly button click handler
+    domElements.viewAssembly.addEventListener('click', function() {
+      console.log('View Assembly button clicked');
+      const code = window.editor.getValue();
+      const lang = domElements.language.value;
+      const compiler = document.getElementById("compiler").value;
+      const optimization = document.getElementById("optimization").value;
+
+      domElements.assemblyTab.click();
+
+      // Create a loading div
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'loading';
+      loadingDiv.textContent = 'Generating assembly code';
+
+      // Get assembly div and its CodeMirror container
+      const assemblyDiv = domElements.assembly;
+      const cmContainer = assemblyDiv.querySelector('.CodeMirror');
+
+      // Insert loadingDiv before cmcontainer
+      if (cmContainer) {
+        assemblyDiv.insertBefore(loadingDiv, cmContainer);
+      } else {
+        assemblyDiv.appendChild(loadingDiv);
+      }
+      
+      if (window.assemblyView) {
+        window.assemblyView.setValue('');
+      }
+
+      fetch('/api/compile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: code,
+          lang: lang,
+          compiler: compiler,
+          optimization: optimization,
+          action: 'assembly'
+        })
+      })
+      .then(response => response.text())
+      .then(data => {
+        // Remove loading div
+        if (loadingDiv.parentNode) {
+          loadingDiv.parentNode.removeChild(loadingDiv);
+        }
+        
+        const trimmedData = data.trim();
+        if (window.assemblyView) {
+          window.assemblyView.setValue(trimmedData);
+        }
+      })
+      .catch(error => {
+        // Remove loading div
+        if (loadingDiv.parentNode) {
+          loadingDiv.parentNode.removeChild(loadingDiv);
+        }
+        
+        if (window.assemblyView) {
+          window.assemblyView.setValue("Error: " + error);
+        }
+      });
+    });
+
+    // Memory check button click handler
+    domElements.memcheck.addEventListener('click', function() {
+      console.log('Memory check button clicked');
+      const code = window.editor.getValue();
+      const lang = domElements.language.value;
+      const compiler = document.getElementById("compiler").value;
+      const optimization = document.getElementById("optimization").value;
+
+      domElements.outputTab.click();
+      domElements.output.innerHTML = "<div class='loading'>Running memory check...</div>";
+
+      fetch('/api/memcheck', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: code,
+          lang: lang,
+          compiler: compiler,
+          optimization: optimization
+        })
+      })
+      .then(response => response.text())
+      .then(data => {
+        domElements.output.innerHTML = 
+          `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
+      })
+      .catch(error => {
+        domElements.output.innerHTML = 
+          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+      });
+    });
+
+    // Format button click handler
+    domElements.format.addEventListener('click', function() {
+      console.log('Format button clicked');
+      const code = window.editor.getValue();
+      const cursor = window.editor.getCursor();
+      const lang = domElements.language.value;
+
+      fetch('/api/format', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: code,
+          lang: lang
+        })
+      })
+      .then(response => response.text())
+      .then(data => {
+        // Remove leading and trailing newlines
+        const formattedData = data.replace(/^\n+/, '').replace(/\n+$/, '');
+        const scrollInfo = window.editor.getScrollInfo();
+        window.editor.setValue(formattedData);
+        window.editor.setCursor(cursor);
+        window.editor.scrollTo(scrollInfo.left, scrollInfo.top);
+        window.editor.refresh();
+      })
+      .catch(error => {
+        console.error("Format error:", error);
+      });
+    });
+
+    // Style check button click handler
+    domElements.styleCheck.addEventListener('click', function() {
+      console.log('Style check button clicked');
+      const code = window.editor.getValue();
+      const lang = domElements.language.value;
+
+      domElements.outputTab.click();
+      domElements.output.innerHTML = "<div class='loading'>Running cppcheck...</div>";
+
+      fetch('/api/styleCheck', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: code,
+          lang: lang
+        })
+      })
+      .then(response => response.text())
+      .then(data => {
+        const lines = data.split('\n');
+        const formattedLines = lines.map(line => {
+          if (line.trim()) {
+            return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${formatOutput(line)}</div>`;
+          }
+          return '';
+        }).filter(line => line);
+
+        domElements.output.innerHTML =
+          `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join('\n')}</div>`;
+      })
+      .catch(error => {
+        domElements.output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+      });
+    });
+
+    // Clear button click handler
+    domElements.clear.addEventListener('click', function() {
+      console.log('Clear button clicked');
+      domElements.output.innerHTML = `<pre class="default-output">// Program output will appear here</pre>`;
+      if (window.assemblyView) {
+        window.assemblyView.setValue("");
+      }
+    });
+    
+    // Initialize theme selection
+    if (domElements.themeSelect) {
+      domElements.themeSelect.addEventListener('change', function() {
+        const theme = this.value;
+        if (window.editor) {
+          window.editor.setOption('theme', theme);
+        }
+        if (window.assemblyView) {
+          window.assemblyView.setOption('theme', theme);
+        }
+      });
+    }
+    
+    // Initialize Vim mode toggle
+    if (domElements.vimMode) {
+      domElements.vimMode.addEventListener('change', function() {
+        if (window.editor) {
+          window.editor.setOption('keyMap', this.checked ? 'vim' : 'default');
+        }
+      });
+    }
+    
+    console.log('Event handlers initialized');
   }
   
   /**
@@ -72,12 +393,14 @@ const WebCppUI = (function() {
     switch(data.type) {
       case 'connected':
         sessionId = data.sessionId;
+        console.log(`Connected with session ID: ${sessionId}`);
         break;
         
       case 'compiling':
         isCompiling = true;
         isRunning = false;
         updateStatus('Compiling...');
+        console.log('Received compiling event');
         
         // Make sure the output panel is visible
         domElements.outputPanel.style.display = 'flex';
@@ -96,6 +419,7 @@ const WebCppUI = (function() {
         isCompiling = false;
         isRunning = false;
         updateStatus('Compilation Error');
+        console.log('Received compilation error');
         domElements.output.innerHTML = 
           `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data.output)}</div>`;
         break;
@@ -104,6 +428,18 @@ const WebCppUI = (function() {
         isCompiling = false;
         isRunning = true;
         updateStatus('Running');
+        console.log('Received compilation success, setting up terminal');
+        
+        // Clear any previous terminal instance to prevent double execution
+        if (terminal) {
+          console.log('Disposing existing terminal');
+          try {
+            terminal.dispose();
+          } catch (e) {
+            console.error('Error disposing terminal:', e);
+          }
+          terminal = null;
+        }
         
         // Make sure the output panel is visible
         domElements.outputPanel.style.display = 'flex';
@@ -136,19 +472,42 @@ const WebCppUI = (function() {
         break;
         
       case 'error':
+        console.error('Received error from server:', data.output || data.message);
         if (terminal) {
-          terminal.write(`\x1b[31m${data.output}\x1b[0m`);
+          terminal.write(`\x1b[31m${data.output || data.message}\x1b[0m`);
         }
         break;
         
       case 'exit':
         isRunning = false;
         updateStatus('Completed');
+        console.log(`Program exited with code: ${data.code}`);
+        
         if (terminal) {
           terminal.write(`\r\n\x1b[90m[Program exited with code: ${data.code}]\x1b[0m\r\n`);
         }
         break;
+        
+      case 'cleanup-complete':
+        console.log('Session cleanup completed on server');
+        break;
+        
+      default:
+        console.log(`Unknown message type: ${data.type}`);
     }
+  }
+  
+  /**
+   * Format compiler output for display
+   */
+  function formatOutput(output) {
+    if (!output) return '';
+    return output
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/error:/g, '<span class="error-highlight">error:</span>')
+      .replace(/warning:/g, '<span class="warning-highlight">warning:</span>')
+      .replace(/note:/g, '<span class="note-highlight">note:</span>');
   }
   
   /**
@@ -156,6 +515,7 @@ const WebCppUI = (function() {
    * @param {string} status - Status text to display
    */
   function updateStatus(status) {
+    console.log(`Status updated: ${status}`);
     const statusElement = document.getElementById('connection-status');
     if (statusElement) {
       statusElement.textContent = status;
@@ -166,6 +526,9 @@ const WebCppUI = (function() {
    * Set up terminal interface
    */
   function setupTerminal() {
+    console.log('Setting up terminal interface');
+    
+    // Clear previous content
     domElements.output.innerHTML = '<div id="terminal-container" class="terminal-container"></div>';
     
     // Make sure to get the correct theme first
@@ -179,7 +542,22 @@ const WebCppUI = (function() {
       fontFamily: '"JetBrains Mono", "Fira Code", monospace',
       theme: currentTheme,
       allowTransparency: true,
-      rendererType: 'dom'
+      rendererType: 'dom',
+      // Add custom key handling to prevent terminal from capturing Escape key
+      customKeyEventHandler: (event) => {
+        // Pass through all non-Escape key events to terminal
+        if (event.key !== 'Escape') {
+          return true;
+        }
+        
+        // Don't let terminal handle Escape key
+        // Our global document listener will handle it
+        if (event.type === 'keydown' && event.key === 'Escape') {
+          return false;
+        }
+        
+        return true;
+      }
     });
     
     // Create fit addon to make terminal adapt to container size
@@ -187,13 +565,31 @@ const WebCppUI = (function() {
     terminal.loadAddon(window.fitAddon);
     
     // Open terminal in container and resize
-    terminal.open(document.getElementById('terminal-container'));
+    const terminalContainer = document.getElementById('terminal-container');
+    if (!terminalContainer) {
+      console.error('Terminal container not found');
+      return;
+    }
+    
+    terminal.open(terminalContainer);
     
     // Ensure theme is applied and resize
     setTimeout(() => {
-      if (window.fitAddon) window.fitAddon.fit();
+      if (window.fitAddon) {
+        try {
+          window.fitAddon.fit();
+        } catch (e) {
+          console.error('Error fitting terminal:', e);
+        }
+      }
+      
       // Force terminal redraw to apply new theme
-      terminal.refresh(0, terminal.rows - 1);
+      try {
+        terminal.refresh(0, terminal.rows - 1);
+      } catch (e) {
+        console.error('Error refreshing terminal:', e);
+      }
+      
       console.log('Terminal setup complete');
     }, 50);
     
@@ -205,7 +601,13 @@ const WebCppUI = (function() {
     
     // Listen for window resize events
     window.addEventListener('resize', () => {
-      if (window.fitAddon) window.fitAddon.fit();
+      if (window.fitAddon) {
+        try {
+          window.fitAddon.fit();
+        } catch (e) {
+          console.error('Error fitting terminal on resize:', e);
+        }
+      }
     });
   }
   
@@ -213,11 +615,13 @@ const WebCppUI = (function() {
    * Set up terminal input handling
    */
   function setupTerminalInput() {
+    console.log('Setting up terminal input handling');
     let lineBuffer = '';
     
     // Handle terminal input
     terminal.onData(data => {
       if (!isRunning || !socket || socket.readyState !== WebSocket.OPEN) {
+        console.log('Not sending terminal input: program not running or socket closed');
         return;
       }
 
@@ -225,6 +629,7 @@ const WebCppUI = (function() {
       if (data === '\r') {
         lastInput = lineBuffer; // Record the last sent input
         terminal.write('\r\n');
+        console.log(`Sending input to program: "${lineBuffer}"`);
         socket.send(JSON.stringify({
           type: 'input',
           input: lineBuffer
@@ -251,391 +656,27 @@ const WebCppUI = (function() {
   }
   
   /**
-   * Compile and run code via WebSocket
-   */
-  function compileViaWebSocket() {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      // Fall back to original HTTP-based handler if WebSocket not available
-      return compileViaHTTP();
-    }
-    
-    // If already compiling, don't do anything
-    if (isCompiling) {
-      return;
-    }
-    
-    const code = editor.getValue();
-    const lang = domElements.language.value;
-    const compiler = document.getElementById("compiler").value;
-    const optimization = document.getElementById("optimization").value;
-    
-    domElements.outputTab.click();
-    
-    // Send compile request via WebSocket
-    socket.send(JSON.stringify({
-      type: 'compile',
-      code: code,
-      lang: lang,
-      compiler: compiler,
-      optimization: optimization
-    }));
-  }
-  
-  /**
-   * Original HTTP-based compile handler (fallback)
-   */
-  function compileViaHTTP() {
-    const code = editor.getValue();
-    const lang = domElements.language.value;
-    const compiler = document.getElementById("compiler").value;
-    const optimization = document.getElementById("optimization").value;
-
-    domElements.outputTab.click();
-    domElements.output.innerHTML = "<div class='loading'>Compiling and running...</div>";
-
-    fetch('/api/compile', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        code: code,
-        lang: lang,
-        compiler: compiler,
-        optimization: optimization,
-        action: 'compile'
-      })
-    })
-    .then(response => response.text())
-    .then(data => {
-      domElements.output.innerHTML = `<pre>${formatOutput(data)}</pre>`;
-    })
-    .catch(error => {
-      domElements.output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-    });
-  }
-  
-  /**
-   * Format output with syntax highlighting
-   * @param {string} text - Raw output text
-   * @returns {string} Formatted HTML
-   */
-  function formatOutput(text) {
-    text = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/error:/gi, '<span class="error-text">error:</span>')
-      .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
-      .replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
-
-    if (text.includes('HEAP SUMMARY') || text.includes('LEAK SUMMARY')) {
-      text = text
-        .replace(/###LINE:(\d+)###/g, '(line: <span class="line-number">$1</span>)')
-        .replace(/###LEAK:(.*?)###/g, '<div class="memcheck-leak">$1</div>')
-        .trim()// Remove leading and trailing whitespace
-        .replace(/\n{2,}/g, '\n'); // Remove multiple newlines
-    }
-
-    return text;
-  }
-  
-  /**
-   * Create button ripple effect
-   * @param {Event} event - Click event
-   */
-  function createRippleEffect(event) {
-    const button = event.currentTarget;
-
-    //Remove existing ripples
-    const ripples = button.getElementsByClassName("ripple");
-    Array.from(ripples).forEach(ripple => ripple.remove());
-
-    //Create a new ripple
-    const circle = document.createElement("span");
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
-    const radius = diameter / 2;
-
-    //Set position of ripple
-    const rect = button.getBoundingClientRect();
-    const x = event.clientX - rect.left - radius;
-    const y = event.clientY - rect.top - radius;
-
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${x}px`;
-    circle.style.top = `${y}px`;
-    circle.classList.add("ripple");
-
-    button.appendChild(circle);
-
-    circle.addEventListener("animationend", () => circle.remove());
-  }
-  
-  /**
-   * Initialize UI elements and event listeners
-   */
-  function initializeUI() {
-    // Template change handler
-    domElements.template.addEventListener("change", function (e) {
-      const lang = domElements.language.value;
-      const templateName = e.target.value;
-      editor.setValue(templates[lang][templateName]);
-    });
-
-    // Vim mode toggle handler
-    domElements.vimMode.addEventListener("change", function (e) {
-      editor.setOption("keyMap", e.target.checked ? "vim" : "default");
-    });
-
-    // Language change handler
-    domElements.language.addEventListener("change", function () {
-      const lang = this.value;
-      updateTemplates();
-      domElements.template.value = "Hello World";
-      editor.setValue(templates[lang]["Hello World"]);
-    });
-
-    // Output tab click handler
-    domElements.outputTab.addEventListener("click", function () {
-      domElements.output.style.display = 'block';
-      domElements.assembly.style.display = 'none';
-      this.classList.add('active');
-      domElements.assemblyTab.classList.remove('active');
-    });
-
-    // Assembly tab click handler
-    domElements.assemblyTab.addEventListener("click", function () {
-      domElements.output.style.display = 'none';
-      domElements.assembly.style.display = 'block';
-      this.classList.add('active');
-      domElements.outputTab.classList.remove('active');
-    });
-    
-    // Store the original compile button handler if it exists
-    const originalCompileHandler = domElements.compile.onclick;
-    
-    // Replace with WebSocket-enabled handler
-    domElements.compile.onclick = originalCompileHandler 
-      ? function() { compileViaWebSocket.call(this); }
-      : compileViaWebSocket;
-
-    // Memcheck button click handler
-    domElements.memcheck.onclick = function () {
-      const code = editor.getValue();
-      const lang = domElements.language.value;
-      const compiler = document.getElementById("compiler").value;
-      const optimization = document.getElementById("optimization").value;
-
-      domElements.outputTab.click();
-      domElements.output.innerHTML = "<div class='loading'>Running memory check...</div>";
-
-      fetch('/api/memcheck', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: code,
-          lang: lang,
-          compiler: compiler,
-          optimization: optimization
-        })
-      })
-      .then(response => response.text())
-      .then(data => {
-        domElements.output.innerHTML = 
-          `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
-      })
-      .catch(error => {
-        domElements.output.innerHTML = 
-          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-      });
-    };
-
-    // Format button click handler
-    domElements.format.onclick = function () {
-      const code = editor.getValue();
-      const cursor = editor.getCursor();
-      const lang = domElements.language.value;
-
-      fetch('/api/format', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: code,
-          lang: lang
-        })
-      })
-      .then(response => response.text())
-      .then(data => {
-        // Remove leading and trailing newlines
-        const formattedData = data.replace(/^\n+/, '').replace(/\n+$/, '');
-        const scrollInfo = editor.getScrollInfo();
-        editor.setValue(formattedData);
-        editor.setCursor(cursor);
-        editor.scrollTo(scrollInfo.left, scrollInfo.top);
-        editor.refresh();
-      })
-      .catch(error => {
-        console.error("Format error:", error);
-      });
-    };
-
-    // View assembly button click handler
-    domElements.viewAssembly.onclick = function () {
-      const code = editor.getValue();
-      const lang = domElements.language.value;
-      const compiler = document.getElementById("compiler").value;
-      const optimization = document.getElementById("optimization").value;
-
-      domElements.assemblyTab.click();
-
-      // Create a loading div
-      const loadingDiv = document.createElement('div');
-      loadingDiv.className = 'loading';
-      loadingDiv.textContent = 'Generating assembly code';
-
-      //Get assembly div and its CodeMirror container
-      const assemblyDiv = domElements.assembly;
-      const cmContainer = assemblyDiv.querySelector('.CodeMirror');
-
-      // Insert loadingDiv before cmcontainer
-      assemblyDiv.insertBefore(loadingDiv, cmContainer);
-      assemblyView.setValue('');
-
-      fetch('/api/compile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: code,
-          lang: lang,
-          compiler: compiler,
-          optimization: optimization,
-          action: 'assembly'
-        })
-      })
-      .then(response => response.text())
-      .then(data => {
-        loadingDiv.remove();
-        const trimmedData = data.trim();
-        assemblyView.setValue(trimmedData);
-      })
-      .catch(error => {
-        loadingDiv.remove();
-        assemblyView.setValue("Error: " + error);
-      });
-    };
-
-    // Style check button click handler
-    domElements.styleCheck.onclick = function () {
-      const code = editor.getValue();
-      const lang = domElements.language.value;
-
-      domElements.outputTab.click();
-      domElements.output.innerHTML = "<div class='loading'>Running cppcheck...</div>";
-
-      fetch('/api/styleCheck', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: code,
-          lang: lang
-        })
-      })
-      .then(response => response.text())
-      .then(data => {
-        const lines = data.split('\n');
-        const formattedLines = lines.map(line => {
-          if (line.trim()) {
-            return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${formatOutput(line)}</div>`;
-          }
-          return '';
-        }).filter(line => line);
-
-        domElements.output.innerHTML =
-          `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join('\n')}</div>`;
-      })
-      .catch(error => {
-        domElements.output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-      });
-    };
-
-    // Clear button click handler
-    domElements.clear.onclick = function () {
-      domElements.output.innerHTML = `<pre class="default-output">// Program output will appear here</pre>`;
-      assemblyView.setValue("");
-    };
-
-    // Theme change handler for terminal
-    domElements.themeSelect.addEventListener('change', function() {
-      if (terminal) {
-        setTimeout(() => {
-          const newTheme = window.getTerminalTheme ? window.getTerminalTheme() : {};
-          console.log('Theme changed, applying terminal theme:', newTheme);
-          
-          // Update terminal theme
-          terminal.setOption('theme', newTheme);
-          
-          // force terminal redraw to apply new theme
-          terminal.refresh(0, terminal.rows - 1);
-        }, 50); // Delay to allow theme change to propagate
-      }
-    });
-
-    // Handle window resize
-    window.addEventListener('resize', function () {
-      editor.refresh();
-      assemblyView.refresh();
-    });
-
-    // Initialize ripple effect for buttons
-    document.querySelectorAll("button").forEach(button => {
-      button.addEventListener("click", createRippleEffect);
-    });
-  }
-  
-  /**
-   * Initialize status indicator
-   */
-  function initializeStatusIndicator() {
-    const panelHeader = document.querySelectorAll('.panel-header')[1];
-    if (panelHeader) {
-      const buttonContainer = panelHeader.querySelector('.button-container');
-      if (buttonContainer) {
-        // Create status element
-        const statusEl = document.createElement('div');
-        statusEl.className = 'status-indicator';
-        statusEl.innerHTML = 'Status: <span id="connection-status">Connecting...</span>';
-        
-        // Add status element to button container
-        buttonContainer.appendChild(statusEl);
-      }
-    }
-  }
-  
-  /**
-   * Initialize the application
+   * Initialize all components
    */
   function init() {
-    document.addEventListener('DOMContentLoaded', function() {
-      initializeStatusIndicator();
-      initializeUI();
-      initWebSocket();
-    });
+    console.log('Initializing WebCpp UI');
+    
+    // Initialize WebSocket connection
+    initWebSocket();
+    
+    // Initialize event handlers
+    initEventHandlers();
+    
+    // ... other initialization code ...
+    
+    console.log('WebCpp UI initialization complete');
   }
   
   // Public API
   return {
-    init: init,
-    formatOutput: formatOutput
+    init: init
   };
 })();
 
-// Initialize the application
-WebCppUI.init();
+// Initialize the UI when the DOM is ready
+document.addEventListener('DOMContentLoaded', WebCppUI.init);

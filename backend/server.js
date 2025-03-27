@@ -27,6 +27,7 @@ const { router: compileRouter, setupWebSocketHandlers } = require('./routes/comp
 const memcheckRouter = require('./routes/memcheck');
 const formatRouter = require('./routes/format');
 const styleCheckRouter = require('./routes/styleCheck');
+const templatesRouter = require('./routes/templates');
 
 // Set up WebSocket handlers for compilation
 setupWebSocketHandlers(wss);
@@ -36,6 +37,7 @@ app.use('/api/compile', compileRouter);
 app.use('/api/memcheck', memcheckRouter);
 app.use('/api/format', formatRouter);
 app.use('/api/styleCheck', styleCheckRouter);
+app.use('/api/templates', templatesRouter);
 
 // Start server
 server.listen(port, () => {

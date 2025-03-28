@@ -1,0 +1,231 @@
+/* Button container styles */
+.button-container {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 4.5px 0;
+}
+
+/* Base button styles */
+button {
+  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+  color: var(--text-primary);
+  border: none;
+  padding: 5.4px 10.8px;
+  border-radius: 5.4px;
+  cursor: pointer;
+  font-size: 12.6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 5.4px;
+  height: 29px;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* Button variants */
+.primary-btn {
+  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+}
+
+.secondary-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.tab-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+}
+
+.tab-btn.active {
+  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+  border-color: var(--accent);
+}
+
+/* Hover effects */
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  filter: brightness(1.1);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  filter: brightness(0.95);
+}
+
+/* Icon animation */
+button i {
+  transition: transform 0.3s ease;
+}
+
+button:hover i {
+  transform: scale(1.2);
+}
+
+/* Existing button SVG animation */
+button svg {
+  transition: transform 0.3s ease;
+  font-size: 1.1em;
+}
+
+button:hover svg {
+  transform: scale(1.2);
+}
+
+/* Tooltip */
+button[title] {
+  position: relative;
+}
+
+/* Special button styles */
+button#compile {
+  background: linear-gradient(45deg, #006633, #00b359);
+}
+
+button#compile:hover {
+  background: linear-gradient(45deg, #007a3d, #00cc66);
+}
+
+button#clear {
+  background: linear-gradient(45deg, #993333, #cc4d4d);
+}
+
+button#clear:hover {
+  background: linear-gradient(45deg, #b33c3c, #e65c5c);
+}
+
+/* Ripple effect */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(0);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Loading animation for buttons */
+button.loading {
+  position: relative;
+  cursor: wait;
+}
+
+button.loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: button-loading-spinner 0.8s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+  from {
+    transform: rotate(0turn);
+  }
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* Disabled button state */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Toggle switch styles */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 7.2px;
+  height: 29px;
+  flex-shrink: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 41.4px;
+  height: 21.6px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-primary);
+  transition: .3s;
+  border-radius: 24px;
+  border: 2px solid var(--border);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14.4px;
+  width: 14.4px;
+  left: 3.6px;
+  bottom: 1.8px;
+  background-color: var(--text-primary);
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+}
+
+input:checked + .slider:before {
+  transform: translateX(18px);
+}
+
+#toggle-shortcuts,
+#learn-btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 7.2px 14.4px;
+  border-radius: 3.6px;
+  cursor: pointer;
+  font-size: 12.6px;
+  transition: all 0.2s ease;
+}
+
+#toggle-shortcuts:hover,
+#learn-btn:hover {
+  border-color: var(--accent);
+  background-color: rgba(14, 99, 156, 0.1);
+} 

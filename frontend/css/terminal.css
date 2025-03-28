@@ -1,0 +1,98 @@
+/* Terminal styles */
+.terminal-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  padding: 4px;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.xterm {
+  height: 100%;
+  color: var(--text-primary) !important;
+}
+
+.xterm-viewport {
+  width: 100% !important;
+  transition: background-color 0.3s ease !important;
+  background-color: var(--bg-primary) !important;
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+}
+
+/* Ensure terminal interface matches theme color scheme */
+.xterm-screen {
+  transition: background-color 0.3s ease, color 0.3s ease;
+  color: var(--text-primary) !important;
+}
+
+.xterm-rows {
+  color: var(--text-primary) !important;
+}
+
+/* Individual line in xterm */
+.xterm-rows > div {
+  color: var(--text-primary) !important;
+}
+
+/* Synchronize terminal cursor color with theme */
+.xterm-cursor {
+  background-color: var(--accent) !important;
+  color: var(--bg-primary) !important;
+}
+
+.xterm-cursor-outline {
+  border-color: var(--accent) !important;
+}
+
+/* Terminal text selection color */
+.xterm-selection {
+  background-color: var(--accent) !important;
+  opacity: 0.3;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  padding: 0 10px;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+#connection-status {
+  font-weight: bold;
+  margin-left: 5px;
+  color: var(--accent);
+  transition: color 0.3s ease;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Override styles for xterm scrollbar */
+.xterm-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.xterm-viewport::-webkit-scrollbar-track {
+  display: none;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  display: none;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  display: none;
+} 

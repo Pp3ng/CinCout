@@ -1,0 +1,79 @@
+/* Loading indicator */
+.loading {
+  padding: 18px;
+  text-align: center;
+  color: var(--accent);
+  font-style: italic;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.loading:after {
+  content: '...';
+  animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+  0%,
+  20% {
+    content: '.';
+  }
+
+  40% {
+    content: '..';
+  }
+
+  60% {
+    content: '...';
+  }
+
+  80%,
+  100% {
+    content: '';
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 7.2px;
+  height: 7.2px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 3.6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 3.6px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+/* Error and warning outputs */
+.error-output {
+  background-color: rgba(255, 85, 85, 0.1);
+  border-left: 3px solid #ff5555;
+}
+
+.style-check-output {
+  background-color: rgba(189, 147, 249, 0.1);
+  border-left: 3px solid #bd93f9;
+}
+
+/* Line and column number highlighting */
+.line-number {
+  color: #bd93f9;
+  font-weight: bold;
+}
+
+.column-number {
+  color: #8be9fd;
+  font-weight: bold;
+} 

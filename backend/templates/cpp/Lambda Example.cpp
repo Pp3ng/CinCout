@@ -87,4 +87,4 @@ auto main(int argc, const char* argv[]) -> int
     mutableAndReturnLambda();
     genericLambda();
     return 0;
-} 
+}

@@ -12,8 +12,12 @@ const port = 9527;
 // Create HTTP server and integrate with Express
 const server = http.createServer(app);
 
-// Setup WebSocket server
-const wss = new WebSocket.Server({ server });
+// Setup WebSocket server with ping enabled
+const wss = new WebSocket.Server({ 
+  server,
+  // Add ping interval to detect disconnected clients
+  clientTracking: true
+});
 
 // Middleware
 app.use(cors());
@@ -32,6 +36,24 @@ const templatesRouter = require('./routes/templates');
 // Set up WebSocket handlers for compilation
 setupWebSocketHandlers(wss);
 
+// Set up heartbeat mechanism to keep connections alive
+const interval = setInterval(function ping() {
+  wss.clients.forEach(function each(ws) {
+    if (ws.isAlive === false) {
+      console.log("Terminating inactive WebSocket connection");
+      return ws.terminate();
+    }
+    
+    ws.isAlive = false;
+    ws.ping('', false, true); // send ping frame to client
+  });
+}, 30000); // check every 30 seconds
+
+// Clean up on server close
+wss.on('close', function close() {
+  clearInterval(interval);
+});
+
 // Use routes
 app.use('/api/compile', compileRouter);
 app.use('/api/memcheck', memcheckRouter);
@@ -42,4 +64,4 @@ app.use('/api/templates', templatesRouter);
 // Start server
 server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
-}); 
+});

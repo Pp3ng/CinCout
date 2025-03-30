@@ -15,6 +15,14 @@ function setupWebSocketHandlers(wss) {
   wss.on('connection', (ws) => {
     console.log('New WebSocket connection established for compilation');
     
+    // Set up heartbeat mechanism
+    ws.isAlive = true;
+    
+    ws.on('pong', () => {
+      // Mark the connection as alive when pong is received
+      ws.isAlive = true;
+    });
+    
     // Create unique session ID for each connection
     const sessionId = require('uuid').v4();
     
@@ -23,6 +31,15 @@ function setupWebSocketHandlers(wss) {
         const data = JSON.parse(message);
         
         switch(data.type || data.action) {
+          case 'ping':
+            // Handle ping from client
+            console.log(`Received ping from client ${sessionId}`);
+            ws.send(JSON.stringify({
+              type: 'pong',
+              timestamp: Date.now()
+            }));
+            break;
+            
           case 'compile':
             // Compile and run code using PTY
             compileAndRunWithPTY(ws, sessionId, data.code, data.lang, data.compiler, data.optimization);
@@ -296,4 +313,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = { router, setupWebSocketHandlers }; 
+module.exports = { router, setupWebSocketHandlers };

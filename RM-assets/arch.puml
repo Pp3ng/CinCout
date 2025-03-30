@@ -10,11 +10,21 @@ rectangle "Frontend" {
   component "Xterm.js Terminal" as Terminal
   component "Result Display" as Display
   component "Request Processing" as FrontProc
+  
+  component "WebSocket Connection Manager" as WsManager {
+    component "Heartbeat System" as HeartbeatClient
+    component "Auto-Reconnection" as Reconnect
+  }
 }
 
 rectangle "Backend" {
   component "Express Server" as Express
   component "WebSocket Server" as WSServer
+  
+  component "WebSocket Health Monitor" as WsMonitor {
+    component "Connection Tracking" as ConnTracker
+    component "Ping/Pong System" as HeartbeatServer
+  }
   
   package "API Routes (routes/)" {
     component "Compile API" as CompileAPI
@@ -61,8 +71,15 @@ Browser <--> Terminal : Interactive I/O
 ' Frontend connections
 Editor --> FrontProc : Submit for processing
 FrontProc --> Express : HTTP POST requests
-FrontProc --> WSServer : Send code for interactive execution
+FrontProc --> WsManager : Send code for interactive execution
 FrontProc --> Display : Present results
+
+' WebSocket Connection Management
+WsManager --> WSServer : Maintains persistent connection
+HeartbeatClient --> HeartbeatServer : Sends periodic pings
+HeartbeatServer --> HeartbeatClient : Responds with pongs
+Reconnect --> WsManager : Handles connection failures
+WsManager --> Reconnect : Triggers on disconnect
 
 ' Nginx connections
 Browser --> Nginx : HTTP/HTTPS requests
@@ -75,6 +92,11 @@ Express --> CompileAPI : Route compile requests
 Express --> MemcheckAPI : Route memory check requests
 Express --> FormatAPI : Route format requests
 Express --> StyleAPI : Route style check requests
+
+' WebSocket server and monitoring
+WSServer --> ConnTracker : Tracks connection status
+ConnTracker --> HeartbeatServer : Manages timeout detection
+WSServer --> WsMonitor : Inactivity detection
 
 ' API to Service connections
 CompileAPI --> CompileService : Process
@@ -128,26 +150,6 @@ note right of NodePTY
   - CPU time: 10 seconds
   - Stack size: 8MB
   - Auto-termination for long-running processes
-end note
-
-' Session management note
-note bottom of SessionMgr
-  Session management:
-  - WebSocket connections create unique sessions
-  - Each session has isolated environment
-  - Sessions track terminal processes and temp files
-  - Auto-cleanup on timeout or disconnect
-end note
-
-' Nginx note
-note right of Nginx
-  Production Configuration:
-  - Handles HTTP/HTTPS requests
-  - WebSocket protocol support
-  - SSL termination
-  - Load balancing (if needed)
-  - Security layer
-  - Serves static content efficiently
 end note
 
 @enduml

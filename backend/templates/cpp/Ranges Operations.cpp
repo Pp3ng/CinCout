@@ -13,16 +13,12 @@ int main(int argc, const char* argv[])
     };
 
     auto view = numbers
-        | std::views::join              // Flatten 2D vector into 1D
-        | std::views::filter([](int n)
-            { return n % 2 == 0; })     // Keep only even numbers
-        | std::views::transform([](int n)
-            { return n * n; })          // Square each number
-        | std::views::filter([](int n)
-            { return n > 20; })         // Keep numbers greater than 20
-        | std::views::transform([](int n)
-            { return n / 2; })          // Halve each number
-        | std::views::take(4);          // Take first 4 elements
+        | std::views::join // Flatten 2D vector into 1D
+        | std::views::filter([](int n) { return n % 2 == 0; }) // Keep only even numbers
+        | std::views::transform([](int n) { return n * n; }) // Square each number
+        | std::views::filter([](int n) { return n > 20; }) // Keep numbers greater than 20
+        | std::views::transform([](int n) { return n / 2; }) // Halve each number
+        | std::views::take(4); // Take first 4 elements
 
     for (int n : view) {
         std::cout << n << " ";
@@ -30,4 +26,4 @@ int main(int argc, const char* argv[])
     std::cout << std::endl;
 
     return 0;
-} 
+}

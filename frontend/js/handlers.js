@@ -8,6 +8,9 @@ const WebCppUI = (function() {
   let isRunning = false;
   let sessionId;
   let lastInput = '';
+  let pingInterval;
+  let reconnectTimeout;
+  let isReconnecting = false;
   
   // DOM element cache for performance
   const domElements = {
@@ -35,6 +38,15 @@ const WebCppUI = (function() {
   function initWebSocket() {
     console.log('Initializing WebSocket connection');
     
+    // Clear any existing ping intervals and reconnect timeouts
+    if (pingInterval) {
+      clearInterval(pingInterval);
+    }
+    
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+    }
+    
     // Close any existing connection
     if (socket) {
       try {
@@ -46,39 +58,126 @@ const WebCppUI = (function() {
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    socket = new WebSocket(`${protocol}//${host}`);
     
-    socket.onopen = () => {
-      console.log('WebSocket connection established');
-      updateStatus('Ready');
-    };
-    
-    socket.onmessage = (event) => {
-      console.log('WebSocket message received:', event.data.substring(0, 100) + (event.data.length > 100 ? '...' : ''));
-      handleWebSocketMessage(event);
-    };
-    
-    socket.onclose = () => {
-      console.log('WebSocket connection closed');
-      updateStatus('Disconnected');
+    try {
+      socket = new WebSocket(`${protocol}//${host}`);
       
-      // Reset state
-      isCompiling = false;
-      isRunning = false;
+      socket.onopen = () => {
+        console.log('WebSocket connection established');
+        updateStatus('Ready');
+        isReconnecting = false;
+        
+        // Set up ping interval to keep connection alive
+        pingInterval = setInterval(() => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            console.log('Sending ping to keep connection alive');
+            socket.send(JSON.stringify({
+              type: 'ping',
+              timestamp: Date.now()
+            }));
+          }
+        }, 20000); // Send ping every 20 seconds
+      };
       
-      // Only try to reconnect if page is still active
-      setTimeout(() => {
-        if (document.visibilityState === 'visible') {
-          console.log('Attempting to reconnect WebSocket');
-          initWebSocket(); // Try to reconnect
+      socket.onmessage = (event) => {
+        console.log('WebSocket message received:', event.data.substring(0, 100) + (event.data.length > 100 ? '...' : ''));
+        handleWebSocketMessage(event);
+      };
+      
+      socket.onclose = (event) => {
+        console.log('WebSocket connection closed', event.code, event.reason);
+        updateStatus('Disconnected');
+        
+        // Clear ping interval
+        if (pingInterval) {
+          clearInterval(pingInterval);
         }
-      }, 3000);
-    };
-    
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      updateStatus('Connection Error');
-    };
+        
+        // Reset state
+        isCompiling = false;
+        isRunning = false;
+        
+        // Only try to reconnect if page is still active and we're not already reconnecting
+        if (document.visibilityState === 'visible' && !isReconnecting) {
+          console.log('Scheduling WebSocket reconnection');
+          isReconnecting = true;
+          reconnectTimeout = setTimeout(() => {
+            console.log('Attempting to reconnect WebSocket');
+            initWebSocket(); // Try to reconnect
+          }, 3000);
+        }
+      };
+      
+      socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        updateStatus('Connection Error');
+      };
+    } catch (error) {
+      console.error('Error creating WebSocket:', error);
+      updateStatus('Connection Failed');
+      
+      // Try to reconnect if page is still active
+      if (document.visibilityState === 'visible' && !isReconnecting) {
+        console.log('Scheduling WebSocket reconnection after error');
+        isReconnecting = true;
+        reconnectTimeout = setTimeout(() => {
+          console.log('Attempting to reconnect WebSocket after error');
+          initWebSocket(); // Try to reconnect
+        }, 5000); // Wait longer after an error
+      }
+    }
+  }
+  
+  /**
+   * Check WebSocket connection and reconnect if needed
+   * @returns {Promise} Resolves when connection is ready
+   */
+  function ensureConnection() {
+    return new Promise((resolve, reject) => {
+      // If socket exists and is open, we're good to go
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        resolve();
+        return;
+      }
+      
+      // If socket exists but is connecting, wait for it
+      if (socket && socket.readyState === WebSocket.CONNECTING) {
+        const onOpen = () => {
+          socket.removeEventListener('open', onOpen);
+          socket.removeEventListener('error', onError);
+          resolve();
+        };
+        
+        const onError = (err) => {
+          socket.removeEventListener('open', onOpen);
+          socket.removeEventListener('error', onError);
+          reject(new Error('Connection failed while waiting'));
+        };
+        
+        socket.addEventListener('open', onOpen);
+        socket.addEventListener('error', onError);
+        return;
+      }
+      
+      // Otherwise, try to reconnect
+      console.log('Reconnecting WebSocket before operation');
+      initWebSocket();
+      
+      // Set up listener for connection
+      const checkConnection = setInterval(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          clearInterval(checkConnection);
+          clearTimeout(connectionTimeout);
+          resolve();
+        }
+      }, 100);
+      
+      // Set a timeout for connection attempts
+      const connectionTimeout = setTimeout(() => {
+        clearInterval(checkConnection);
+        reject(new Error('Connection timed out'));
+      }, 5000);
+    });
   }
   
   /**
@@ -123,7 +222,7 @@ const WebCppUI = (function() {
     }
     
     // Compile button event
-    domElements.compile.addEventListener('click', function() {
+    domElements.compile.addEventListener('click', async function() {
       console.log('Compile button clicked');
       
       if (isCompiling || isRunning) {
@@ -144,7 +243,10 @@ const WebCppUI = (function() {
         return;
       }
       
-      if (socket && socket.readyState === WebSocket.OPEN) {
+      try {
+        // Ensure WebSocket connection is active before sending
+        await ensureConnection();
+        
         console.log('Sending compile request via WebSocket');
         socket.send(JSON.stringify({
           type: 'compile',
@@ -153,29 +255,35 @@ const WebCppUI = (function() {
           compiler: compiler,
           optimization: optimization
         }));
-      } else {
-        console.error('WebSocket not connected, cannot compile');
-        domElements.output.innerHTML = '<div class="error-output">Error: WebSocket connection not established</div>';
+      } catch (error) {
+        console.error('WebSocket connection failed:', error);
+        domElements.output.innerHTML = '<div class="error-output">Error: WebSocket connection failed. Please try again.</div>';
+        updateStatus('Connection Failed');
       }
     });
     
     // Close output panel event - send cleanup signal to backend
-    domElements.closeOutput.addEventListener('click', function() {
+    domElements.closeOutput.addEventListener('click', async function() {
       console.log('Close output button clicked, cleaning up session');
       
-      if (socket && socket.readyState === WebSocket.OPEN && sessionId) {
-        console.log(`Sending cleanup request for session ${sessionId}`);
-        // Send cleanup request to backend
-        socket.send(JSON.stringify({
-          action: 'cleanup',
-          sessionId: sessionId
-        }));
+      try {
+        // Ensure WebSocket connection is active before sending
+        await ensureConnection();
         
-        // Reset state
-        isRunning = false;
-        isCompiling = false;
-      } else {
-        console.log('No active session or WebSocket to clean up');
+        if (sessionId) {
+          console.log(`Sending cleanup request for session ${sessionId}`);
+          // Send cleanup request to backend
+          socket.send(JSON.stringify({
+            action: 'cleanup',
+            sessionId: sessionId
+          }));
+          
+          // Reset state
+          isRunning = false;
+          isCompiling = false;
+        }
+      } catch (error) {
+        console.log('Failed to send cleanup request:', error);
       }
     });
     
@@ -380,6 +488,17 @@ const WebCppUI = (function() {
       });
     }
     
+    // Add visibility change event listener to reconnect when tab becomes visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        // Check if we need to reconnect
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          console.log('Page became visible, reconnecting WebSocket');
+          initWebSocket();
+        }
+      }
+    });
+    
     console.log('Event handlers initialized');
   }
   
@@ -391,6 +510,11 @@ const WebCppUI = (function() {
     const data = JSON.parse(event.data);
     
     switch(data.type) {
+      case 'pong':
+        // Received pong from server, connection is alive
+        console.log('Received pong from server');
+        break;
+        
       case 'connected':
         sessionId = data.sessionId;
         console.log(`Connected with session ID: ${sessionId}`);
@@ -500,15 +624,25 @@ const WebCppUI = (function() {
   /**
    * Format compiler output for display
    */
-  function formatOutput(output) {
-    if (!output) return '';
-    return output
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/error:/g, '<span class="error-highlight">error:</span>')
-      .replace(/warning:/g, '<span class="warning-highlight">warning:</span>')
-      .replace(/note:/g, '<span class="note-highlight">note:</span>');
-  }
+  function formatOutput(text) {
+    text = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/error:/gi, '<span class="error-text">error:</span>')
+        .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
+        .replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
+
+    if (text.includes('HEAP SUMMARY') || text.includes('LEAK SUMMARY')) {
+        text = text
+            .replace(/###LINE:(\d+)###/g, '(line: <span class="line-number">$1</span>)')
+            .replace(/###LEAK:(.*?)###/g, '<div class="memcheck-leak">$1</div>')
+            .trim()// Remove leading and trailing whitespace
+            .replace(/\n{2,}/g, '\n'); // Remove multiple newlines
+    }
+
+    return text;
+}
   
   /**
    * Update status display
@@ -674,7 +808,11 @@ const WebCppUI = (function() {
   
   // Public API
   return {
-    init: init
+    init: init,
+    reconnect: function() {
+      // Public method to force reconnection
+      initWebSocket();
+    }
   };
 })();
 

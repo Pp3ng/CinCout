@@ -6,8 +6,7 @@ const router = express.Router();
 const fs = require('fs-extra');
 const path = require('path');
 const tmp = require('tmp');
-const { validateCode, sanitizeOutput, getCompilerCommand, getStandardOption, executeCommand } = require('../utils/helpers');
-const { validateCodeSecurity } = require('../utils/security');
+const { sanitizeOutput, getCompilerCommand, getStandardOption, executeCommand } = require('../utils/helpers');
 const { activeSessions, terminateSession, cleanupSession, createPtyProcess } = require('../utils/sessionManager');
 
 // WebSocket setup functions
@@ -82,6 +81,25 @@ function setupWebSocketHandlers(wss) {
     ws.send(JSON.stringify({ type: 'connected', sessionId }));
   });
 }
+
+const validateCodeSecurity = (code) => {
+  // Basic validation
+  if (!code || code.trim() === '') {
+    return { valid: false, error: 'Error: No code provided' };
+  }
+
+  // Check code length
+  if (code.length > 50000) {
+    return { valid: false, error: 'Error: Code exceeds maximum length of 50,000 characters' };
+  }
+
+  // Check line count
+  if (code.split('\n').length > 1000) {
+    return { valid: false, error: 'Error: Code exceeds maximum of 1,000 lines' };
+  }
+
+  return { valid: true };
+};
 
 // Compile and run code with PTY for true terminal experience
 function compileAndRunWithPTY(ws, sessionId, code, lang, compiler, optimization) {
@@ -182,24 +200,6 @@ function compileAndRunWithPTY(ws, sessionId, code, lang, compiler, optimization)
             }, 100);
           });
 
-          // Set a timeout to kill long-running processes
-          setTimeout(() => {
-            if (activeSessions.has(sessionId)) {
-              const session = activeSessions.get(sessionId);
-              if (session && session.pty) {
-                console.log(`Timeout reached for session ${sessionId}, terminating`);
-                try {
-                  ws.send(JSON.stringify({
-                    type: 'error',
-                    output: '\r\nError: Program execution timed out (10 seconds)'
-                  }));
-                } catch (e) {
-                  console.error(`Error sending timeout message for session ${sessionId}:`, e);
-                }
-                terminateSession(sessionId);
-              }
-            }
-          }, 10000);
         } catch (ptyError) {
           console.error(`Error creating PTY for session ${sessionId}:`, ptyError);
           ws.send(JSON.stringify({
@@ -284,21 +284,23 @@ router.post('/', async (req, res) => {
         
         // Execute compiled program with resource limits
         const command = `ulimit -v 102400 && ulimit -m 102400 && ulimit -t 10 && ulimit -s 8192 && "${outputFile}" 2>&1`;
-        
+
         try {
           const { stdout } = await executeCommand(command, { timeout: 10000 });
-          res.send(stdout);
-        } catch (error) {
-          if (typeof error === 'string' && error.includes('bad_alloc')) {
-            return res.status(400).send('Error: Program exceeded memory limit (100MB)');
-          } else if (typeof error === 'string' && error.includes('Killed')) {
-            return res.status(400).send('Error: Program killed (exceeded memory limit)');
-          } else if (error.code === 124 || error.code === 142) {
-            return res.status(400).send('Error: Program execution timed out (10 seconds)');
-          } else {
-            return res.status(400).send(error);
-          }
-        }
+          ws.send(JSON.stringify({ type: 'output', output: stdout }));
+          } catch (error) {
+            let errorMessage = '';
+            if (typeof error === 'string' && error.includes('bad_alloc')) {
+              errorMessage = 'Error: Program exceeded memory limit (100MB)';
+            } else if (typeof error === 'string' && error.includes('Killed')) {
+              errorMessage = 'Error: Program killed (exceeded memory limit)';
+            } else if (error.code === 124 || error.code === 142) {
+              errorMessage = 'Error: Program execution timed out (10 seconds)';
+            } else {
+              errorMessage = error.toString();
+            }
+          ws.send(JSON.stringify({ type: 'error', output: `\r\n${errorMessage}` }));
+}
       } else if (action === 'assembly') {
         // Return assembly code
         const assemblyCode = fs.readFileSync(asmFile, 'utf8');

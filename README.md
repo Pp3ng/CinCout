@@ -52,7 +52,6 @@ http://39.105.45.170
 |                        | Code Formatting      | Automatic code formatting           | `backend/routes/format.js`        |
 | **Connection**         | WebSocket Management | Server-side connection monitoring   | `backend/server.js`               |
 |                        | Ping/Pong Protocol   | Keep-alive detection system         | `backend/routes/compile.js`       |
-| **Security**           | Code Validation      | Protection against dangerous calls  | `backend/utils/security.js`       |
 |                        | Resource Limits      | Memory, CPU and timeout controls    | `backend/utils/sessionManager.js` |
 | **Session Management** | Temporary Files      | Secure creation and cleanup         | `backend/utils/helpers.js`        |
 |                        | Process Isolation    | Session-based process management    | `backend/utils/sessionManager.js` |

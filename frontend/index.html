@@ -171,73 +171,10 @@
     </div>
 </div>
 
-<!-- OS detection and keyboard shortcuts display script -->
-<script>
-// Detect operating system
-function detectOS() {
-    const userAgent = window.navigator.userAgent;
-    const platform = window.navigator.platform;
-    const macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'];
-    
-    if (macosPlatforms.indexOf(platform) !== -1) {
-        return 'MacOS';
-    } else if (platform.indexOf('Win') !== -1) {
-        return 'Windows';
-    } else if (/Linux/.test(platform)) {
-        return 'Linux';
-    } else {
-        return 'Unknown';
-    }
-}
-
-// Generate shortcuts list
-function generateShortcutsList() {
-    const os = detectOS();
-    const isMac = os === 'MacOS';
-    
-    // Define shortcuts
-    const shortcuts = [
-        { action: 'Compile and Run', keys: isMac ? ['⌘', 'return'] : ['Ctrl', 'Enter'] },
-        { action: 'Clear Output', keys: isMac ? ['⌘', 'L'] : ['Ctrl', 'L'] },
-        { action: 'Save Code', keys: isMac ? ['⌘', 'S'] : ['Ctrl', 'S'] },
-        { action: 'Open Code File', keys: isMac ? ['⌘', 'O'] : ['Ctrl', 'O'] },
-        { action: 'Toggle Code Folding', keys: isMac ? ['⌘', 'K'] : ['Ctrl', 'K'] },
-        { action: 'Close Output Panel', keys: ['Esc'] },
-        { action: 'View Assembly', keys: isMac ? ['^', '1'] : ['Alt', '1'] },
-        { action: 'Format Code', keys: isMac ? ['^', '2'] : ['Alt', '2'] },
-        { action: 'Check Style', keys: isMac ? ['^', '3'] : ['Alt', '3'] },
-        { action: 'Memory Check', keys: isMac ? ['^', '4'] : ['Alt', '4'] }
-    ];
-    
-    // Generate HTML
-    const shortcutsContainer = document.getElementById('shortcuts-content');
-    
-    // Create list
-    const ul = document.createElement('ul');
-    
-    // Generate items for each shortcut
-    shortcuts.forEach(shortcut => {
-        const li = document.createElement('li');
-        
-        // Generate key combination
-        const keyHtml = shortcut.keys.map(key => `<kbd>${key}</kbd>`).join(' + ');
-        
-        li.innerHTML = `${keyHtml} ${shortcut.action}`;
-        ul.appendChild(li);
-    });
-    
-    shortcutsContainer.appendChild(ul);
-}
-
-// Execute when page is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    generateShortcutsList();
-});
-</script>
-
 <script src="js/themes.js"></script>
 <script src="js/templates.js"></script>
 <script src="js/editor.js"></script>
+<script src="js/websocket.js"></script>
 <script src="js/handlers.js"></script>
 <script src="js/shortcuts.js"></script>
 <script src="js/layout.js"></script>

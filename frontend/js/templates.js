@@ -22,8 +22,6 @@ async function loadTemplates() {
             document.getElementById("template").value = "Hello World";
             window.editor.setValue(templateData[lang]["Hello World"]);
         }
-        
-        console.log('Templates loaded successfully');
     } catch (error) {
         console.error('Failed to load templates:', error);
     }

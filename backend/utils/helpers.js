@@ -1,7 +1,3 @@
-/**
- * Helper utilities for web compiler application
- */
-
 const fs = require('fs-extra');
 const path = require('path');
 const tmp = require('tmp');

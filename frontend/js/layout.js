@@ -1,7 +1,5 @@
 // Handles showing/hiding panels and managing the layout
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing layout manager');
-    
     // Panel elements
     const outputPanel = document.getElementById('outputPanel');
     const editorPanel = document.querySelector('.editor-panel');
@@ -18,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle closing the output panel
     // Note: The actual cleanup is handled in handlers.js
     closeOutputBtn.addEventListener('click', function() {
-        console.log('Closing output panel');
         outputPanel.style.display = 'none';
         editorPanel.classList.remove('with-output');
         // Need to refresh the CodeMirror instance when size changes
@@ -34,11 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Only handle the panel visibility with capture phase
             // This ensures the panel is shown BEFORE the original event handler is executed
             button.addEventListener('click', function showPanel(e) {
-                console.log(`Action button clicked: ${button.id} - showing panel`);
-                
                 // Only handle panel visibility, don't call original handlers
                 if (outputPanel.style.display === 'none') {
-                    console.log('Showing output panel');
                     outputPanel.style.display = 'flex';
                     editorPanel.classList.add('with-output');
                     
@@ -54,10 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Otherwise default to output tab
                         document.getElementById('outputTab').click();
                     }
-                } else {
-                    console.log('Output panel already visible');
-                }
-                
+                } 
                 // The original event handler will be called automatically via event propagation
                 // Don't try to manually invoke any handlers here as it would cause double execution
             }, true); // true = capture phase, runs before bubbling phase
@@ -66,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Tab switching
     document.getElementById('outputTab').addEventListener('click', function() {
-        console.log('Switching to output tab');
         this.classList.add('active');
         document.getElementById('assemblyTab').classList.remove('active');
         document.getElementById('output').style.display = 'block';
@@ -74,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     document.getElementById('assemblyTab').addEventListener('click', function() {
-        console.log('Switching to assembly tab');
         this.classList.add('active');
         document.getElementById('outputTab').classList.remove('active');
         document.getElementById('output').style.display = 'none';
@@ -99,6 +88,4 @@ document.addEventListener('DOMContentLoaded', function() {
             window.fitAddon.fit();
         }
     });
-    
-    console.log('Layout manager initialization complete');
 }); 

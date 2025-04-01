@@ -1,18 +1,17 @@
-/**
- * WebCpp IDE Keyboard Shortcuts Manager
- * 
- * This module handles all keyboard shortcuts for the WebCpp IDE, providing:
- * - Platform-aware shortcuts (Mac/non-Mac)
- * - Special handling for terminal focus states
- * - Support for file operations, code compilation, and tool shortcuts
- */
 (() => {
   //=============================================================================
   // Constants and Configuration
   //=============================================================================
   
+  // Detect operating system
+ function detectOS() {
+  const userAgent = window.navigator.userAgent;
+  return /Mac/.test(userAgent) ? 'MacOS' : 'Other';
+}
+
   // Platform detection (Mac or other platforms)
-  const IS_MAC = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const OS = detectOS();
+  const IS_MAC = OS === 'MacOS';
   
   // Get primary command key (Command for Mac, Ctrl for others)
   const CMD_KEY = IS_MAC ? 'meta' : 'ctrl';
@@ -27,7 +26,8 @@
     STYLE_CHECK: "styleCheck",
     MEMORY_CHECK: "memcheck",
     OUTPUT_PANEL: "outputPanel",
-    LANGUAGE: "language"
+    LANGUAGE: "language",
+    SHORTCUTS_CONTENT: "shortcuts-content"
   };
 
   //=============================================================================
@@ -43,23 +43,28 @@
     common: {
       [`${CMD_KEY}+Enter`]: {
         action: () => triggerButton(DOM_IDS.COMPILE),
-        description: "Compile and run code"
+        description: "Compile and run code",
+        displayKeys: IS_MAC ? ['⌘', 'return'] : ['Ctrl', 'Enter']
       },
       [`${CMD_KEY}+l`]: {
         action: () => triggerButton(DOM_IDS.CLEAR),
-        description: "Clear terminal output"
+        description: "Clear terminal output",
+        displayKeys: IS_MAC ? ['⌘', 'L'] : ['Ctrl', 'L']
       },
       [`${CMD_KEY}+s`]: {
         action: saveCodeToFile,
-        description: "Save code to file"
+        description: "Save code to file",
+        displayKeys: IS_MAC ? ['⌘', 'S'] : ['Ctrl', 'S']
       },
       [`${CMD_KEY}+o`]: {
         action: openCodeFromFile,
-        description: "Open code from file"
+        description: "Open code from file",
+        displayKeys: IS_MAC ? ['⌘', 'O'] : ['Ctrl', 'O']
       },
       [`${CMD_KEY}+k`]: {
         action: toggleCodeFolding,
-        description: "Toggle code folding"
+        description: "Toggle code folding",
+        displayKeys: IS_MAC ? ['⌘', 'K'] : ['Ctrl', 'K']
       }
     },
     
@@ -67,19 +72,23 @@
     mac: {
       'ctrl+1': {
         action: () => triggerButton(DOM_IDS.VIEW_ASSEMBLY),
-        description: "View assembly code"
+        description: "View assembly code",
+        displayKeys: ['^', '1']
       },
       'ctrl+2': {
         action: () => triggerButton(DOM_IDS.FORMAT),
-        description: "Format code"
+        description: "Format code",
+        displayKeys: ['^', '2']
       },
       'ctrl+3': {
         action: () => triggerButton(DOM_IDS.STYLE_CHECK),
-        description: "Style check"
+        description: "Style check",
+        displayKeys: ['^', '3']
       },
       'ctrl+4': {
         action: () => triggerButton(DOM_IDS.MEMORY_CHECK),
-        description: "Memory check"
+        description: "Memory check",
+        displayKeys: ['^', '4']
       }
     },
     
@@ -87,19 +96,32 @@
     other: {
       'alt+1': {
         action: () => triggerButton(DOM_IDS.VIEW_ASSEMBLY),
-        description: "View assembly code"
+        description: "View assembly code",
+        displayKeys: ['Alt', '1']
       },
       'alt+2': {
         action: () => triggerButton(DOM_IDS.FORMAT),
-        description: "Format code"
+        description: "Format code",
+        displayKeys: ['Alt', '2']
       },
       'alt+3': {
         action: () => triggerButton(DOM_IDS.STYLE_CHECK),
-        description: "Style check"
+        description: "Style check",
+        displayKeys: ['Alt', '3']
       },
       'alt+4': {
         action: () => triggerButton(DOM_IDS.MEMORY_CHECK),
-        description: "Memory check"
+        description: "Memory check",
+        displayKeys: ['Alt', '4']
+      }
+    },
+    
+    // Special keys
+    special: {
+      'Escape': {
+        action: closeOutputPanel,
+        description: "Close output panel",
+        displayKeys: ['Esc']
       }
     }
   };
@@ -277,6 +299,51 @@
   }
   
   //=============================================================================
+  // Shortcuts Display
+  //=============================================================================
+  
+  /**
+   * Generates the shortcuts list for display in the UI
+   */
+  function generateShortcutsList() {
+    const shortcutsContainer = document.getElementById(DOM_IDS.SHORTCUTS_CONTENT);
+    if (!shortcutsContainer) return;
+    
+    // Clear existing content
+    shortcutsContainer.innerHTML = '';
+    
+    // Create list
+    const ul = document.createElement('ul');
+    
+    // Add common shortcuts
+    Object.values(SHORTCUTS.common).forEach(shortcut => {
+      const li = document.createElement('li');
+      const keyHtml = shortcut.displayKeys.map(key => `<kbd>${key}</kbd>`).join(' + ');
+      li.innerHTML = `${keyHtml} - ${shortcut.description}`;
+      ul.appendChild(li);
+    });
+    
+    // Add platform-specific shortcuts
+    const platformShortcuts = IS_MAC ? SHORTCUTS.mac : SHORTCUTS.other;
+    Object.values(platformShortcuts).forEach(shortcut => {
+      const li = document.createElement('li');
+      const keyHtml = shortcut.displayKeys.map(key => `<kbd>${key}</kbd>`).join(' + ');
+      li.innerHTML = `${keyHtml} - ${shortcut.description}`;
+      ul.appendChild(li);
+    });
+    
+    // Add special keys
+    Object.values(SHORTCUTS.special).forEach(shortcut => {
+      const li = document.createElement('li');
+      const keyHtml = shortcut.displayKeys.map(key => `<kbd>${key}</kbd>`).join(' + ');
+      li.innerHTML = `${keyHtml} - ${shortcut.description}`;
+      ul.appendChild(li);
+    });
+    
+    shortcutsContainer.appendChild(ul);
+  }
+  
+  //=============================================================================
   // Initialization
   //=============================================================================
   
@@ -296,45 +363,8 @@
       }
     }, true); // true enables capture phase
     
-    // Optional: Log available shortcuts for debugging
-    // console.table(getShortcutList());
-  }
-  
-  /**
-   * Get a list of all shortcuts for debugging
-   * @returns {Array} List of shortcuts
-   */
-  function getShortcutList() {
-    const shortcutList = [];
-    
-    // Add common shortcuts
-    Object.entries(SHORTCUTS.common).forEach(([key, value]) => {
-      shortcutList.push({
-        key: key,
-        description: value.description,
-        platform: 'All platforms'
-      });
-    });
-    
-    // Add Mac shortcuts
-    Object.entries(SHORTCUTS.mac).forEach(([key, value]) => {
-      shortcutList.push({
-        key: key,
-        description: value.description,
-        platform: 'Mac'
-      });
-    });
-    
-    // Add other platform shortcuts
-    Object.entries(SHORTCUTS.other).forEach(([key, value]) => {
-      shortcutList.push({
-        key: key,
-        description: value.description,
-        platform: 'Other'
-      });
-    });
-    
-    return shortcutList;
+    // Generate shortcuts list when DOM is ready
+    document.addEventListener('DOMContentLoaded', generateShortcutsList);
   }
   
   // Initialize the shortcuts system

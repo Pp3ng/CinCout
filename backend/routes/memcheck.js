@@ -13,7 +13,7 @@ const {
   getCompilerCommand,
   getStandardOption,
   sanitizeOutput,
-  formatMemcheckOutput
+  formatOutput
 } = require('../utils/helpers');
 
 router.post('/', async (req, res) => {
@@ -45,7 +45,9 @@ router.post('/', async (req, res) => {
       try {
         await executeCommand(compileCmd);
       } catch (stderr) {
-        return res.status(400).send(`Compilation Error:\n${sanitizeOutput(stderr)}`);
+        const sanitizedError = sanitizeOutput(stderr);
+        const formattedError = formatOutput(sanitizedError);
+        return res.status(400).send(`Compilation Error:\n${formattedError}`);
       }
       
       // Run Valgrind
@@ -71,7 +73,10 @@ router.post('/', async (req, res) => {
         }
       }
       
-      res.send(formatMemcheckOutput(report));
+      // Format and prepare the result with the new unified formatter
+      const formattedReport = formatOutput(report, 'memcheck');
+      res.send(formattedReport);
+      
     } finally {
       // Clean up temporary files
       tmpDir.removeCallback();
@@ -81,4 +86,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

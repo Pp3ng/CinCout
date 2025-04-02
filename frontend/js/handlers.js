@@ -5,7 +5,6 @@ const WebCppUI = (function() {
   window.fitAddon = null; // Make fitAddon global for layout.js
   let isCompiling = false;
   let isRunning = false;
-  let lastInput = '';
   
   // DOM element cache for performance
   const domElements = {
@@ -66,8 +65,9 @@ const WebCppUI = (function() {
         isCompiling = false;
         isRunning = false;
         updateStatus('Compilation Error');
+        // The output is already formatted by the backend
         domElements.output.innerHTML = 
-          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data.output)}</div>`;
+          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${data.output}</div>`;
         break;
         
       case 'compile-success':
@@ -101,16 +101,8 @@ const WebCppUI = (function() {
         
       case 'output':
         if (terminal) {
-          // Filter out outputs that match the last input to prevent duplication
-          if (lastInput && (
-            data.output === lastInput ||
-            data.output === lastInput + '\r' ||
-            data.output === lastInput + '\n' ||
-            data.output === lastInput + '\r\n'
-          )) {
-            lastInput = ''; // Clear the processed last input
-            return;
-          }
+          // Directly write the content received from the server, no filtering needed
+          // PTY already handles echo correctly
           terminal.write(data.output);
         }
         break;
@@ -135,32 +127,22 @@ const WebCppUI = (function() {
       case 'cleanup-complete':
         break;
         
+      case 'session_restored':
+        // Handle session restoration
+        console.log('Session restored:', data.message);
+        // Reset the status
+        isRunning = true;
+        updateStatus('Session Restored');
+        
+        // If terminal doesn't exist, need to recreate it
+        if (!terminal) {
+          setupTerminal();
+        }
+        break;
+        
       default:
         console.log(`Unknown message type: ${data.type}`);
     }
-  }
-  
-  /**
-   * Format compiler output for display
-   */
-  function formatOutput(text) {
-    text = text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/error:/gi, '<span class="error-text">error:</span>')
-        .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
-        .replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
-
-    if (text.includes('HEAP SUMMARY') || text.includes('LEAK SUMMARY')) {
-        text = text
-            .replace(/###LINE:(\d+)###/g, '(line: <span class="line-number">$1</span>)')
-            .replace(/###LEAK:(.*?)###/g, '<div class="memcheck-leak">$1</div>')
-            .trim()// Remove leading and trailing whitespace
-            .replace(/\n{2,}/g, '\n'); // Remove multiple newlines
-    }
-
-    return text;
   }
   
   /**
@@ -194,6 +176,7 @@ const WebCppUI = (function() {
       theme: currentTheme,
       allowTransparency: true,
       rendererType: 'dom',
+      convertEol: true, // Ensure line ending conversion
       // Add custom key handling to prevent terminal from capturing Escape key
       customKeyEventHandler: (event) => {
         // Pass through all non-Escape key events to terminal
@@ -229,6 +212,14 @@ const WebCppUI = (function() {
       if (window.fitAddon) {
         try {
           window.fitAddon.fit();
+          // Send the adjusted size to the server
+          if (WebCppSocket.isConnected() && isRunning) {
+            WebCppSocket.sendData({
+              type: 'resize',
+              cols: terminal.cols,
+              rows: terminal.rows
+            });
+          }
         } catch (e) {
           console.error('Error fitting terminal:', e);
         }
@@ -259,48 +250,35 @@ const WebCppUI = (function() {
         }
       }
     });
+
+    // After terminal is opened, send size information to the server
+    terminal.onResize(({ cols, rows }) => {
+      if (WebCppSocket.isConnected() && isRunning) {
+        WebCppSocket.sendData({
+          type: 'resize',
+          cols: cols,
+          rows: rows
+        });
+      }
+    });
   }
   
   /**
    * Set up terminal input handling
    */
   function setupTerminalInput() {
-    let lineBuffer = '';
-    
-    // Handle terminal input
+    // Simplified terminal input handling, letting backend handle echo
     terminal.onData(data => {
       if (!isRunning || !WebCppSocket.isConnected()) {
         console.log('Not sending terminal input: program not running or socket closed');
         return;
       }
 
-      // Handle Enter key
-      if (data === '\r') {
-        lastInput = lineBuffer; // Record the last sent input
-        terminal.write('\r\n');
-        console.log(`Sending input to program: "${lineBuffer}"`);
-        WebCppSocket.sendData({
-          type: 'input',
-          input: lineBuffer
-        });
-        lineBuffer = '';
-        return;
-      }
-      
-      // Handle Backspace key
-      if (data === '\b' || data === '\x7f') {
-        if (lineBuffer.length > 0) {
-          lineBuffer = lineBuffer.substring(0, lineBuffer.length - 1);
-          terminal.write('\b \b'); // Erase character on screen
-        }
-        return;
-      }
-      
-      // Handle regular characters
-      if (data >= ' ' && data <= '~') {
-        lineBuffer += data;
-        terminal.write(data); // Echo character locally
-      }
+      // Send all input characters to the server for PTY to handle
+      WebCppSocket.sendData({
+        type: 'input',
+        input: data
+      });
     });
   }
   
@@ -490,7 +468,7 @@ const WebCppUI = (function() {
       .then(response => response.text())
       .then(data => {
         domElements.output.innerHTML = 
-          `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${formatOutput(data)}</div>`;
+          `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`;
       })
       .catch(error => {
         domElements.output.innerHTML = 
@@ -552,7 +530,8 @@ const WebCppUI = (function() {
         const lines = data.split('\n');
         const formattedLines = lines.map(line => {
           if (line.trim()) {
-            return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${formatOutput(line)}</div>`;
+            // The line is already formatted by the backend
+            return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${line}</div>`;
           }
           return '';
         }).filter(line => line);

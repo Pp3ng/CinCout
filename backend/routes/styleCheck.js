@@ -7,7 +7,8 @@ const {
   validateCode,
   createTempDirectory,
   writeCodeToFile,
-  executeCommand
+  executeCommand,
+  formatOutput
 } = require('../utils/helpers');
 
 router.post('/', async (req, res) => {
@@ -63,7 +64,9 @@ router.post('/', async (req, res) => {
       if (!hasOutput) {
         res.send('No issues found.');
       } else {
-        res.send(output);
+        // Apply formatting to style check output
+        const formattedOutput = formatOutput(output, 'style');
+        res.send(formattedOutput);
       }
     } finally {
       // Clean up temporary files
@@ -74,4 +77,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

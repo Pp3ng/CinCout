@@ -16,23 +16,75 @@ function sanitizeOutput(output) {
 }
 
 /**
- * Format memory check output
- * @param {string} text - Valgrind output text
- * @returns {string} Formatted output
+ * Format output for display in frontend with HTML markup
+ * @param {string} text - Text to format
+ * @param {string} outputType - Type of output (default, memcheck, style, etc.)
+ * @returns {string} Formatted HTML output
  */
-function formatMemcheckOutput(text) {
+function formatOutput(text, outputType = 'default') {
   if (!text) return '';
   
-  // Remove valgrind prefix and extra spaces
-  text = text.replace(/==\d+== /g, '')
-             .replace(/\s+from\s+/g, ' from ')
-             .replace(/in \/.*?\/([^\/]+)\)/g, 'in $1)')
-             .replace(/^\s*\n/g, '')
-             .replace(/\n\s*\n/g, '\n')
-             // program.c:10 -> ###LINE:10###
-             .replace(/\((?:program\.c|program\.cpp):(\d+)\)/g, '###LINE:$1###')
-             // Mark memory leaks
-             .replace(/(\d+ bytes? in \d+ blocks? are definitely lost.*?)(?=\s*at|$)/g, '###LEAK:$1###');
+  // Only apply HTML sanitization and formatting for output types that need it
+  if (outputType === 'default' || outputType === 'memcheck' || outputType === 'style') {
+    // Basic HTML sanitization
+    text = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    
+    // Process based on output type
+    switch (outputType) {
+      case 'memcheck':
+        // Pre-process memcheck output
+        text = text
+                 // Remove valgrind prefixes
+                 .replace(/==\d+== /g, '')
+                 // Clean up spacing
+                 .replace(/\s+from\s+/g, ' from ')
+                 // Remove temporary directory paths - more robust regex to catch various forms
+                 .replace(/\(\/tmp\/webCpp-[^\/]+\/[^:)]+:[^\)]+\)/g, '(program.c:LINE)')
+                 .replace(/by 0x[0-9a-fA-F]+: \w+ \(\/tmp\/webCpp-[^\/]+\/([^:)]+):(\d+)\)/g, 'by 0x...: (line: $2)')
+                 // Remove all other path references
+                 .replace(/in \/.*?\/([^\/]+)\)/g, 'in $1)')
+                 // Clean up whitespace
+                 .replace(/^\s*\n/g, '')
+                 .replace(/\n\s*\n/g, '\n')
+                 // Mark line numbers for further processing
+                 .replace(/\((?:program\.c|program\.cpp):(\d+)\)/g, '###LINE:$1###')
+                 // Mark memory leaks
+                 .replace(/(\d+ bytes? in \d+ blocks? are definitely lost.*?)(?=\s*at|$)/g, '###LEAK:$1###');
+        break;
+        
+      case 'style':
+        // Process style check output
+        // No special pre-processing needed, just the common formatting
+        break;
+        
+      default:
+        // Default formatting (no pre-processing)
+        break;
+    }
+    
+    // Common formatting for styled output types
+    
+    // Highlight error and warning messages
+    text = text.replace(/error:/gi, '<span class="error-text">error:</span>')
+               .replace(/warning:/gi, '<span class="warning-text">warning:</span>');
+    
+    // Highlight line and column numbers
+    text = text.replace(/(\d+):(\d+):/g, '<span class="line-number">$1</span>:<span class="column-number">$2</span>:');
+    
+    // Format memcheck specific markers if present
+    if ((outputType === 'memcheck') && 
+        (text.includes('HEAP SUMMARY') || text.includes('LEAK SUMMARY') || 
+         text.includes('###LINE') || text.includes('###LEAK'))) {
+      text = text
+          .replace(/###LINE:(\d+)###/g, '(line: <span class="line-number">$1</span>)')
+          .replace(/###LEAK:(.*?)###/g, '<div class="memcheck-leak">$1</div>')
+          .trim() // Remove leading and trailing whitespace
+          .replace(/\n{2,}/g, '\n'); // Remove multiple newlines
+    }
+  }
   
   return text;
 }
@@ -112,11 +164,11 @@ function validateCode(code) {
 
 module.exports = {
   sanitizeOutput,
-  formatMemcheckOutput,
+  formatOutput,
   createTempDirectory,
   writeCodeToFile,
   executeCommand,
   getCompilerCommand,
   getStandardOption,
   validateCode
-}; 
+};

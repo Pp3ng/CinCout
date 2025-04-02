@@ -153,10 +153,39 @@ const WebCppSocket = (function() {
    */
   function sendData(data) {
     return ensureConnection().then(() => {
+      // Add session ID to all messages
+      if (sessionId) {
+        data.sessionId = sessionId;
+      }
+      
+      // Add timestamp
+      data.timestamp = Date.now();
+      
+      // Send data
       socket.send(JSON.stringify(data));
     });
   }
   
+  /**
+   * Reconnect the WebSocket connection and restore session if possible
+   */
+  function reconnect() {
+    const previousSessionId = sessionId;
+    initWebSocket();
+    
+    // After connection, try to restore the session
+    if (previousSessionId) {
+      ensureConnection().then(() => {
+        sendData({
+          type: 'restore_session',
+          previousSessionId: previousSessionId
+        });
+      }).catch(err => {
+        console.error('Failed to restore session:', err);
+      });
+    }
+  }
+
   /**
    * Update status display
    * @param {string} status - Status text to display
@@ -177,6 +206,32 @@ const WebCppSocket = (function() {
     }
   });
   
+  // Add visibility change handler for better reconnection on tab focus
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      // Check connection health when the tab becomes visible
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.log('Tab visible, reconnecting WebSocket...');
+        reconnect();
+      } else {
+        // Check if the connection is still responsive by sending a ping
+        console.log('Tab visible, checking connection health...');
+        try {
+          sendData({
+            type: 'ping',
+            timestamp: Date.now()
+          }).catch(() => {
+            console.log('Ping failed, reconnecting...');
+            reconnect();
+          });
+        } catch (e) {
+          console.error('Error sending ping:', e);
+          reconnect();
+        }
+      }
+    }
+  });
+  
   // Public API
   return {
     init: function(msgHandler, statusCallback) {
@@ -184,9 +239,7 @@ const WebCppSocket = (function() {
       statusUpdateCallback = statusCallback;
       initWebSocket();
     },
-    reconnect: function() {
-      initWebSocket();
-    },
+    reconnect: reconnect,
     sendData: sendData,
     ensureConnection: ensureConnection,
     getSessionId: function() {

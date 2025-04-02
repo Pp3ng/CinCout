@@ -1,13 +1,4 @@
 /* Memory check specific styles */
-.memcheck-block {
-  font-family: 'JetBrains Mono', monospace;
-  padding: 2px 8px;
-  margin: 2px 0;
-  line-height: 1.4;
-  font-size: 16px;
-  color: var(--text-primary);
-}
-
 .memcheck-leak {
   border-left: 3px solid #ff5555;
   background: rgba(255, 85, 85, 0.1);
@@ -18,8 +9,7 @@
 }
 
 .memcheck-output {
-  background-color: rgba(80, 250, 123, 0.05);
-  border-left: 3px solid #50fa7b;
+  background-color: var(--bg-secondary);
   padding: 10px;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   line-height: 1.5;
@@ -38,56 +28,3 @@
   background-color: rgba(255, 85, 85, 0.05);
   border-radius: 2px;
 }
-
-.leak-bytes {
-  color: #ff5555;
-  font-weight: bold;
-}
-
-.leak-detail {
-  color: #f1fa8c;
-  margin-left: 20px;
-  display: block;
-  padding: 2px 0;
-  position: relative;
-}
-
-.leak-detail:before {
-  content: "→";
-  position: absolute;
-  left: -15px;
-  color: #8be9fd;
-}
-
-.leak-summary {
-  color: #ff79c6;
-  font-weight: bold;
-  display: block;
-  margin-top: 15px;
-  margin-bottom: 10px;
-  text-decoration: underline;
-  font-size: 1.1em;
-  padding: 3px 0;
-  border-bottom: 1px solid rgba(255, 121, 198, 0.3);
-}
-
-/* Error highlighting styles */
-.error-highlight {
-  color: #ff5555;
-  font-weight: bold;
-}
-
-.warning-highlight {
-  color: #f1fa8c;
-  font-weight: bold;
-}
-
-.note-highlight {
-  color: #8be9fd;
-  font-style: italic;
-}
-
-.style-block {
-  padding: 2px 0;
-  display: block;
-} 

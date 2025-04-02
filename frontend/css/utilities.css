@@ -62,9 +62,10 @@
   border-left: 3px solid #ff5555;
 }
 
+
 .style-check-output {
-  background-color: rgba(189, 147, 249, 0.1);
-  border-left: 3px solid #bd93f9;
+  background-color: var(--bg-secondary);
+  border-left: 3px solid var(--accent);
 }
 
 /* Line and column number highlighting */
@@ -77,3 +78,19 @@
   color: #8be9fd;
   font-weight: bold;
 } 
+
+/* Highlighting for specific types of messages */
+.error-highlight {
+  color: #ff5555;
+  font-weight: bold;
+}
+
+.warning-highlight {
+  color: #f1fa8c;
+  font-weight: bold;
+}
+
+.note-highlight {
+  color: #8be9fd;
+  font-style: italic;
+}

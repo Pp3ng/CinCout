@@ -2,7 +2,6 @@
  * Session management for terminal sessions
  */
 const pty = require('node-pty');
-const fs = require('fs-extra');
 const path = require('path');
 const tmp = require('tmp');
 

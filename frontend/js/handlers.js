@@ -513,7 +513,7 @@ const WebCppUI = (function() {
       const lang = domElements.language.value;
 
       domElements.outputTab.click();
-      domElements.output.innerHTML = "<div class='loading'>Running cppcheck...</div>";
+      domElements.output.innerHTML = "<div class='loading'>Running style check...</div>";
 
       fetch('/api/styleCheck', {
         method: 'POST',

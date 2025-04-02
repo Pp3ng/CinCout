@@ -34,7 +34,7 @@ http://39.105.45.170
 |                  | Custom Scrollbars    | Themed scrollbar design                  | `frontend/css/utilities.css`  |
 |                  | Terminal Emulation   | Full terminal emulation with xterm.js    | `frontend/js/handlers.js`     |
 | **Connectivity** | WebSocket Heartbeat  | Keep-alive ping/pong mechanism           | `frontend/js/handlers.js`     |
-|                  | Auto-Reconnection    | Reconnect when connection drops          | `frontend/js/handlers.js`     |
+|                  | Auto-Reconnection    | Reconnect when connection drops          | `frontend/js/websocket.js`     |
 |                  | Visibility Detection | Resume connections on tab focus          | `frontend/js/handlers.js`     |
 | **Templates**    | Code Examples        | Built-in code templates                  | `frontend/js/templates.js`    |
 |                  | Template Selection   | Quick-access template dropdown           | `frontend/index.html`         |

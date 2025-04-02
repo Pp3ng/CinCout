@@ -1,11 +1,10 @@
 # WEB C/C++ Code Editor and Compiler
 
-
 This project is a web IDE(integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using Node.js for the backend and HTML/CSS/JavaScript for the frontend.
 
 # Screenshots 📷
 
-![sample](RM-assets/sample.png)
+![sample](README/sample.png)
 
 # Try it (no guarantee always available due to myself's server)
 
@@ -15,7 +14,8 @@ http://39.105.45.170
 
 # Architecture
 
-![architecture](RM-assets/Architecture.png)
+This is the architecture diagram of the project.
+![architecture](README/Architecture.png)
 
 ---
 
@@ -34,7 +34,7 @@ http://39.105.45.170
 |                  | Custom Scrollbars    | Themed scrollbar design                  | `frontend/css/utilities.css`  |
 |                  | Terminal Emulation   | Full terminal emulation with xterm.js    | `frontend/js/handlers.js`     |
 | **Connectivity** | WebSocket Heartbeat  | Keep-alive ping/pong mechanism           | `frontend/js/handlers.js`     |
-|                  | Auto-Reconnection    | Reconnect when connection drops          | `frontend/js/websocket.js`     |
+|                  | Auto-Reconnection    | Reconnect when connection drops          | `frontend/js/websocket.js`    |
 |                  | Visibility Detection | Resume connections on tab focus          | `frontend/js/handlers.js`     |
 | **Templates**    | Code Examples        | Built-in code templates                  | `frontend/js/templates.js`    |
 |                  | Template Selection   | Quick-access template dropdown           | `frontend/index.html`         |
@@ -112,7 +112,7 @@ sudo apt install nodejs npm gcc g++ clang clang-format valgrind cppcheck
 git clone https://github.com/Pp3ng/webCpp.git
 
 # Change directory
-cd webCpp
+cd webCpp/backend
 
 # Install dependencies
 npm install
@@ -122,7 +122,7 @@ npm install
 
 ```bash
 # Start the server
-node backend/server.js
+node server.js
 ```
 
 3. Access the application at http://localhost:9527
@@ -142,7 +142,7 @@ npm install pm2 -g
 
 ```bash
 # Start the application
-pm2 start backend/server.js --name "webCpp"
+pm2 start server.js --name "webCpp"
 
 # Set up startup script to run on server boot
 pm2 startup

@@ -1,17 +1,24 @@
 /**
  * Code formatting router
  */
-const express = require('express');
-const router = express.Router();
-const {
+import express, { Request, Response } from 'express';
+import fs from 'fs-extra';
+import {
   validateCode,
   createTempDirectory,
   writeCodeToFile,
   executeCommand
-} = require('../utils/helpers');
+} from '../utils/helpers';
 
-router.post('/', async (req, res) => {
-  const { code, lang } = req.body;
+const router = express.Router();
+
+interface FormatRequest {
+  code: string;
+  lang: string;
+}
+
+router.post('/', async (req: Request, res: Response) => {
+  const { code, lang } = req.body as FormatRequest;
   
   // Validate code
   const validation = validateCode(code);
@@ -30,7 +37,6 @@ router.post('/', async (req, res) => {
       await executeCommand(formatCmd);
       
       // Read formatted code
-      const fs = require('fs-extra');
       const formattedCode = fs.readFileSync(inFile, 'utf8');
       res.send(formattedCode);
     } finally {
@@ -38,8 +44,8 @@ router.post('/', async (req, res) => {
       tmpDir.removeCallback();
     }
   } catch (error) {
-    res.status(500).send(`Error: ${error.message || error}`);
+    res.status(500).send(`Error: ${(error as Error).message || error}`);
   }
 });
 
-module.exports = router; 
+export default router;

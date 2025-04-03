@@ -1,6 +1,6 @@
 # WEB C/C++ Code Editor and Compiler
 
-This project is a web IDE(integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using Node.js for the backend and HTML/CSS/JavaScript for the frontend.
+This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using TypeScript/Node.js for the backend and HTML/CSS/JavaScript for the frontend.
 
 # Screenshots 📷
 
@@ -41,20 +41,20 @@ This is the architecture diagram of the project.
 
 ## Backend Features
 
-| Category               | Feature              | Description                         | Implementation                    |
-| ---------------------- | -------------------- | ----------------------------------- | --------------------------------- |
-| **Compilation**        | Multiple Compilers   | Support for GCC and Clang           | `backend/routes/compile.js`       |
-|                        | Optimization Levels  | -O0 to -O3 and -Os options          | `backend/routes/compile.js`       |
-|                        | Assembly View        | View generated assembly code        | `backend/routes/compile.js`       |
-|                        | Interactive Terminal | Real-time program interaction       | `backend/utils/sessionManager.js` |
-| **Code Analysis**      | Style Checking       | Static code analysis with cppcheck  | `backend/routes/styleCheck.js`    |
-|                        | Memory Check         | Memory leak detection with valgrind | `backend/routes/memcheck.js`      |
-|                        | Code Formatting      | Automatic code formatting           | `backend/routes/format.js`        |
-| **Connection**         | WebSocket Management | Server-side connection monitoring   | `backend/server.js`               |
-|                        | Ping/Pong Protocol   | Keep-alive detection system         | `backend/routes/compile.js`       |
-|                        | Resource Limits      | Memory, CPU and timeout controls    | `backend/utils/sessionManager.js` |
-| **Session Management** | Temporary Files      | Secure creation and cleanup         | `backend/utils/helpers.js`        |
-|                        | Process Isolation    | Session-based process management    | `backend/utils/sessionManager.js` |
+| Category               | Feature              | Description                         | Implementation                        |
+| ---------------------- | -------------------- | ----------------------------------- | ------------------------------------- |
+| **Compilation**        | Multiple Compilers   | Support for GCC and Clang           | `backend/src/routes/compile.ts`       |
+|                        | Optimization Levels  | -O0 to -O3 and -Os options          | `backend/src/routes/compile.ts`       |
+|                        | Assembly View        | View generated assembly code        | `backend/src/routes/compile.ts`       |
+|                        | Interactive Terminal | Real-time program interaction       | `backend/src/utils/sessionManager.ts` |
+| **Code Analysis**      | Style Checking       | Static code analysis with cppcheck  | `backend/src/routes/styleCheck.ts`    |
+|                        | Memory Check         | Memory leak detection with valgrind | `backend/src/routes/memcheck.ts`      |
+|                        | Code Formatting      | Automatic code formatting           | `backend/src/routes/format.ts`        |
+| **Connection**         | WebSocket Management | Server-side connection monitoring   | `backend/src/server.ts`               |
+|                        | Ping/Pong Protocol   | Keep-alive detection system         | `backend/src/routes/compile.ts`       |
+|                        | Resource Limits      | Memory, CPU and timeout controls    | `backend/src/utils/sessionManager.ts` |
+| **Session Management** | Temporary Files      | Secure creation and cleanup         | `backend/src/utils/helpers.ts`        |
+|                        | Process Isolation    | Session-based process management    | `backend/src/utils/sessionManager.ts` |
 
 ---
 
@@ -118,14 +118,25 @@ cd webCpp/backend
 npm install
 ```
 
-2. Start the application:
+2. Build and start the application:
 
 ```bash
+# Build TypeScript code
+npm run build
+
 # Start the server
-node server.js
+npm start
 ```
 
 3. Access the application at http://localhost:9527
+
+## Development Mode
+
+To run the server in development mode with auto-reload:
+
+```bash
+npm run dev
+```
 
 ## Run as a Background Service (Optional)
 
@@ -141,8 +152,11 @@ npm install pm2 -g
 2. Start the application with PM2:
 
 ```bash
+# Build the TypeScript code
+npm run build
+
 # Start the application
-pm2 start server.js --name "webCpp"
+pm2 start dist/server.js --name "webCpp"
 
 # Set up startup script to run on server boot
 pm2 startup
@@ -168,7 +182,7 @@ pm2 stop webCpp
 pm2 delete webCpp
 ```
 
-### Using Nginx as a Reverse Proxy(Recommended)
+### Using Nginx as a Reverse Proxy (Recommended)
 
 1. Install Nginx:
 
@@ -218,15 +232,15 @@ sudo ufw deny 9527           # Block direct access to the application port
 
 6. Optional: Configure the application to only listen on localhost (127.0.0.1)
 
-For added security, you can modify the server.js file to only listen on localhost instead of all interfaces:
+For added security, you can modify the server.ts file to only listen on localhost instead of all interfaces:
 
-```javascript
-// Find the server.listen line in backend/server.js
+```typescript
+// Find the server.listen line in backend/src/server.ts
 // Change from:
-// server.listen(9527, () => { ... });
+// server.listen(port, () => { ... });
 // To:
-server.listen(9527, "127.0.0.1", () => {
-  console.log("Server listening on http://localhost:9527");
+server.listen(port, "127.0.0.1", () => {
+  console.log(`Server running at http://localhost:${port}`);
 });
 ```
 
@@ -236,4 +250,4 @@ This ensures application is only accessible through Nginx and not directly via p
 
 # Contributing 🤝
 
-Welcome contributions! Please fell free to fork to make any creative changes you want and make a pull request.
+Welcome contributions! Please feel free to fork to make any creative changes you want and make a pull request.

@@ -1,11 +1,10 @@
 /**
  * Memory checking router
  */
-const express = require('express');
-const router = express.Router();
-const fs = require('fs-extra');
-const path = require('path');
-const {
+import express, { Request, Response } from 'express';
+import fs from 'fs-extra';
+import path from 'path';
+import {
   validateCode,
   createTempDirectory,
   writeCodeToFile,
@@ -14,10 +13,19 @@ const {
   getStandardOption,
   sanitizeOutput,
   formatOutput
-} = require('../utils/helpers');
+} from '../utils/helpers';
 
-router.post('/', async (req, res) => {
-  const { code, lang, compiler: selectedCompiler, optimization } = req.body;
+const router = express.Router();
+
+interface MemcheckRequest {
+  code: string;
+  lang: string;
+  compiler?: string;
+  optimization?: string;
+}
+
+router.post('/', async (req: Request, res: Response) => {
+  const { code, lang, compiler: selectedCompiler, optimization } = req.body as MemcheckRequest;
   
   // Validate code
   const validation = validateCode(code);
@@ -45,7 +53,7 @@ router.post('/', async (req, res) => {
       try {
         await executeCommand(compileCmd);
       } catch (stderr) {
-        const sanitizedError = sanitizeOutput(stderr);
+        const sanitizedError = sanitizeOutput(stderr as string);
         const formattedError = formatOutput(sanitizedError);
         return res.status(400).send(`Compilation Error:\n${formattedError}`);
       }
@@ -82,8 +90,8 @@ router.post('/', async (req, res) => {
       tmpDir.removeCallback();
     }
   } catch (error) {
-    res.status(500).send(`Error: ${error.message || error}`);
+    res.status(500).send(`Error: ${(error as Error).message || error}`);
   }
 });
 
-module.exports = router;
+export default router;

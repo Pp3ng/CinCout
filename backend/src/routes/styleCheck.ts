@@ -1,18 +1,24 @@
 /**
  * Style checking router
  */
-const express = require('express');
-const router = express.Router();
-const {
+import express, { Request, Response } from 'express';
+import {
   validateCode,
   createTempDirectory,
   writeCodeToFile,
   executeCommand,
   formatOutput
-} = require('../utils/helpers');
+} from '../utils/helpers';
 
-router.post('/', async (req, res) => {
-  const { code, lang } = req.body;
+const router = express.Router();
+
+interface StyleCheckRequest {
+  code: string;
+  lang: string;
+}
+
+router.post('/', async (req: Request, res: Response) => {
+  const { code, lang } = req.body as StyleCheckRequest;
   
   // Validate code
   const validation = validateCode(code);
@@ -29,7 +35,10 @@ router.post('/', async (req, res) => {
       // Run cppcheck
       const cppcheckCmd = `cppcheck --enable=all --suppress=missingInclude --suppress=missingIncludeSystem --suppress=unmatchedSuppression --suppress=checkersReport --inline-suppr --verbose "${inFile}" 2>&1`;
       
-      const { stdout } = await executeCommand(cppcheckCmd, { shell: true, failOnError: false });
+      const { stdout } = await executeCommand(cppcheckCmd, { 
+        shell: true as unknown as string,  // Type assertion to fix the error
+        failOnError: false 
+      });
       
       let output = '';
       let hasOutput = false;
@@ -73,8 +82,8 @@ router.post('/', async (req, res) => {
       tmpDir.removeCallback();
     }
   } catch (error) {
-    res.status(500).send(`Error: ${error.message || error}`);
+    res.status(500).send(`Error: ${(error as Error).message || error}`);
   }
 });
 
-module.exports = router;
+export default router;

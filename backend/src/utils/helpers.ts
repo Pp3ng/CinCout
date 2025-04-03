@@ -1,14 +1,25 @@
-const fs = require('fs-extra');
-const path = require('path');
-const tmp = require('tmp');
-const { exec } = require('child_process');
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as tmp from 'tmp';
+import { DirResult } from 'tmp';
+import { exec, ExecOptions } from 'child_process';
+
+interface ExecResult {
+  stdout: string;
+  stderr: string;
+}
+
+interface ValidationResult {
+  valid: boolean;
+  message?: string;
+}
 
 /**
  * Clean file paths from output
  * @param {string} output - Raw output to sanitize
  * @returns {string} Sanitized output
  */
-function sanitizeOutput(output) {
+function sanitizeOutput(output: string): string {
   if (!output) {
     return '';
   }
@@ -21,7 +32,7 @@ function sanitizeOutput(output) {
  * @param {string} outputType - Type of output (default, memcheck, style, etc.)
  * @returns {string} Formatted HTML output
  */
-function formatOutput(text, outputType = 'default') {
+function formatOutput(text: string, outputType: string = 'default'): string {
   if (!text) return '';
   
   // Only apply HTML sanitization and formatting for output types that need it
@@ -92,9 +103,9 @@ function formatOutput(text, outputType = 'default') {
 /**
  * Creates a temporary working directory
  * @param {string} prefix - Prefix for temp directory name
- * @returns {Object} Temporary directory object
+ * @returns {DirResult} Temporary directory object
  */
-function createTempDirectory(prefix = 'webCpp-') {
+function createTempDirectory(prefix: string = 'webCpp-'): DirResult {
   return tmp.dirSync({ prefix, unsafeCleanup: true });
 }
 
@@ -105,7 +116,7 @@ function createTempDirectory(prefix = 'webCpp-') {
  * @param {string} code - Code content
  * @returns {string} Full path to created file
  */
-function writeCodeToFile(dirPath, filename, code) {
+function writeCodeToFile(dirPath: string, filename: string, code: string): string {
   const filePath = path.join(dirPath, filename);
   fs.writeFileSync(filePath, code);
   return filePath;
@@ -114,10 +125,10 @@ function writeCodeToFile(dirPath, filename, code) {
 /**
  * Executes a command and returns a promise
  * @param {string} command - Command to execute
- * @param {Object} options - Execution options
- * @returns {Promise} Promise resolving with stdout or rejecting with error
+ * @param {object} options - Execution options
+ * @returns {Promise<ExecResult>} Promise resolving with stdout or rejecting with error
  */
-function executeCommand(command, options = {}) {
+function executeCommand(command: string, options: ExecOptions & { shell?: boolean | string, failOnError?: boolean } = {}): Promise<ExecResult> {
   return new Promise((resolve, reject) => {
     exec(command, options, (error, stdout, stderr) => {
       if (error && options.failOnError !== false) {
@@ -135,7 +146,7 @@ function executeCommand(command, options = {}) {
  * @param {string} compiler - Compiler selection
  * @returns {string} Compiler command
  */
-function getCompilerCommand(lang, compiler) {
+function getCompilerCommand(lang: string, compiler?: string): string {
   return lang === 'cpp' 
     ? (compiler === 'clang' ? 'clang++' : 'g++')
     : (compiler === 'clang' ? 'clang' : 'gcc');
@@ -146,23 +157,23 @@ function getCompilerCommand(lang, compiler) {
  * @param {string} lang - Programming language (cpp or c)
  * @returns {string} Standard option
  */
-function getStandardOption(lang) {
+function getStandardOption(lang: string): string {
   return lang === 'cpp' ? '-std=c++20' : '-std=c11';
 }
 
 /**
  * Validates input code
  * @param {string} code - Code to validate
- * @returns {Object} Validation result with status and message
+ * @returns {ValidationResult} Validation result with status and message
  */
-function validateCode(code) {
+function validateCode(code: string): ValidationResult {
   if (!code || code.trim() === '') {
     return { valid: false, message: 'Error: No code provided' };
   }
   return { valid: true };
 }
 
-module.exports = {
+export {
   sanitizeOutput,
   formatOutput,
   createTempDirectory,
@@ -170,5 +181,7 @@ module.exports = {
   executeCommand,
   getCompilerCommand,
   getStandardOption,
-  validateCode
+  validateCode,
+  ExecResult,
+  ValidationResult
 };

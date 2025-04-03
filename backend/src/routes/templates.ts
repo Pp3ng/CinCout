@@ -1,16 +1,23 @@
-const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+import express, { Request, Response } from 'express';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
 const router = express.Router();
 
 // Directory where template files will be stored
-const TEMPLATES_DIR = path.join(__dirname, '../templates');
+const TEMPLATES_DIR = path.join(__dirname, '../../templates');
+
+interface TemplateCollection {
+  [language: string]: {
+    [templateName: string]: string;
+  };
+}
 
 // Route to get all available templates
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     // Create structure to hold templates
-    const templates = {
+    const templates: TemplateCollection = {
       c: {},
       cpp: {}
     };
@@ -50,4 +57,4 @@ router.get('/', async (req, res) => {
   }
 });
 
-module.exports = router; 
+export default router;

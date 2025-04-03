@@ -1,23 +1,32 @@
 {
-  "name": "webCpp",
-  "version": "1.0.0",
-  "description": "Online C/C++ IDE and Compiler",
-  "main": "server.js",
+  "name": "webcpp",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "watch": "tsc -w"
   },
   "dependencies": {
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.19.0",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
+    "express": "^4.17.1",
     "fs-extra": "^11.1.1",
-    "tmp": "^0.2.1",
     "node-pty": "^0.10.1",
-    "ws": "^8.2.3",
-    "uuid": "^8.3.2"
+    "tmp": "^0.2.1",
+    "uuid": "^9.0.0",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "@types/body-parser": "^1.19.2",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/fs-extra": "^11.0.1",
+    "@types/node": "^18.16.0",
+    "@types/tmp": "^0.2.3",
+    "@types/uuid": "^9.0.1",
+    "@types/ws": "^8.5.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
   }
-} 
+}

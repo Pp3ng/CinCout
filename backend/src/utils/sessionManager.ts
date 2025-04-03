@@ -1,21 +1,31 @@
 /**
  * Session management for terminal sessions
  */
-const pty = require('node-pty');
-const path = require('path');
-const tmp = require('tmp');
+import * as pty from 'node-pty';
+import * as path from 'path';
+import * as tmp from 'tmp';
+import { DirResult } from 'tmp';
+import { WebSocket } from 'ws';
+
+// Define session interface
+interface Session {
+  pty: pty.IPty;
+  tmpDir: DirResult;
+  lastActivity: number;
+  dimensions: { cols: number; rows: number };
+}
 
 // Store active terminal sessions
-const activeSessions = new Map();
+const activeSessions = new Map<string, Session>();
 
 // Track disconnected but preserved sessions
-const preservedSessions = new Map();
+const preservedSessions = new Map<string, Session>();
 
 /**
  * Terminate a specific session
  * @param {string} sessionId - ID of the session to terminate
  */
-function terminateSession(sessionId) {
+function terminateSession(sessionId: string): void {
   console.log(`Terminating session ${sessionId}`);
   const session = activeSessions.get(sessionId);
   if (session) {
@@ -41,7 +51,7 @@ function terminateSession(sessionId) {
  * Clean up session resources
  * @param {string} sessionId - ID of the session to clean up
  */
-function cleanupSession(sessionId) {
+function cleanupSession(sessionId: string): void {
   console.log(`Cleaning up session ${sessionId}`);
   const session = activeSessions.get(sessionId);
   if (session) {
@@ -55,7 +65,7 @@ function cleanupSession(sessionId) {
         // Try a different approach if the callback method fails
         try {
           const { exec } = require('child_process');
-          exec(`rm -rf "${session.tmpDir.name}"`, (err) => {
+          exec(`rm -rf "${session.tmpDir.name}"`, (err: Error) => {
             if (err) {
               console.error(`Failed to forcefully remove temp dir ${session.tmpDir.name}:`, err);
             } else {
@@ -77,16 +87,16 @@ function cleanupSession(sessionId) {
 /**
  * Create a PTY instance with resource limitations
  * @param {string} command - Command to run
- * @param {Object} options - PTY options
- * @returns {Object} PTY process
+ * @param {pty.IPtyForkOptions} options - PTY options
+ * @returns {pty.IPty} PTY process
  */
-function createPtyProcess(command, options = {}) {
-  const defaultOptions = {
+function createPtyProcess(command: string, options: pty.IPtyForkOptions = {}): pty.IPty {
+  const defaultOptions: pty.IPtyForkOptions = {
     name: 'xterm-color',
     cols: 80,
     rows: 24,
     cwd: process.cwd(),
-    env: process.env
+    env: process.env as { [key: string]: string } // Type assertion
   };
   
   const ptyOptions = { ...defaultOptions, ...options };
@@ -96,12 +106,17 @@ function createPtyProcess(command, options = {}) {
   ], ptyOptions);
 }
 
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
 /**
  * Validate code for security concerns
  * @param {string} code - Source code to validate
- * @returns {Object} Validation result
+ * @returns {ValidationResult} Validation result
  */
-function validateCodeSecurity(code) {
+function validateCodeSecurity(code: string): ValidationResult {
   // Basic validation
   if (!code || code.trim() === '') {
     return { valid: false, error: 'Error: No code provided' };
@@ -122,12 +137,12 @@ function validateCodeSecurity(code) {
 
 /**
  * Start a compilation session
- * @param {Object} ws - WebSocket connection
+ * @param {WebSocket} ws - WebSocket connection
  * @param {string} sessionId - Session ID
- * @param {Object} tmpDir - Temporary directory
+ * @param {DirResult} tmpDir - Temporary directory
  * @param {string} outputFile - Path to compiled executable
  */
-function startCompilationSession(ws, sessionId, tmpDir, outputFile) {
+function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirResult, outputFile: string): boolean {
   try {
     // Set standard terminal size: 80 columns, 24 rows
     const cols = 80;
@@ -140,7 +155,7 @@ function startCompilationSession(ws, sessionId, tmpDir, outputFile) {
       rows: rows,
       cwd: tmpDir.name,
       env: {
-        ...process.env,
+        ...(process.env as { [key: string]: string }),
         TERM: 'xterm-256color' // Ensure program knows the correct terminal type
       }
     });
@@ -154,7 +169,7 @@ function startCompilationSession(ws, sessionId, tmpDir, outputFile) {
     });
     
     // Handle PTY output
-    ptyProcess.onData((data) => {
+    ptyProcess.onData((data: string) => {
       try {
         // Update last activity timestamp
         const session = activeSessions.get(sessionId);
@@ -205,7 +220,7 @@ function startCompilationSession(ws, sessionId, tmpDir, outputFile) {
     console.error(`Error creating PTY for session ${sessionId}:`, ptyError);
     ws.send(JSON.stringify({
       type: 'error',
-      output: `Error executing program: ${ptyError.message}`
+      output: `Error executing program: ${(ptyError as Error).message}`
     }));
     
     return false;
@@ -216,10 +231,10 @@ function startCompilationSession(ws, sessionId, tmpDir, outputFile) {
  * Send input to a running session
  * @param {string} sessionId - Session ID
  * @param {string} input - Input to send to the process
- * @param {Object} ws - WebSocket connection
+ * @param {WebSocket} ws - WebSocket connection
  * @returns {boolean} Whether the input was sent successfully
  */
-function sendInputToSession(sessionId, input, ws) {
+function sendInputToSession(sessionId: string, input: string, ws: WebSocket): boolean {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     // In PTY, input is automatically echoed by the program (if using standard IO)
@@ -233,12 +248,19 @@ function sendInputToSession(sessionId, input, ws) {
   return false;
 }
 
+interface CompilationEnvironment {
+  tmpDir: DirResult;
+  sourceFile: string;
+  outputFile: string;
+  asmFile: string;
+}
+
 /**
  * Create a temporary compilation directory
  * @param {string} lang - Programming language (c/cpp)
- * @returns {Object} Object containing directory and file paths
+ * @returns {CompilationEnvironment} Object containing directory and file paths
  */
-function createCompilationEnvironment(lang) {
+function createCompilationEnvironment(lang: string): CompilationEnvironment {
   const tmpDir = tmp.dirSync({ prefix: 'webCpp-', unsafeCleanup: true });
   const sourceExtension = lang === 'cpp' ? 'cpp' : 'c';
   const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
@@ -257,10 +279,10 @@ function createCompilationEnvironment(lang) {
  * Try to restore a previously disconnected session
  * @param {string} previousSessionId - Previous session ID
  * @param {string} newSessionId - New session ID
- * @param {Object} ws - WebSocket connection
+ * @param {WebSocket} ws - WebSocket connection
  * @returns {boolean} Whether the session was restored
  */
-function tryRestoreSession(previousSessionId, newSessionId, ws) {
+function tryRestoreSession(previousSessionId: string, newSessionId: string, ws: WebSocket): boolean {
   const preservedSession = preservedSessions.get(previousSessionId);
   
   if (preservedSession) {
@@ -272,7 +294,7 @@ function tryRestoreSession(previousSessionId, newSessionId, ws) {
     
     // Reconnect the PTY's output to the new WebSocket
     if (preservedSession.pty) {
-      preservedSession.pty.onData((data) => {
+      preservedSession.pty.onData((data: string) => {
         try {
           ws.send(JSON.stringify({
             type: 'output',
@@ -302,7 +324,7 @@ function tryRestoreSession(previousSessionId, newSessionId, ws) {
  * Useful for brief disconnections
  * @param {string} sessionId - Session ID to preserve
  */
-function preserveSession(sessionId) {
+function preserveSession(sessionId: string): void {
   const session = activeSessions.get(sessionId);
   if (session) {
     console.log(`Preserving session ${sessionId} for potential reconnection`);
@@ -317,7 +339,7 @@ function preserveSession(sessionId) {
         const preservedSession = preservedSessions.get(sessionId);
         
         // Clean up the preserved session
-        if (preservedSession.pty) {
+        if (preservedSession && preservedSession.pty) {
           try {
             preservedSession.pty.kill('SIGKILL');
           } catch (e) {
@@ -325,7 +347,7 @@ function preserveSession(sessionId) {
           }
         }
         
-        if (preservedSession.tmpDir) {
+        if (preservedSession && preservedSession.tmpDir) {
           try {
             preservedSession.tmpDir.removeCallback();
           } catch (e) {
@@ -346,7 +368,7 @@ function preserveSession(sessionId) {
  * @param {number} rows - Number of rows
  * @returns {boolean} Whether resize was successful
  */
-function resizeTerminal(sessionId, cols, rows) {
+function resizeTerminal(sessionId: string, cols: number, rows: number): boolean {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     try {
@@ -361,7 +383,7 @@ function resizeTerminal(sessionId, cols, rows) {
   return false;
 }
 
-module.exports = {
+export {
   activeSessions,
   terminateSession,
   cleanupSession,
@@ -372,5 +394,8 @@ module.exports = {
   createCompilationEnvironment,
   preserveSession,
   tryRestoreSession,
-  resizeTerminal
+  resizeTerminal,
+  Session,
+  ValidationResult,
+  CompilationEnvironment
 };

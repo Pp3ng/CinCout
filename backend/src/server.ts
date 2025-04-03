@@ -1,10 +1,9 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const path = require('path');
-const http = require('http');
-const WebSocket = require('ws');
-const fs = require('fs');
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import path from 'path';
+import http from 'http';
+import { WebSocketServer } from 'ws';
 
 const app = express();
 const port = 9527;
@@ -13,7 +12,7 @@ const port = 9527;
 const server = http.createServer(app);
 
 // Setup WebSocket server with ping enabled
-const wss = new WebSocket.Server({ 
+const wss = new WebSocketServer({ 
   server,
   // Add ping interval to detect disconnected clients
   clientTracking: true
@@ -24,21 +23,21 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../../frontend')));
 
 // Import routes
-const { router: compileRouter, setupWebSocketHandlers } = require('./routes/compile');
-const memcheckRouter = require('./routes/memcheck');
-const formatRouter = require('./routes/format');
-const styleCheckRouter = require('./routes/styleCheck');
-const templatesRouter = require('./routes/templates');
+import { router as compileRouter, setupWebSocketHandlers } from './routes/compile';
+import memcheckRouter from './routes/memcheck';
+import formatRouter from './routes/format';
+import styleCheckRouter from './routes/styleCheck';
+import templatesRouter from './routes/templates';
 
 // Set up WebSocket handlers for compilation
 setupWebSocketHandlers(wss);
 
 // Set up heartbeat mechanism to keep connections alive
 const interval = setInterval(function ping() {
-  wss.clients.forEach(function each(ws) {
+  wss.clients.forEach(function each(ws: any) {
     if (ws.isAlive === false) {
       console.log("Terminating inactive WebSocket connection");
       return ws.terminate();

@@ -1,0 +1,138 @@
+/* Select styles */
+select {
+  appearance: none;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 2px solid var(--border);
+  padding: 7.2px 31.5px 7.2px 10.8px;
+  border-radius: 5.4px;
+  font-size: 12.6px;
+  cursor: pointer;
+  min-width: 0;
+  width: 117px;
+  height: 32.4px;
+  background-image: none; /* Remove default arrow */
+  transition: all 0.2s ease;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Add arrow element for animation - updated to match buttons */
+.custom-select-container::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 5px; /* Even smaller width */
+  height: 5px; /* Even smaller height */
+  border-right: 1.5px solid var(--text-secondary);
+  border-bottom: 1.5px solid var(--text-secondary);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+}
+
+/* Add arrow rotation and bounce animation on hover - match buttons style */
+.custom-select-container:hover::after {
+  transform: translateY(-55%) rotate(225deg); /* Reduced movement */
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy easing */
+}
+
+/* Custom dropdown that appears on hover */
+.select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  margin-top: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent);
+  border-radius: 5.4px;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Reuse the fadeIn animation from buttons.css */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Each custom option */
+.custom-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.custom-option:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.custom-option.selected {
+  background-color: rgba(var(--accent-rgb, 14, 99, 156), 0.1);
+  font-weight: bold;
+}
+
+/* Container for hover behavior */
+.custom-select-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Show options when hovering over container */
+.custom-select-container:hover .select-options {
+  display: block;
+}
+
+/* Hide the default select arrow since we're using our custom one */
+.custom-select-container select {
+  background-image: none;
+  pointer-events: none;
+}
+
+/* Specific widths for different select types */
+select#template {
+  width: 162px;
+}
+
+select#optimization {
+  width: 144px;
+}
+
+select:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-hover);
+  animation: selectHover 0.3s ease;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(14, 99, 156, 0.2);
+}
+
+select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 12px;
+}
+
+@keyframes selectHover {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}

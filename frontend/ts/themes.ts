@@ -1,5 +1,62 @@
+// Define theme interfaces
+interface TerminalColors {
+    red: string;
+    green: string;
+    yellow: string;
+    blue: string;
+    magenta: string;
+    cyan: string;
+}
+
+interface Theme {
+    name: string;
+    bg: string;
+    bgSecondary: string;
+    text: string;
+    textSecondary: string;
+    accent: string;
+    accentHover: string;
+    border: string;
+    cdnUrl?: string;
+    terminal: TerminalColors;
+}
+
+interface TerminalTheme {
+    background: string;
+    foreground: string;
+    cursor: string;
+    cursorAccent: string;
+    selection: string;
+    black: string;
+    red: string;
+    green: string;
+    yellow: string;
+    blue: string;
+    magenta: string;
+    cyan: string;
+    white: string;
+    brightBlack: string;
+    brightRed: string;
+    brightGreen: string;
+    brightYellow: string;
+    brightBlue: string;
+    brightMagenta: string;
+    brightCyan: string;
+    brightWhite: string;
+    [key: string]: string;
+}
+
+interface ThemeMap {
+    [key: string]: Theme;
+}
+
+interface EditorInstance {
+    instance: any;
+    type: string;
+}
+
 // Theme definitions object
-const themes = {
+const themes: ThemeMap = {
     "default": {
         name: "Default",
         bg: "#ffffff",
@@ -172,32 +229,30 @@ const themes = {
     }
 };
 
-    // Theme Manager class - handles all theme-related functionality
+// Theme Manager class - handles all theme-related functionality
 class ThemeManager {
-    constructor() {
-        this.themeSelect = null;
-        this.currentTheme = 'default';
-        this.editorInstances = []; // Track editor instances for theme updates
-        this.cssVarMap = {
-            bg: '--bg-primary',
-            bgSecondary: '--bg-secondary',
-            text: '--text-primary',
-            textSecondary: '--text-secondary',
-            accent: '--accent',
-            accentHover: '--accent-hover',
-            border: '--border'
-        };
-    }
+    private themeSelect: HTMLSelectElement | null = null;
+    private currentTheme: string = 'default';
+    private editorInstances: EditorInstance[] = []; // Track editor instances for theme updates
+    private cssVarMap: {[key: string]: string} = {
+        bg: '--bg-primary',
+        bgSecondary: '--bg-secondary',
+        text: '--text-primary',
+        textSecondary: '--text-secondary',
+        accent: '--accent',
+        accentHover: '--accent-hover',
+        border: '--border'
+    };
 
     // Register an editor instance for theme updates
-    registerEditor(editorInstance, type = 'code') {
+    public registerEditor(editorInstance: any, type: string = 'code'): void {
         if (editorInstance) {
             this.editorInstances.push({ instance: editorInstance, type });
         }
     }
 
     // Load theme CSS from CDN
-    loadThemeCSS(theme) {
+    private loadThemeCSS(theme: Theme): void {
         if (!theme.cdnUrl) return;
         
         const existingLink = document.querySelector(`link[href="${theme.cdnUrl}"]`);
@@ -210,7 +265,7 @@ class ThemeManager {
     }
 
     // Get computed CSS variable value
-    getCssVar(varName, fallback = '') {
+    private getCssVar(varName: string, fallback: string = ''): string {
         const value = getComputedStyle(document.documentElement)
             .getPropertyValue(varName)
             .trim();
@@ -218,12 +273,12 @@ class ThemeManager {
     }
 
     // Get terminal theme configuration based on current theme
-    getTerminalTheme() {
+    public getTerminalTheme(): TerminalTheme {
         // Get the current theme data
         const themeData = themes[this.currentTheme] || themes["default"];
         
         // Default terminal colors - used when theme doesn't define specific colors
-        const defaultTermColors = {
+        const defaultTermColors: TerminalColors = {
             red: '#ff5555',
             green: '#50fa7b',
             yellow: '#f1fa8c',
@@ -233,13 +288,13 @@ class ThemeManager {
         };
         
         // Get theme-defined terminal colors or use defaults
-        const terminalColors = {
+        const terminalColors: TerminalColors = {
             ...defaultTermColors,
             ...(themeData.terminal || {})
         };
         
         // Get color values from CSS variables
-        const cssVars = {
+        const cssVars: {[key: string]: string} = {
             background: this.getCssVar('--bg-primary'),
             foreground: this.getCssVar('--text-primary'),
             cursor: this.getCssVar('--accent'),
@@ -248,7 +303,7 @@ class ThemeManager {
         };
         
         // Build complete terminal theme
-        const theme = {
+        const theme: TerminalTheme = {
             // CSS variable colors
             ...cssVars,
             
@@ -277,7 +332,7 @@ class ThemeManager {
     }
 
     // Ensure all color values have # prefix
-    ensureHashPrefixes(colorObject) {
+    private ensureHashPrefixes(colorObject: {[key: string]: string}): {[key: string]: string} {
         return Object.fromEntries(
             Object.entries(colorObject).map(([key, value]) => {
                 if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('#')) {
@@ -289,19 +344,19 @@ class ThemeManager {
     }
 
     // Set CSS variables from theme
-    setCssVariables(theme) {
+    private setCssVariables(theme: Theme): void {
         const root = document.documentElement;
         
         // Set CSS variables using the mapping
         Object.entries(this.cssVarMap).forEach(([themeKey, cssVar]) => {
-            if (theme[themeKey]) {
-                root.style.setProperty(cssVar, theme[themeKey]);
+            if (theme[themeKey as keyof Theme]) {
+                root.style.setProperty(cssVar, theme[themeKey as keyof Theme]);
             }
         });
     }
 
     // Update all editor instances with the theme
-    updateEditors(themeName) {
+    private updateEditors(themeName: string): void {
         const isDefault = themeName === 'default';
         
         // Update registered editor instances
@@ -310,17 +365,17 @@ class ThemeManager {
         });
         
         // Maintain backwards compatibility
-        if (typeof editor !== 'undefined' && editor) {
-            editor.setOption('theme', isDefault ? 'default' : themeName);
+        if (typeof (window as any).editor !== 'undefined' && (window as any).editor) {
+            (window as any).editor.setOption('theme', isDefault ? 'default' : themeName);
         }
         
-        if (typeof assemblyView !== 'undefined' && assemblyView) {
-            assemblyView.setOption('theme', isDefault ? 'default' : themeName);
+        if (typeof (window as any).assemblyView !== 'undefined' && (window as any).assemblyView) {
+            (window as any).assemblyView.setOption('theme', isDefault ? 'default' : themeName);
         }
     }
 
     // Apply theme to the application
-    applyTheme(themeName) {
+    public applyTheme(themeName: string): void {
         const theme = themes[themeName];
         if (!theme) return;
 
@@ -356,21 +411,21 @@ class ThemeManager {
     }
 
     // Update terminal with current theme
-    updateTerminal() {
-        if (typeof terminal !== 'undefined' && terminal) {
+    private updateTerminal(): void {
+        if (typeof (window as any).terminal !== 'undefined' && (window as any).terminal) {
             setTimeout(() => {
                 const terminalTheme = this.getTerminalTheme();
-                terminal.setOption('theme', terminalTheme);
+                (window as any).terminal.setOption('theme', terminalTheme);
                 
                 // Force terminal to redraw
-                terminal.refresh(0, terminal.rows - 1);
+                (window as any).terminal.refresh(0, (window as any).terminal.rows - 1);
             }, 50);
         }
     }
 
     // initialize theme selector dropdown
-    initializeThemeSelector() {
-        this.themeSelect = document.getElementById('theme-select');
+    private initializeThemeSelector(): void {
+        this.themeSelect = document.getElementById('theme-select') as HTMLSelectElement;
         if (!this.themeSelect) return;
 
         // Clear existing options
@@ -393,12 +448,12 @@ class ThemeManager {
 
         // Add change event listener
         this.themeSelect.addEventListener('change', (e) => {
-            this.applyTheme(e.target.value);
+            this.applyTheme((e.target as HTMLSelectElement).value);
         });
     }
 
     // Preload all theme CSS files
-    preloadThemeCSS() {
+    private preloadThemeCSS(): void {
         Object.values(themes).forEach(theme => {
             if (theme.cdnUrl) {
                 this.loadThemeCSS(theme);
@@ -407,7 +462,7 @@ class ThemeManager {
     }
 
     // Initialize the theme manager
-    initialize() {
+    public initialize(): void {
         this.preloadThemeCSS();
         this.initializeThemeSelector();
         
@@ -421,8 +476,8 @@ class ThemeManager {
 const themeManager = new ThemeManager();
 
 // Maintain compatibility with existing code
-window.getTerminalTheme = () => themeManager.getTerminalTheme();
-window.applyTheme = (themeName) => themeManager.applyTheme(themeName);
+(window as any).getTerminalTheme = (): TerminalTheme => themeManager.getTerminalTheme();
+(window as any).applyTheme = (themeName: string): void => themeManager.applyTheme(themeName);
 
 // Initialize themes on DOM ready
 document.addEventListener('DOMContentLoaded', () => {

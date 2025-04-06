@@ -1,5 +1,8 @@
+// TypeScript definitions for global objects
+declare const CodeMirror: any;
+
 // Initialize editor globally so it can be accessed by layout.js
-window.editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+(window as any).editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
     mode: "text/x-c++src",
     keyMap: "default",
@@ -20,19 +23,19 @@ window.editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 });
 
 // Initialize assembly view globally so it can be accessed by layout.js
-window.assemblyView = CodeMirror(document.getElementById("assembly"), {
+(window as any).assemblyView = CodeMirror(document.getElementById("assembly"), {
     lineNumbers: true,
     mode: "gas",
     readOnly: true,
     lineWrapping: true
 });
 
-window.assemblyView.setSize(null, "100%");
+(window as any).assemblyView.setSize(null, "100%");
 
 //Init font size
-let fontSize = 14;
+let fontSize: number = 14;
 
-document.addEventListener('wheel', function(e) {
+document.addEventListener('wheel', function(e: WheelEvent) {
     if (e.ctrlKey) {
         e.preventDefault();
         
@@ -43,13 +46,13 @@ document.addEventListener('wheel', function(e) {
             fontSize = Math.max(fontSize - 1, 8); // Min font size is 8px
         }
 
-        window.editor.getWrapperElement().style.fontSize = `${fontSize}px`;
-        window.assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;
+        (window as any).editor.getWrapperElement().style.fontSize = `${fontSize}px`;
+        (window as any).assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;
         
-        window.editor.refresh();
-        window.assemblyView.refresh();
+        (window as any).editor.refresh();
+        (window as any).assemblyView.refresh();
     }
 }, { passive: false });
 
-window.editor.getWrapperElement().style.fontSize = `${fontSize}px`;
-window.assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;
+(window as any).editor.getWrapperElement().style.fontSize = `${fontSize}px`;
+(window as any).assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;

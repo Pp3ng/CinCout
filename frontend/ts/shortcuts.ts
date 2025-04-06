@@ -3,18 +3,40 @@
   // Constants and Configuration
   //=============================================================================
   
+  // Types
+  interface ShortcutDefinition {
+    action: () => void;
+    description: string;
+    displayKeys: string[];
+  }
+
+  interface ShortcutMap {
+    [key: string]: ShortcutDefinition;
+  }
+
+  interface ShortcutCategories {
+    common: ShortcutMap;
+    mac: ShortcutMap;
+    other: ShortcutMap;
+    special: ShortcutMap;
+  }
+
+  interface KeyHandler {
+    (e: KeyboardEvent): boolean;
+  }
+
   // Detect operating system
- function detectOS() {
-  const userAgent = window.navigator.userAgent;
-  return /Mac/.test(userAgent) ? 'MacOS' : 'Other';
-}
+  function detectOS(): string {
+    const userAgent = window.navigator.userAgent;
+    return /Mac/.test(userAgent) ? 'MacOS' : 'Other';
+  }
 
   // Platform detection (Mac or other platforms)
-  const OS = detectOS();
-  const IS_MAC = OS === 'MacOS';
+  const OS: string = detectOS();
+  const IS_MAC: boolean = OS === 'MacOS';
   
   // Get primary command key (Command for Mac, Ctrl for others)
-  const CMD_KEY = IS_MAC ? 'meta' : 'ctrl';
+  const CMD_KEY: string = IS_MAC ? 'meta' : 'ctrl';
   
   // Define DOM element ID constants for easier reference
   const DOM_IDS = {
@@ -38,7 +60,7 @@
    * Shortcut configuration
    * Each shortcut contains an action function and description text
    */
-  const SHORTCUTS = {
+  const SHORTCUTS: ShortcutCategories = {
     // Common shortcuts for all platforms
     common: {
       [`${CMD_KEY}+Enter`]: {
@@ -131,7 +153,7 @@
    * These handlers execute before standard shortcut handling and work
    * even when the terminal has focus
    */
-  const SPECIAL_KEY_HANDLERS = {
+  const SPECIAL_KEY_HANDLERS: {[key: string]: KeyHandler} = {
     // Escape key handler (works with terminal focus)
     'Escape': (e) => {
       const outputPanel = document.getElementById(DOM_IDS.OUTPUT_PANEL);
@@ -162,7 +184,7 @@
    * Triggers a click event on an element with the specified ID
    * @param {string} id - The ID of the element to click
    */
-  function triggerButton(id) {
+  function triggerButton(id: string): void {
     const element = document.getElementById(id);
     if (element) element.click();
   }
@@ -170,13 +192,13 @@
   /**
    * Closes the output panel and restores focus to the editor
    */
-  function closeOutputPanel() {
+  function closeOutputPanel(): void {
     const outputPanel = document.getElementById(DOM_IDS.OUTPUT_PANEL);
     if (outputPanel && outputPanel.style.display !== 'none') {
       triggerButton(DOM_IDS.CLOSE_OUTPUT);
       // Restore editor focus after closing panel
       setTimeout(() => {
-        if (window.editor) window.editor.focus();
+        if ((window as any).editor) (window as any).editor.focus();
       }, 10);
     }
   }
@@ -184,9 +206,10 @@
   /**
    * Saves the current code to a file
    */
-  function saveCodeToFile() {
+  function saveCodeToFile(): void {
+    const editor = (window as any).editor;
     const code = editor.getValue();
-    const fileType = document.getElementById(DOM_IDS.LANGUAGE).value === 'cpp' ? 'cpp' : 'c';
+    const fileType = (document.getElementById(DOM_IDS.LANGUAGE) as HTMLSelectElement).value === 'cpp' ? 'cpp' : 'c';
     const blob = new Blob([code], {type: 'text/plain'});
     const downloadLink = document.createElement('a');
     
@@ -198,19 +221,19 @@
   /**
    * Opens code from a file
    */
-  function openCodeFromFile() {
+  function openCodeFromFile(): void {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.c,.cpp';
     
-    fileInput.onchange = function() {
-      const selectedFile = this.files[0];
+    fileInput.onchange = function(this: HTMLInputElement) {
+      const selectedFile = this.files?.[0];
       if (!selectedFile) return;
       
       const reader = new FileReader();
       reader.onload = function() {
-        if (window.editor) {
-          editor.setValue(reader.result);
+        if ((window as any).editor) {
+          (window as any).editor.setValue(reader.result as string);
         }
       };
       reader.readAsText(selectedFile);
@@ -222,9 +245,9 @@
   /**
    * Toggles code folding at the cursor position
    */
-  function toggleCodeFolding() {
-    if (window.editor) {
-      editor.foldCode(editor.getCursor());
+  function toggleCodeFolding(): void {
+    if ((window as any).editor) {
+      (window as any).editor.foldCode((window as any).editor.getCursor());
     }
   }
 
@@ -237,7 +260,7 @@
    * @param {KeyboardEvent} event - The keyboard event
    * @returns {string} - Normalized key representation
    */
-  function normalizeKeyCombo(event) {
+  function normalizeKeyCombo(event: KeyboardEvent): string {
     const key = event.key.toLowerCase();
     
     // Handle special keys
@@ -268,7 +291,7 @@
    * Main keyboard event handler
    * @param {KeyboardEvent} event - The keyboard event
    */
-  function handleKeyboardEvent(event) {
+  function handleKeyboardEvent(event: KeyboardEvent): void {
     // First check special keys (Enter with modifiers, Escape)
     const specialHandler = SPECIAL_KEY_HANDLERS[event.key];
     if (specialHandler && specialHandler(event)) {
@@ -305,7 +328,7 @@
   /**
    * Generates the shortcuts list for display in the UI
    */
-  function generateShortcutsList() {
+  function generateShortcutsList(): void {
     const shortcutsContainer = document.getElementById(DOM_IDS.SHORTCUTS_CONTENT);
     if (!shortcutsContainer) return;
     
@@ -350,7 +373,7 @@
   /**
    * Initialize the keyboard shortcuts system
    */
-  function initializeShortcuts() {
+  function initializeShortcuts(): void {
     // Register main shortcut handler (bubbling phase)
     document.addEventListener('keydown', handleKeyboardEvent);
     

@@ -25,18 +25,18 @@ This is the architecture diagram of the project.
 
 | Category         | Feature              | Description                              | Implementation                |
 | ---------------- | -------------------- | ---------------------------------------- | ----------------------------- |
-| **Editor**       | Syntax Highlighting  | Language-specific highlighting for C/C++ | `frontend/js/editor.js`       |
-|                  | Code Folding         | Collapsible code blocks                  | `frontend/js/editor.js`       |
-|                  | Auto Brackets        | Automatic closing of brackets            | `frontend/js/editor.js`       |
-|                  | Font Size Control    | Ctrl + Mouse Wheel to adjust font size   | `frontend/js/editor.js`       |
-| **UI/UX**        | Multiple Themes      | 8 different color themes                 | `frontend/js/themes.js`       |
+| **Editor**       | Syntax Highlighting  | Language-specific highlighting for C/C++ | `frontend/ts/editor.ts`       |
+|                  | Code Folding         | Collapsible code blocks                  | `frontend/ts/editor.ts`       |
+|                  | Auto Brackets        | Automatic closing of brackets            | `frontend/ts/editor.ts`       |
+|                  | Font Size Control    | Ctrl + Mouse Wheel to adjust font size   | `frontend/ts/editor.ts`       |
+| **UI/UX**        | Multiple Themes      | Different color themes                   | `frontend/ts/themes.ts`       |
 |                  | Responsive Design    | Mobile-friendly layout                   | `frontend/css/responsive.css` |
 |                  | Custom Scrollbars    | Themed scrollbar design                  | `frontend/css/utilities.css`  |
-|                  | Terminal Emulation   | Full terminal emulation with xterm.js    | `frontend/js/handlers.js`     |
-| **Connectivity** | WebSocket Heartbeat  | Keep-alive ping/pong mechanism           | `frontend/js/handlers.js`     |
-|                  | Auto-Reconnection    | Reconnect when connection drops          | `frontend/js/websocket.js`    |
-|                  | Visibility Detection | Resume connections on tab focus          | `frontend/js/handlers.js`     |
-| **Templates**    | Code Examples        | Built-in code templates                  | `frontend/js/templates.js`    |
+|                  | Terminal Emulation   | Full terminal emulation with xterm.js    | `frontend/ts/handlers.ts`     |
+| **Connectivity** | WebSocket Heartbeat  | Keep-alive ping/pong mechanism           | `frontend/ts/handlers.ts`     |
+|                  | Auto-Reconnection    | Reconnect when connection drops          | `frontend/ts/websocket.ts`    |
+|                  | Visibility Detection | Resume connections on tab focus          | `frontend/ts/handlers.ts`     |
+| **Templates**    | Code Examples        | Built-in code templates                  | `frontend/ts/templates.ts`    |
 |                  | Template Selection   | Quick-access template dropdown           | `frontend/index.html`         |
 
 ## Backend Features
@@ -111,32 +111,25 @@ sudo apt install nodejs npm gcc g++ clang clang-format valgrind cppcheck
 # Clone the repository
 git clone https://github.com/Pp3ng/webCpp.git
 
-# Change directory
-cd webCpp/backend
-
-# Install dependencies
-npm install
+# install dependencies
+cd webCpp/backend && npm install && cd ../frontend && npm install
 ```
 
 2. Build and start the application:
 
 ```bash
-# Build TypeScript code
+# Build frontend TypeScript code and assets
+npm run build
+
+# Build backend TypeScript code
+cd ../backend
 npm run build
 
 # Start the server
-npm start
+node dist/server.js
 ```
 
 3. Access the application at http://localhost:9527
-
-## Development Mode
-
-To run the server in development mode with auto-reload:
-
-```bash
-npm run dev
-```
 
 ## Run as a Background Service (Optional)
 

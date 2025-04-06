@@ -5,11 +5,12 @@ actor "User" as User
 component "Browser" as Browser
 
 rectangle "Frontend" {
-  component "HTML/CSS/JS" as StaticFiles
+  component "HTML/CSS/TS" as StaticFiles
   component "CodeMirror Editor" as Editor
   component "Xterm.js Terminal" as Terminal
   component "Result Display" as Display
   component "Request Processing" as FrontProc
+  component "Asset Bundling (Webpack)" as AssetBundle
   
   component "WebSocket Connection Manager" as WsManager {
     component "Heartbeat System" as HeartbeatClient
@@ -69,6 +70,7 @@ Browser --> Editor : Inputs code
 Browser <--> Terminal : Interactive I/O
 
 ' Frontend connections
+AssetBundle --> StaticFiles : Bundles JS/CSS
 Editor --> FrontProc : Submit for processing
 FrontProc --> Express : HTTP POST requests
 FrontProc --> WsManager : Send code for interactive execution

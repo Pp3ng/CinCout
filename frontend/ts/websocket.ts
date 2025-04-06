@@ -1,18 +1,18 @@
 // WebSocket handling module
 const WebCppSocket = (function() {
   // Private variables
-  let socket;
-  let sessionId;
-  let pingInterval;
-  let reconnectTimeout;
-  let isReconnecting = false;
-  let messageHandler = null;
-  let statusUpdateCallback = null;
+  let socket: WebSocket | null = null;
+  let sessionId: string | null = null;
+  let pingInterval: number | null = null;
+  let reconnectTimeout: number | null = null;
+  let isReconnecting: boolean = false;
+  let messageHandler: ((event: MessageEvent) => void) | null = null;
+  let statusUpdateCallback: ((status: string) => void) | null = null;
   
   /**
    * Initialize WebSocket connection
    */
-  function initWebSocket() {
+  function initWebSocket(): void {
     // Clear any existing ping intervals and reconnect timeouts
     if (pingInterval) {
       clearInterval(pingInterval);
@@ -42,7 +42,7 @@ const WebCppSocket = (function() {
         isReconnecting = false;
         
         // Set up ping interval to keep connection alive
-        pingInterval = setInterval(() => {
+        pingInterval = window.setInterval(() => {
           if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
               type: 'ping',
@@ -52,14 +52,14 @@ const WebCppSocket = (function() {
         }, 20000); // Send ping every 20 seconds
       };
       
-      socket.onmessage = (event) => {
+      socket.onmessage = (event: MessageEvent) => {
         console.log('WebSocket message received:', event.data.substring(0, 100) + (event.data.length > 100 ? '...' : ''));
         if (messageHandler) {
           messageHandler(event);
         }
       };
       
-      socket.onclose = (event) => {
+      socket.onclose = (event: CloseEvent) => {
         console.log('WebSocket connection closed', event.code, event.reason);
         updateStatus('Disconnected');
         
@@ -71,13 +71,13 @@ const WebCppSocket = (function() {
         // Only try to reconnect if page is still active and we're not already reconnecting
         if (document.visibilityState === 'visible' && !isReconnecting) {
           isReconnecting = true;
-          reconnectTimeout = setTimeout(() => {
+          reconnectTimeout = window.setTimeout(() => {
             initWebSocket(); // Try to reconnect
           }, 3000);
         }
       };
       
-      socket.onerror = (error) => {
+      socket.onerror = (error: Event) => {
         console.error('WebSocket error:', error);
         updateStatus('Connection Error');
       };
@@ -88,7 +88,7 @@ const WebCppSocket = (function() {
       // Try to reconnect if page is still active
       if (document.visibilityState === 'visible' && !isReconnecting) {
         isReconnecting = true;
-        reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = window.setTimeout(() => {
           initWebSocket(); // Try to reconnect
         }, 5000); // Wait longer after an error
       }
@@ -97,10 +97,10 @@ const WebCppSocket = (function() {
   
   /**
    * Check WebSocket connection and reconnect if needed
-   * @returns {Promise} Resolves when connection is ready
+   * @returns {Promise<void>} Resolves when connection is ready
    */
-  function ensureConnection() {
-    return new Promise((resolve, reject) => {
+  function ensureConnection(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       // If socket exists and is open, we're good to go
       if (socket && socket.readyState === WebSocket.OPEN) {
         resolve();
@@ -110,14 +110,18 @@ const WebCppSocket = (function() {
       // If socket exists but is connecting, wait for it
       if (socket && socket.readyState === WebSocket.CONNECTING) {
         const onOpen = () => {
-          socket.removeEventListener('open', onOpen);
-          socket.removeEventListener('error', onError);
+          if (socket) {
+            socket.removeEventListener('open', onOpen);
+            socket.removeEventListener('error', onError);
+          }
           resolve();
         };
         
-        const onError = (err) => {
-          socket.removeEventListener('open', onOpen);
-          socket.removeEventListener('error', onError);
+        const onError = (err: Event) => {
+          if (socket) {
+            socket.removeEventListener('open', onOpen);
+            socket.removeEventListener('error', onError);
+          }
           reject(new Error('Connection failed while waiting'));
         };
         
@@ -130,7 +134,7 @@ const WebCppSocket = (function() {
       initWebSocket();
       
       // Set up listener for connection
-      const checkConnection = setInterval(() => {
+      const checkConnection = window.setInterval(() => {
         if (socket && socket.readyState === WebSocket.OPEN) {
           clearInterval(checkConnection);
           clearTimeout(connectionTimeout);
@@ -139,7 +143,7 @@ const WebCppSocket = (function() {
       }, 100);
       
       // Set a timeout for connection attempts
-      const connectionTimeout = setTimeout(() => {
+      const connectionTimeout = window.setTimeout(() => {
         clearInterval(checkConnection);
         reject(new Error('Connection timed out'));
       }, 5000);
@@ -148,10 +152,10 @@ const WebCppSocket = (function() {
 
   /**
    * Send data through WebSocket
-   * @param {Object} data - Data to send
-   * @returns {Promise} Resolves when data is sent
+   * @param {any} data - Data to send
+   * @returns {Promise<void>} Resolves when data is sent
    */
-  function sendData(data) {
+  function sendData(data: any): Promise<void> {
     return ensureConnection().then(() => {
       // Add session ID to all messages
       if (sessionId) {
@@ -162,14 +166,16 @@ const WebCppSocket = (function() {
       data.timestamp = Date.now();
       
       // Send data
-      socket.send(JSON.stringify(data));
+      if (socket) {
+        socket.send(JSON.stringify(data));
+      }
     });
   }
   
   /**
    * Reconnect the WebSocket connection and restore session if possible
    */
-  function reconnect() {
+  function reconnect(): void {
     const previousSessionId = sessionId;
     initWebSocket();
     
@@ -190,7 +196,7 @@ const WebCppSocket = (function() {
    * Update status display
    * @param {string} status - Status text to display
    */
-  function updateStatus(status) {
+  function updateStatus(status: string): void {
     if (statusUpdateCallback) {
       statusUpdateCallback(status);
     }
@@ -234,7 +240,7 @@ const WebCppSocket = (function() {
   
   // Public API
   return {
-    init: function(msgHandler, statusCallback) {
+    init: function(msgHandler: (event: MessageEvent) => void, statusCallback: (status: string) => void): void {
       messageHandler = msgHandler;
       statusUpdateCallback = statusCallback;
       initWebSocket();
@@ -242,14 +248,17 @@ const WebCppSocket = (function() {
     reconnect: reconnect,
     sendData: sendData,
     ensureConnection: ensureConnection,
-    getSessionId: function() {
+    getSessionId: function(): string | null {
       return sessionId;
     },
-    setSessionId: function(id) {
+    setSessionId: function(id: string): void {
       sessionId = id;
     },
-    isConnected: function() {
-      return socket && socket.readyState === WebSocket.OPEN;
+    isConnected: function(): boolean {
+      return !!(socket && socket.readyState === WebSocket.OPEN);
     }
   };
 })();
+
+// Export to make it available as a global variable
+(window as any).WebCppSocket = WebCppSocket;

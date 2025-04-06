@@ -9,18 +9,18 @@ document.addEventListener('DOMContentLoaded', function() {
   setupOptionChangeObservers();
 });
 
-function initializeSelectDropdowns() {
+function initializeSelectDropdowns(): void {
   // Find all the select elements to enhance
   const selects = document.querySelectorAll('select');
   
   selects.forEach(select => {
-    enhanceSelect(select);
+    enhanceSelect(select as HTMLSelectElement);
   });
 }
 
-function enhanceSelect(select) {
+function enhanceSelect(select: HTMLSelectElement): void {
   // Skip if already enhanced
-  if (select.parentNode.classList.contains('custom-select-container')) {
+  if (select.parentNode?.classList.contains('custom-select-container')) {
     return;
   }
   
@@ -32,8 +32,7 @@ function enhanceSelect(select) {
   container.setAttribute('data-for', select.id);
   
   // Position the container where the select is
-  const selectRect = select.getBoundingClientRect();
-  select.parentNode.insertBefore(container, select);
+  select.parentNode!.insertBefore(container, select);
   
   // Move the select into our container
   container.appendChild(select);
@@ -69,7 +68,7 @@ function enhanceSelect(select) {
 }
 
 // Function to update the selected option in the custom UI
-function updateSelectedOption(select, optionsContainer) {
+function updateSelectedOption(select: HTMLSelectElement, optionsContainer: HTMLElement): void {
   const selectedIndex = select.selectedIndex;
   
   // Update selected state in custom options
@@ -83,7 +82,7 @@ function updateSelectedOption(select, optionsContainer) {
 }
 
 // Function to rebuild custom options
-function rebuildCustomOptions(select, optionsContainer) {
+function rebuildCustomOptions(select: HTMLSelectElement, optionsContainer: HTMLElement): void {
   // Clear existing options
   optionsContainer.innerHTML = '';
   
@@ -96,12 +95,12 @@ function rebuildCustomOptions(select, optionsContainer) {
     }
     customOption.textContent = option.text;
     customOption.setAttribute('data-value', option.value);
-    customOption.setAttribute('data-index', index);
+    customOption.setAttribute('data-index', index.toString());
     
     // Handle option selection
-    customOption.addEventListener('click', function(e) {
+    customOption.addEventListener('click', function(this: HTMLElement) {
       // Update the real select element
-      select.selectedIndex = parseInt(this.getAttribute('data-index'));
+      select.selectedIndex = parseInt(this.getAttribute('data-index') || '0');
       
       // Trigger a change event for any listeners
       const event = new Event('change', { bubbles: true });
@@ -124,7 +123,7 @@ function rebuildCustomOptions(select, optionsContainer) {
 }
 
 // Monitor for changes to the options of the select elements
-function setupOptionChangeObservers() {
+function setupOptionChangeObservers(): void {
   // Monitor template select for changes
   const templateSelect = document.getElementById('template');
   if (templateSelect) {
@@ -137,7 +136,7 @@ function setupOptionChangeObservers() {
           if (container) {
             const optionsContainer = container.querySelector('.select-options');
             if (optionsContainer) {
-              rebuildCustomOptions(templateSelect, optionsContainer);
+              rebuildCustomOptions(templateSelect as HTMLSelectElement, optionsContainer as HTMLElement);
             }
           }
         }

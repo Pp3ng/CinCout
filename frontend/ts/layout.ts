@@ -1,9 +1,9 @@
 // Handles showing/hiding panels and managing the layout
 document.addEventListener('DOMContentLoaded', function() {
     // Panel elements
-    const outputPanel = document.getElementById('outputPanel');
-    const editorPanel = document.querySelector('.editor-panel');
-    const closeOutputBtn = document.getElementById('closeOutput');
+    const outputPanel = document.getElementById('outputPanel') as HTMLElement;
+    const editorPanel = document.querySelector('.editor-panel') as HTMLElement;
+    const closeOutputBtn = document.getElementById('closeOutput') as HTMLElement;
     
     // Action buttons that should show the output panel
     const actionButtons = [
@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
         outputPanel.style.display = 'none';
         editorPanel.classList.remove('with-output');
         // Need to refresh the CodeMirror instance when size changes
-        if (window.editor) {
-            setTimeout(() => window.editor.refresh(), 10);
+        if ((window as any).editor) {
+            setTimeout(() => (window as any).editor.refresh(), 10);
         }
     });
     
@@ -37,16 +37,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     editorPanel.classList.add('with-output');
                     
                     // Need to refresh the CodeMirror instance when size changes
-                    if (window.editor) {
-                        setTimeout(() => window.editor.refresh(), 10);
+                    if ((window as any).editor) {
+                        setTimeout(() => (window as any).editor.refresh(), 10);
                     }
                     
                     // If assembly button was clicked, switch to assembly tab
                     if (button.id === 'viewAssembly') {
-                        document.getElementById('assemblyTab').click();
+                        (document.getElementById('assemblyTab') as HTMLElement).click();
                     } else {
                         // Otherwise default to output tab
-                        document.getElementById('outputTab').click();
+                        (document.getElementById('outputTab') as HTMLElement).click();
                     }
                 } 
                 // The original event handler will be called automatically via event propagation
@@ -56,36 +56,36 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Tab switching
-    document.getElementById('outputTab').addEventListener('click', function() {
+    document.getElementById('outputTab')!.addEventListener('click', function() {
         this.classList.add('active');
-        document.getElementById('assemblyTab').classList.remove('active');
-        document.getElementById('output').style.display = 'block';
-        document.getElementById('assembly').style.display = 'none';
+        document.getElementById('assemblyTab')!.classList.remove('active');
+        (document.getElementById('output') as HTMLElement).style.display = 'block';
+        (document.getElementById('assembly') as HTMLElement).style.display = 'none';
     });
     
-    document.getElementById('assemblyTab').addEventListener('click', function() {
+    document.getElementById('assemblyTab')!.addEventListener('click', function() {
         this.classList.add('active');
-        document.getElementById('outputTab').classList.remove('active');
-        document.getElementById('output').style.display = 'none';
-        document.getElementById('assembly').style.display = 'block';
+        document.getElementById('outputTab')!.classList.remove('active');
+        (document.getElementById('output') as HTMLElement).style.display = 'none';
+        (document.getElementById('assembly') as HTMLElement).style.display = 'block';
         
         // Refresh assembly view
-        if (window.assemblyView) {
-            setTimeout(() => window.assemblyView.refresh(), 10);
+        if ((window as any).assemblyView) {
+            setTimeout(() => (window as any).assemblyView.refresh(), 10);
         }
     });
     
     // Handle resize events
     window.addEventListener('resize', function() {
-        if (window.editor) {
-            window.editor.refresh();
+        if ((window as any).editor) {
+            (window as any).editor.refresh();
         }
-        if (window.assemblyView) {
-            window.assemblyView.refresh();
+        if ((window as any).assemblyView) {
+            (window as any).assemblyView.refresh();
         }
         // Handle terminal resize if it exists
-        if (window.fitAddon) {
-            window.fitAddon.fit();
+        if ((window as any).fitAddon) {
+            (window as any).fitAddon.fit();
         }
     });
-}); 
+});

@@ -28,7 +28,10 @@ declare global {
         fitAddon: any;
         terminal: any;
         templates: any;
-        updateTemplates: () => void;
+        templateLists: Record<string, string[]>;
+        loadedTemplates: Set<string>;
+        updateTemplates: () => Promise<void>;
+        setTemplate: () => Promise<void>;
     }
 }
 
@@ -332,20 +335,33 @@ const WebCppUI = (function() {
     
     // Language change handler - must be added before template events
     if (domElements.language) {
-      domElements.language.addEventListener('change', function(this: HTMLSelectElement) {
+      domElements.language.addEventListener('change', async function(this: HTMLSelectElement) {
         const lang = this.value;
         
         // Update available templates for the selected language
         if (typeof window.updateTemplates === 'function') {
-          window.updateTemplates();
+          await window.updateTemplates();
           
           // Set default template
           const templateSelect = document.getElementById('template') as HTMLSelectElement;
           if (templateSelect) {
-            templateSelect.value = 'Hello World';
-            // Update editor with the selected template
-            if (window.editor && window.templates && window.templates[lang] && window.templates[lang]['Hello World']) {
-              window.editor.setValue(window.templates[lang]['Hello World']);
+            // Try to select Hello World template if it exists
+            const helloWorldOption = Array.from(templateSelect.options).find(
+              option => option.value === 'Hello World'
+            );
+            
+            if (helloWorldOption) {
+              templateSelect.value = 'Hello World';
+              // Call setTemplate to update editor content
+              if (typeof window.setTemplate === 'function') {
+                window.setTemplate();
+              }
+            } else if (templateSelect.options.length > 0) {
+              // Select first available template
+              templateSelect.selectedIndex = 0;
+              if (typeof window.setTemplate === 'function') {
+                window.setTemplate();
+              }
             }
           }
         }
@@ -355,12 +371,8 @@ const WebCppUI = (function() {
     // Template change handler
     if (domElements.template) {
       domElements.template.addEventListener('change', function(this: HTMLSelectElement) {
-        const templateName = this.value;
-        const lang = (domElements.language as HTMLSelectElement)?.value;
-        
-        // Update editor with selected template
-        if (window.editor && window.templates && window.templates[lang] && window.templates[lang][templateName]) {
-          window.editor.setValue(window.templates[lang][templateName]);
+        if (typeof window.setTemplate === 'function') {
+          window.setTemplate();
         }
       });
     }

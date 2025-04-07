@@ -110,26 +110,22 @@ sudo apt install nodejs npm gcc g++ clang clang-format valgrind cppcheck
 ```bash
 # Clone the repository
 git clone https://github.com/Pp3ng/webCpp.git
-
-# install dependencies
-cd webCpp/backend && npm install && cd ../frontend && npm install
 ```
 
-2. Build and start the application:
+2. build
 
 ```bash
-# Build frontend TypeScript code and assets
+# install dependencies
+npm install
+# build frontend and backend
 npm run build
-
-# Build backend TypeScript code
-cd ../backend
-npm run build
-
-# Start the server
-node dist/server.js
+# start the server
+npm start
 ```
 
 3. Access the application at http://localhost:9527
+
+---
 
 ## Run as a Background Service (Optional)
 

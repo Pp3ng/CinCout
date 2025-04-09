@@ -49,7 +49,8 @@
     MEMORY_CHECK: "memcheck",
     OUTPUT_PANEL: "outputPanel",
     LANGUAGE: "language",
-    SHORTCUTS_CONTENT: "shortcuts-content"
+    SHORTCUTS_CONTENT: "shortcuts-content",
+    CODESNAP: "codeSnap"
   };
 
   //=============================================================================
@@ -87,6 +88,11 @@
         action: toggleCodeFolding,
         description: "Toggle code folding",
         displayKeys: IS_MAC ? ['⌘', 'K'] : ['Ctrl', 'K']
+      },
+      [`${CMD_KEY}+p`]: {
+        action: () => triggerButton(DOM_IDS.CODESNAP),
+        description: "Take code snapshot",
+        displayKeys: IS_MAC ? ['⌘', 'P'] : ['Ctrl', 'P']
       }
     },
     

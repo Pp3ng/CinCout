@@ -7,6 +7,11 @@
   padding: 4.5px 0;
 }
 
+/* Right-aligned button container */
+.right-aligned {
+  margin-left: auto;
+}
+
 /* Base button styles */
 button {
   background: linear-gradient(45deg, var(--accent), var(--accent-hover));

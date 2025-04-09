@@ -23,21 +23,22 @@ This is the architecture diagram of the project.
 
 ## Frontend Features
 
-| Category         | Feature              | Description                              | Implementation                |
-| ---------------- | -------------------- | ---------------------------------------- | ----------------------------- |
-| **Editor**       | Syntax Highlighting  | Language-specific highlighting for C/C++ | `frontend/ts/editor.ts`       |
-|                  | Code Folding         | Collapsible code blocks                  | `frontend/ts/editor.ts`       |
-|                  | Auto Brackets        | Automatic closing of brackets            | `frontend/ts/editor.ts`       |
-|                  | Font Size Control    | Ctrl + Mouse Wheel to adjust font size   | `frontend/ts/editor.ts`       |
-| **UI/UX**        | Multiple Themes      | Different color themes                   | `frontend/ts/themes.ts`       |
-|                  | Responsive Design    | Mobile-friendly layout                   | `frontend/css/responsive.css` |
-|                  | Custom Scrollbars    | Themed scrollbar design                  | `frontend/css/utilities.css`  |
-|                  | Terminal Emulation   | Full terminal emulation with xterm.js    | `frontend/ts/handlers.ts`     |
-| **Connectivity** | WebSocket Heartbeat  | Keep-alive ping/pong mechanism           | `frontend/ts/handlers.ts`     |
-|                  | Auto-Reconnection    | Reconnect when connection drops          | `frontend/ts/websocket.ts`    |
-|                  | Visibility Detection | Resume connections on tab focus          | `frontend/ts/handlers.ts`     |
-| **Templates**    | Code Examples        | Built-in code templates                  | `frontend/ts/templates.ts`    |
-|                  | Template Selection   | Quick-access template dropdown           | `frontend/index.html`         |
+| Category         | Feature              | Description                                 | Implementation                |
+| ---------------- | -------------------- | ------------------------------------------- | ----------------------------- |
+| **Editor**       | Syntax Highlighting  | Language-specific highlighting for C/C++    | `frontend/ts/editor.ts`       |
+|                  | Code Folding         | Collapsible code blocks                     | `frontend/ts/editor.ts`       |
+|                  | Auto Brackets        | Automatic closing of brackets               | `frontend/ts/editor.ts`       |
+|                  | Font Size Control    | Ctrl + Mouse Wheel to adjust font size      | `frontend/ts/editor.ts`       |
+|                  | Code Snapshot        | Save code as image with syntax highlighting | `frontend/ts/handlers.ts`     |
+| **UI/UX**        | Multiple Themes      | Different color themes                      | `frontend/ts/themes.ts`       |
+|                  | Responsive Design    | Mobile-friendly layout                      | `frontend/css/responsive.css` |
+|                  | Custom Scrollbars    | Themed scrollbar design                     | `frontend/css/utilities.css`  |
+|                  | Terminal Emulation   | Full terminal emulation with xterm.js       | `frontend/ts/handlers.ts`     |
+| **Connectivity** | WebSocket Heartbeat  | Keep-alive ping/pong mechanism              | `frontend/ts/handlers.ts`     |
+|                  | Auto-Reconnection    | Reconnect when connection drops             | `frontend/ts/websocket.ts`    |
+|                  | Visibility Detection | Resume connections on tab focus             | `frontend/ts/handlers.ts`     |
+| **Templates**    | Code Examples        | Built-in code templates                     | `frontend/ts/templates.ts`    |
+|                  | Template Selection   | Quick-access template dropdown              | `frontend/index.html`         |
 
 ## Backend Features
 
@@ -65,6 +66,7 @@ This is the architecture diagram of the project.
 | Compile and Run  | Ctrl + Enter  | ⌘ + Return |
 | Clear Output     | Ctrl + L      | ⌘ + L      |
 | Save Code        | Ctrl + S      | ⌘ + S      |
+| Code Snapshot    | Ctrl + P      | ⌘ + P      |
 | Open Code File   | Ctrl + O      | ⌘ + O      |
 | Toggle Code Fold | Ctrl + K      | ⌘ + K      |
 | Close Output     | ESC           | ESC        |

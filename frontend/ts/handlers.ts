@@ -32,6 +32,7 @@ declare global {
         loadedTemplates: Set<string>;
         updateTemplates: () => Promise<void>;
         setTemplate: () => Promise<void>;
+        html2canvas: any;
     }
 }
 
@@ -60,7 +61,8 @@ const WebCppUI = (function() {
     clear: document.getElementById("clear"),
     themeSelect: document.getElementById("theme-select"),
     outputPanel: document.getElementById("outputPanel"),
-    closeOutput: document.getElementById("closeOutput")
+    closeOutput: document.getElementById("closeOutput"),
+    codesnap: document.getElementById("codeSnap")
   };
   
   /**
@@ -326,6 +328,141 @@ const WebCppUI = (function() {
         input: data
       });
     });
+  }
+  
+  /**
+   * Take a code snapshot of the code editor
+   * @returns {Promise<void>}
+   */
+  async function takeCodeSnap(): Promise<void> {
+    console.log("Taking code snapshot...");
+    
+    // Get the CodeMirror editor element
+    const editorElement = document.querySelector('.CodeMirror');
+    
+    if (!editorElement) {
+      console.error('CodeMirror editor element not found');
+      return;
+    }
+    
+    // Get current language
+    const lang = (domElements.language as HTMLSelectElement)?.value || 'code';
+    
+    // Create a formatted timestamp for the filename
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // Format as "yyyy-MM-dd at HH.mm.ss.png"
+    const timestamp = `${year}-${month}-${day} at ${hours}.${minutes}.${seconds}`;
+    const filename = `${lang}-${timestamp}.png`;
+    
+    // Show loading indicator
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'codesnap-loading';
+    loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...';
+    loadingIndicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
+    document.body.appendChild(loadingIndicator);
+    
+    try {
+      // Get editor theme to determine background color
+      const isDarkTheme = window.getComputedStyle(editorElement).backgroundColor.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i)?.slice(1).map(Number).reduce((a, b) => a + b, 0) < 382;
+      
+      // Use html2canvas to take the code snapshot
+      const canvas = await window.html2canvas(editorElement, {
+        backgroundColor: null,
+        scale: 2, // Higher scale for better quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      });
+      
+      // Create a container with padding and background
+      const paddedCanvas = document.createElement('canvas');
+      const ctx = paddedCanvas.getContext('2d');
+      const padding = 20;
+      
+      if (!ctx) {
+        throw new Error('Failed to get canvas context');
+      }
+      
+      // Set the padded canvas size
+      paddedCanvas.width = canvas.width + padding * 2;
+      paddedCanvas.height = canvas.height + padding * 2;
+      
+      // Fill background based on theme
+      ctx.fillStyle = isDarkTheme ? '#1e1e1e' : '#f5f5f5';
+      ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+      
+      // Draw the original canvas on the padded one
+      ctx.drawImage(canvas, padding, padding);
+      
+      // Convert to blob and download
+      const blob = await new Promise<Blob | null>((resolve) => {
+        paddedCanvas.toBlob(resolve, 'image/png');
+      });
+      
+      if (!blob) {
+        throw new Error('Failed to create blob from canvas');
+      }
+      
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      document.body.removeChild(loadingIndicator);
+      
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'codesnap-notification';
+      notification.innerHTML = '<i class="fas fa-check-circle"></i> Code snapshot saved!';
+      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(40,167,69,0.9); color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;';
+      document.body.appendChild(notification);
+      
+      // Remove notification after a delay
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            document.body.removeChild(notification);
+          }
+        }, 500);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('CodeSnap error:', error);
+      
+      // Make sure loading indicator is removed in case of error
+      if (loadingIndicator.parentNode) {
+        document.body.removeChild(loadingIndicator);
+      }
+      
+      // Show error notification
+      const errorNotification = document.createElement('div');
+      errorNotification.className = 'codesnap-error';
+      errorNotification.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to create code snapshot';
+      errorNotification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(220,53,69,0.9); color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
+      document.body.appendChild(errorNotification);
+      
+      setTimeout(() => {
+        if (errorNotification.parentNode) {
+          document.body.removeChild(errorNotification);
+        }
+      }, 3000);
+    }
   }
   
   /**
@@ -661,6 +798,11 @@ const WebCppUI = (function() {
           window.editor.setOption('keyMap', this.checked ? 'vim' : 'default');
         }
       });
+    }
+
+    // Initialize CodeSnap button
+    if (domElements.codesnap) {
+      domElements.codesnap.addEventListener('click', takeCodeSnap);
     }
   }
   

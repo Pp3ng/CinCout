@@ -1,5 +1,5 @@
 // Define WebSocket-related interfaces
-interface WebCppSocket {
+interface CinCoutSocket {
     init: (messageHandler: (event: MessageEvent) => void, statusUpdater: (status: string) => void) => void;
     sendData: (data: any) => Promise<void>;
     reconnect: () => void;
@@ -22,7 +22,7 @@ interface DomElements {
 // Declare global objects
 declare global {
     interface Window {
-        WebCppSocket: WebCppSocket;
+        CinCoutSocket: CinCoutSocket;
         editor: any;
         assemblyView: any;
         fitAddon: any;
@@ -37,7 +37,7 @@ declare global {
 }
 
 // Module pattern for better organization
-const WebCppUI = (function() {
+const CinCoutUI = (function() {
   // Private variables
   let terminal: any;
   window.fitAddon = null; // Make fitAddon global for layout.js
@@ -78,8 +78,8 @@ const WebCppUI = (function() {
         break;
         
       case 'connected':
-        window.WebCppSocket.setSessionId(data.sessionId);
-        console.log(`Connected with session ID: ${window.WebCppSocket.getSessionId()}`);
+        window.CinCoutSocket.setSessionId(data.sessionId);
+        console.log(`Connected with session ID: ${window.CinCoutSocket.getSessionId()}`);
         break;
         
       case 'compiling':
@@ -261,8 +261,8 @@ const WebCppUI = (function() {
         try {
           window.fitAddon.fit();
           // Send the adjusted size to the server
-          if (window.WebCppSocket.isConnected() && isRunning) {
-            window.WebCppSocket.sendData({
+          if (window.CinCoutSocket.isConnected() && isRunning) {
+            window.CinCoutSocket.sendData({
               type: 'resize',
               cols: terminal.cols,
               rows: terminal.rows
@@ -301,8 +301,8 @@ const WebCppUI = (function() {
 
     // After terminal is opened, send size information to the server
     terminal.onResize(({ cols, rows }: { cols: number, rows: number }) => {
-      if (window.WebCppSocket.isConnected() && isRunning) {
-        window.WebCppSocket.sendData({
+      if (window.CinCoutSocket.isConnected() && isRunning) {
+        window.CinCoutSocket.sendData({
           type: 'resize',
           cols: cols,
           rows: rows
@@ -317,13 +317,13 @@ const WebCppUI = (function() {
   function setupTerminalInput(): void {
     // Simplified terminal input handling, letting backend handle echo
     terminal.onData((data: string) => {
-      if (!isRunning || !window.WebCppSocket.isConnected()) {
+      if (!isRunning || !window.CinCoutSocket.isConnected()) {
         console.log('Not sending terminal input: program not running or socket closed');
         return;
       }
 
       // Send all input characters to the server for PTY to handle
-      window.WebCppSocket.sendData({
+      window.CinCoutSocket.sendData({
         type: 'input',
         input: data
       });
@@ -345,126 +345,205 @@ const WebCppUI = (function() {
       return;
     }
     
-    // Get current language
-    const lang = (domElements.language as HTMLSelectElement)?.value || 'code';
-    
-    // Create a formatted timestamp for the filename
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    
-    // Format as "yyyy-MM-dd at HH.mm.ss.png"
-    const timestamp = `${year}-${month}-${day} at ${hours}.${minutes}.${seconds}`;
-    const filename = `${lang}-${timestamp}.png`;
-    
-    // Show loading indicator
-    const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = 'codesnap-loading';
-    loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...';
-    loadingIndicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
-    document.body.appendChild(loadingIndicator);
-    
     try {
-      // Get editor theme to determine background color
-      const isDarkTheme = window.getComputedStyle(editorElement).backgroundColor.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i)?.slice(1).map(Number).reduce((a, b) => a + b, 0) < 382;
+      // Show loading indicator
+      const loadingIndicator = document.createElement('div');
+      loadingIndicator.className = 'codesnap-loading';
+      loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...';
+      loadingIndicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
+      document.body.appendChild(loadingIndicator);
       
-      // Use html2canvas to take the code snapshot
-      const canvas = await window.html2canvas(editorElement, {
-        backgroundColor: null,
-        scale: 2, // Higher scale for better quality
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      });
-      
-      // Create a container with padding and background
-      const paddedCanvas = document.createElement('canvas');
-      const ctx = paddedCanvas.getContext('2d');
-      const padding = 20;
-      
-      if (!ctx) {
-        throw new Error('Failed to get canvas context');
+      // Get the CodeMirror instance
+      const cm = (editorElement as any).CodeMirror;
+      if (!cm) {
+        throw new Error('CodeMirror instance not found');
       }
       
-      // Set the padded canvas size
-      paddedCanvas.width = canvas.width + padding * 2;
-      paddedCanvas.height = canvas.height + padding * 2;
+      // Get code content and language
+      const fullContent = cm.getValue();
+      const lang = (domElements.language as HTMLSelectElement)?.value || 'code';
+
+      // Create filename with timestamp
+      const timestamp = (() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} at ${String(now.getHours()).padStart(2, '0')}.${String(now.getMinutes()).padStart(2, '0')}.${String(now.getSeconds()).padStart(2, '0')}`
+      })();
+      const filename = `${lang}-${timestamp}.png`;
       
-      // Fill background based on theme
-      ctx.fillStyle = isDarkTheme ? '#1e1e1e' : '#f5f5f5';
-      ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+      // Get current theme directly from theme selector
+      const currentTheme = (document.getElementById('theme-select') as HTMLSelectElement)?.value || 'default';
       
-      // Draw the original canvas on the padded one
-      ctx.drawImage(canvas, padding, padding);
+      // Calculate width based on longest line
+      const lines = fullContent.split('\n');
+      const longestLine = lines.reduce((longest, line) => line.length > longest.length ? line : longest, '');
       
-      // Convert to blob and download
-      const blob = await new Promise<Blob | null>((resolve) => {
-        paddedCanvas.toBlob(resolve, 'image/png');
+      // Measure line width
+      const measureEl = document.createElement('div');
+      measureEl.style.cssText = 'position: absolute; left: -9999px; visibility: hidden; white-space: pre;';
+      measureEl.style.fontFamily = window.getComputedStyle(editorElement).fontFamily;
+      measureEl.style.fontSize = window.getComputedStyle(editorElement).fontSize;
+      measureEl.textContent = longestLine;
+      document.body.appendChild(measureEl);
+      const longestLineWidth = measureEl.clientWidth;
+      document.body.removeChild(measureEl);
+      
+      // Calculate total width including line numbers
+      const lineNumbersWidth = editorElement.querySelector('.CodeMirror-linenumbers')?.clientWidth || 0;
+      const totalWidth = longestLineWidth + lineNumbersWidth + 40;
+      
+      // Create temporary container for new editor
+      const tempContainer = document.createElement('div');
+      tempContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; opacity: 1; width: ${totalWidth}px;`;
+      document.body.appendChild(tempContainer);
+      
+      // Get original editor styling
+      const computedStyle = window.getComputedStyle(editorElement);
+      const editorStyles = {
+        fontFamily: computedStyle.getPropertyValue('font-family'),
+        fontSize: computedStyle.getPropertyValue('font-size'),
+        lineHeight: computedStyle.getPropertyValue('line-height')
+      };
+      
+      // Copy editor options that matter for rendering
+      const currentOptions = {};
+      const relevantOptions = ['mode', 'lineWrapping', 'lineNumbers', 'foldGutter', 'theme', 'indentUnit', 'indentWithTabs', 'smartIndent'];
+      
+      for (const option of relevantOptions) {
+        try {
+          const value = cm.getOption(option);
+          if (value !== undefined) {
+            (currentOptions as any)[option] = value;
+          }
+        } catch (e) {
+          console.warn(`Couldn't get option ${option}:`, e);
+        }
+      }
+      
+      // Create new CodeMirror instance for snapshot
+      const newCm = (window as any).CodeMirror(tempContainer, {
+        ...currentOptions,
+        value: fullContent,
+        readOnly: true,
+        viewportMargin: Infinity,
+        theme: currentTheme !== 'default' ? currentTheme : 'default'
       });
       
+      // Wait for theme CSS to load and apply
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Style the new editor element
+      const newEditorElement = tempContainer.querySelector('.CodeMirror') as HTMLElement;
+      if (!newEditorElement) {
+        throw new Error('New editor element not found');
+      }
+      
+      // Apply necessary styling
+      newEditorElement.style.fontFamily = editorStyles.fontFamily;
+      newEditorElement.style.fontSize = editorStyles.fontSize;
+      newEditorElement.style.lineHeight = editorStyles.lineHeight;
+      newEditorElement.style.width = `${totalWidth}px`;
+      
+      // Make content fully visible without scrolling
+      const scrollElement = newEditorElement.querySelector('.CodeMirror-scroll') as HTMLElement;
+      if (scrollElement) {
+        scrollElement.style.height = 'auto';
+        scrollElement.style.maxHeight = 'none';
+        scrollElement.style.overflow = 'visible';
+        scrollElement.style.width = `${totalWidth}px`;
+      }
+      
+      const sizerElement = newEditorElement.querySelector('.CodeMirror-sizer') as HTMLElement;
+      if (sizerElement) {
+        sizerElement.style.marginBottom = '0';
+        sizerElement.style.minWidth = `${totalWidth - lineNumbersWidth}px`;
+      }
+      
+      const codeArea = newEditorElement.querySelector('.CodeMirror-lines') as HTMLElement;
+      if (codeArea) {
+        codeArea.style.width = `${totalWidth - lineNumbersWidth}px`;
+      }
+      
+      // Force refresh and wait for it to complete
+      newCm.refresh();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Take screenshot
+      const canvas = await window.html2canvas(newEditorElement, {
+        backgroundColor: null,
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        height: newEditorElement.scrollHeight,
+        width: totalWidth,
+        windowHeight: newEditorElement.scrollHeight + 100
+      });
+      
+      // Convert to blob and download
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!blob) {
         throw new Error('Failed to create blob from canvas');
       }
       
-      // Create download link
+      // Download the image
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
-      
-      // Trigger download
       document.body.appendChild(link);
       link.click();
-      
-      // Cleanup
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      
+      // Clean up
+      document.body.removeChild(tempContainer);
       document.body.removeChild(loadingIndicator);
       
       // Show success notification
-      const notification = document.createElement('div');
-      notification.className = 'codesnap-notification';
-      notification.innerHTML = '<i class="fas fa-check-circle"></i> Code snapshot saved!';
-      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(40,167,69,0.9); color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;';
-      document.body.appendChild(notification);
-      
-      // Remove notification after a delay
-      setTimeout(() => {
-        notification.style.opacity = '0';
-        setTimeout(() => {
-          if (notification.parentNode) {
-            document.body.removeChild(notification);
-          }
-        }, 500);
-      }, 3000);
+      showNotification(true, 'Code snapshot saved!');
       
     } catch (error) {
       console.error('CodeSnap error:', error);
       
       // Make sure loading indicator is removed in case of error
-      if (loadingIndicator.parentNode) {
-        document.body.removeChild(loadingIndicator);
+      const existingIndicator = document.querySelector('.codesnap-loading');
+      if (existingIndicator && existingIndicator.parentNode) {
+        existingIndicator.parentNode.removeChild(existingIndicator);
       }
       
       // Show error notification
-      const errorNotification = document.createElement('div');
-      errorNotification.className = 'codesnap-error';
-      errorNotification.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to create code snapshot';
-      errorNotification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(220,53,69,0.9); color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
-      document.body.appendChild(errorNotification);
-      
-      setTimeout(() => {
-        if (errorNotification.parentNode) {
-          document.body.removeChild(errorNotification);
-        }
-      }, 3000);
+      showNotification(false, 'Failed to create code snapshot');
     }
   }
   
+  /**
+   * Show a notification message
+   * @param success - Whether this is a success or error notification
+   * @param message - The message to display
+   */
+  function showNotification(success: boolean, message: string): void {
+    const notification = document.createElement('div');
+    notification.className = success ? 'codesnap-notification' : 'codesnap-error';
+    
+    const icon = success ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = success ? 'rgba(40,167,69,0.9)' : 'rgba(220,53,69,0.9)';
+    
+    notification.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+    notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: ${bgColor}; color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;`;
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after a delay
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          document.body.removeChild(notification);
+        }
+      }, 500);
+    }, 3000);
+  }
+
   /**
    * Initialize event handlers
    */
@@ -538,7 +617,7 @@ const WebCppUI = (function() {
         }
         
         try {
-          await window.WebCppSocket.sendData({
+          await window.CinCoutSocket.sendData({
             type: 'compile',
             code: code,
             lang: lang,
@@ -560,11 +639,11 @@ const WebCppUI = (function() {
       domElements.closeOutput.addEventListener('click', async function() {
         
         try {
-          const sessionId = window.WebCppSocket.getSessionId();
+          const sessionId = window.CinCoutSocket.getSessionId();
           if (sessionId) {
             console.log(`Sending cleanup request for session ${sessionId}`);
             // Send cleanup request to backend
-            await window.WebCppSocket.sendData({
+            await window.CinCoutSocket.sendData({
               action: 'cleanup',
               sessionId: sessionId
             });
@@ -811,7 +890,7 @@ const WebCppUI = (function() {
    */
   function init(): void {
     // Initialize WebSocket connection with handler
-    window.WebCppSocket.init(handleWebSocketMessage, updateStatus);
+    window.CinCoutSocket.init(handleWebSocketMessage, updateStatus);
     
     // Initialize event handlers
     initEventHandlers();
@@ -822,10 +901,10 @@ const WebCppUI = (function() {
     init: init,
     reconnect: function(): void {
       // Public method to force reconnection
-      window.WebCppSocket.reconnect();
+      window.CinCoutSocket.reconnect();
     }
   };
 })();
 
 // Initialize the UI when the DOM is ready
-document.addEventListener('DOMContentLoaded', WebCppUI.init);
+document.addEventListener('DOMContentLoaded', CinCoutUI.init);

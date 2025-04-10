@@ -44,7 +44,7 @@ const interval = setInterval(function ping() {
     }
     
     ws.isAlive = false;
-    ws.ping('', false, true); // send ping frame to client
+    ws.ping();
   });
 }, 30000); // check every 30 seconds
 

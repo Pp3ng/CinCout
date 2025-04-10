@@ -1,5 +1,5 @@
 // WebSocket handling module
-const WebCppSocket = (function() {
+const CinCoutSocket = (function() {
   // Private variables
   let socket: WebSocket | null = null;
   let sessionId: string | null = null;
@@ -261,4 +261,4 @@ const WebCppSocket = (function() {
 })();
 
 // Export to make it available as a global variable
-(window as any).WebCppSocket = WebCppSocket;
+(window as any).CinCoutSocket = CinCoutSocket;

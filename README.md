@@ -1,4 +1,4 @@
-# WEB C/C++ Code Editor and Compiler
+# CinCout
 
 This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using TypeScript/Node.js for the backend and HTML/CSS/JavaScript for the frontend.
 
@@ -111,7 +111,7 @@ sudo apt install nodejs npm gcc g++ clang clang-format valgrind cppcheck
 
 ```bash
 # Clone the repository
-git clone https://github.com/Pp3ng/webCpp.git
+git clone https://github.com/Pp3ng/CinCout.git
 ```
 
 2. build
@@ -147,7 +147,7 @@ npm install pm2 -g
 npm run build
 
 # Start the application
-pm2 start dist/server.js --name "webCpp"
+pm2 start dist/server.js --name "CinCout"
 
 # Set up startup script to run on server boot
 pm2 startup
@@ -161,16 +161,16 @@ pm2 save
 pm2 status
 
 # Restart application
-pm2 restart webCpp
+pm2 restart CinCout
 
 # View logs
-pm2 logs webCpp
+pm2 logs CinCout
 
 # Stop application
-pm2 stop webCpp
+pm2 stop CinCout
 
 # Delete application from PM2
-pm2 delete webCpp
+pm2 delete CinCout
 ```
 
 ### Using Nginx as a Reverse Proxy (Recommended)
@@ -185,7 +185,7 @@ sudo apt install nginx
 2. Create an Nginx configuration file:
 
 ```bash
-sudo vi /etc/nginx/sites-available/webcpp
+sudo vi /etc/nginx/sites-available/CinCout
 ```
 
 3. Add the following configuration:
@@ -209,7 +209,7 @@ server {
 4. Enable the site and restart Nginx:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/webcpp /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/CinCout /etc/nginx/sites-enabled/
 sudo nginx -t  # Test if the configuration is valid
 sudo systemctl restart nginx
 ```

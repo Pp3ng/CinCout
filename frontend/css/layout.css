@@ -12,20 +12,34 @@
   gap: 13.5px;
 }
 
-.title-shortcuts {
+.header > div:first-child {
   display: flex;
   align-items: center;
   gap: 13.5px;
   flex-wrap: wrap;
 }
 
-.title-shortcuts h1 {
+h1 {
+  font-family: 'Fira Code',monospace;
   background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+  background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-size: 1.8em;
+  font-size: 1.6em;
   margin: 0;
+  letter-spacing: 0.4px;
+  text-shadow: 0 1px 5px rgba(var(--accent-rgb), 0.2);
+  animation: gradient-shift 15s ease-in-out infinite;
+  white-space: nowrap;
+  line-height: 1;
+  display: flex;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .github-icon {

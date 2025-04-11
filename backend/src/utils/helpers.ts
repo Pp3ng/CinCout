@@ -53,8 +53,8 @@ function formatOutput(text: string, outputType: string = 'default'): string {
                  // Clean up spacing
                  .replace(/\s+from\s+/g, ' from ')
                  // Remove temporary directory paths - more robust regex to catch various forms
-                 .replace(/\(\/tmp\/webCpp-[^\/]+\/[^:)]+:[^\)]+\)/g, '(program.c:LINE)')
-                 .replace(/by 0x[0-9a-fA-F]+: \w+ \(\/tmp\/webCpp-[^\/]+\/([^:)]+):(\d+)\)/g, 'by 0x...: (line: $2)')
+                 .replace(/\(\/tmp\/CinCout-[^\/]+\/[^:)]+:[^\)]+\)/g, '(program.c:LINE)')
+                 .replace(/by 0x[0-9a-fA-F]+: \w+ \(\/tmp\/CinCout-[^\/]+\/([^:)]+):(\d+)\)/g, 'by 0x...: (line: $2)')
                  // Remove all other path references
                  .replace(/in \/.*?\/([^\/]+)\)/g, 'in $1)')
                  // Clean up whitespace
@@ -105,7 +105,7 @@ function formatOutput(text: string, outputType: string = 'default'): string {
  * @param {string} prefix - Prefix for temp directory name
  * @returns {DirResult} Temporary directory object
  */
-function createTempDirectory(prefix: string = 'webCpp-'): DirResult {
+function createTempDirectory(prefix: string = 'CinCout-'): DirResult {
   return tmp.dirSync({ prefix, unsafeCleanup: true });
 }
 

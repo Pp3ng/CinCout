@@ -102,7 +102,7 @@ function createPtyProcess(command: string, options: pty.IPtyForkOptions = {}): p
   const ptyOptions = { ...defaultOptions, ...options };
   
   return pty.spawn('bash', ['-c', 
-    `ulimit -v 102400 && ulimit -m 102400 && ulimit -t 10 && ulimit -s 8192 && ${command}`
+    `${command}` // Use bash to execute the command
   ], ptyOptions);
 }
 
@@ -261,7 +261,7 @@ interface CompilationEnvironment {
  * @returns {CompilationEnvironment} Object containing directory and file paths
  */
 function createCompilationEnvironment(lang: string): CompilationEnvironment {
-  const tmpDir = tmp.dirSync({ prefix: 'webCpp-', unsafeCleanup: true });
+  const tmpDir = tmp.dirSync({ prefix: 'CinCout-', unsafeCleanup: true });
   const sourceExtension = lang === 'cpp' ? 'cpp' : 'c';
   const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
   const outputFile = path.join(tmpDir.name, 'program.out');

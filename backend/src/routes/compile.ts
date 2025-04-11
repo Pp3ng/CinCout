@@ -314,7 +314,7 @@ router.post('/', async (req: Request, res: Response) => {
         }
         
         // Execute compiled program with resource limits
-        const command = `ulimit -v 102400 && ulimit -m 102400 && ulimit -t 10 && ulimit -s 8192 && "${outputFile}" 2>&1`;
+        const command = `\"${outputFile}\" 2>&1`;
 
         try {
           const { stdout } = await executeCommand(command, { timeout: 10000 });

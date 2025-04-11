@@ -1,11 +1,12 @@
 // Define WebSocket-related interfaces
 interface CinCoutSocket {
-    init: (messageHandler: (event: MessageEvent) => void, statusUpdater: (status: string) => void) => void;
+    init: (messageHandler: (event: MessageEvent) => void) => void;
     sendData: (data: any) => Promise<void>;
-    reconnect: () => void;
     isConnected: () => boolean;
     getSessionId: () => string | null;
     setSessionId: (id: string) => void;
+    connect: () => Promise<void>;
+    disconnect: () => void;
 }
 
 // Define message types
@@ -73,19 +74,13 @@ const CinCoutUI = (function() {
     const data = JSON.parse(event.data) as WebSocketMessage;
     
     switch(data.type) {
-      case 'pong':
-        // Received pong from server, connection is alive
-        break;
-        
       case 'connected':
-        window.CinCoutSocket.setSessionId(data.sessionId);
-        console.log(`Connected with session ID: ${window.CinCoutSocket.getSessionId()}`);
+        (window as any).CinCoutSocket.setSessionId(data.sessionId);
         break;
         
       case 'compiling':
         isCompiling = true;
         isRunning = false;
-        updateStatus('Compiling...');
         
         // Make sure the output panel is visible
         if (domElements.outputPanel) {
@@ -99,26 +94,28 @@ const CinCoutUI = (function() {
         }
         
         // Refresh editor after layout change
-        if (window.editor) {
-          setTimeout(() => window.editor.refresh(), 10);
+        if ((window as any).editor) {
+          setTimeout(() => (window as any).editor.refresh(), 10);
         }
         break;
         
       case 'compile-error':
         isCompiling = false;
         isRunning = false;
-        updateStatus('Compilation Error');
+        
         // The output is already formatted by the backend
         if (domElements.output) {
           domElements.output.innerHTML = 
             `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${data.output}</div>`;
         }
+        
+        // Disconnect WebSocket immediately after error
+        (window as any).CinCoutSocket.disconnect();
         break;
         
       case 'compile-success':
         isCompiling = false;
         isRunning = true;
-        updateStatus('Running');
         
         // Clear any previous terminal instance to prevent double execution
         if (terminal) {
@@ -141,15 +138,13 @@ const CinCoutUI = (function() {
         setupTerminal();
         
         // Refresh editor after layout change
-        if (window.editor) {
-          setTimeout(() => window.editor.refresh(), 10);
+        if ((window as any).editor) {
+          setTimeout(() => (window as any).editor.refresh(), 10);
         }
         break;
         
       case 'output':
         if (terminal) {
-          // Directly write the content received from the server, no filtering needed
-          // PTY already handles echo correctly
           terminal.write(data.output);
         }
         break;
@@ -163,44 +158,17 @@ const CinCoutUI = (function() {
         
       case 'exit':
         isRunning = false;
-        updateStatus('Completed');
-        console.log(`Program exited with code: ${data.code}`);
         
         if (terminal) {
           terminal.write(`\r\n\x1b[90m[Program exited with code: ${data.code}]\x1b[0m\r\n`);
         }
-        break;
         
-      case 'cleanup-complete':
-        break;
-        
-      case 'session_restored':
-        // Handle session restoration
-        console.log('Session restored:', data.message);
-        // Reset the status
-        isRunning = true;
-        updateStatus('Session Restored');
-        
-        // If terminal doesn't exist, need to recreate it
-        if (!terminal) {
-          setupTerminal();
-        }
+        // Disconnect WebSocket immediately when program exits
+        (window as any).CinCoutSocket.disconnect();
         break;
         
       default:
         console.log(`Unknown message type: ${data.type}`);
-    }
-  }
-  
-  /**
-   * Update status display
-   * @param {string} status - Status text to display
-   */
-  function updateStatus(status: string): void {
-    console.log(`Status updated: ${status}`);
-    const statusElement = document.getElementById('connection-status');
-    if (statusElement) {
-      statusElement.textContent = status;
     }
   }
   
@@ -243,8 +211,8 @@ const CinCoutUI = (function() {
     });
     
     // Create fit addon to make terminal adapt to container size
-    window.fitAddon = new (window as any).FitAddon.FitAddon();
-    terminal.loadAddon(window.fitAddon);
+    (window as any).fitAddon = new (window as any).FitAddon.FitAddon();
+    terminal.loadAddon((window as any).fitAddon);
     
     // Open terminal in container and resize
     const terminalContainer = document.getElementById('terminal-container');
@@ -257,12 +225,12 @@ const CinCoutUI = (function() {
     
     // Ensure theme is applied and resize
     setTimeout(() => {
-      if (window.fitAddon) {
+      if ((window as any).fitAddon) {
         try {
-          window.fitAddon.fit();
+          (window as any).fitAddon.fit();
           // Send the adjusted size to the server
-          if (window.CinCoutSocket.isConnected() && isRunning) {
-            window.CinCoutSocket.sendData({
+          if ((window as any).CinCoutSocket.isConnected() && isRunning) {
+            (window as any).CinCoutSocket.sendData({
               type: 'resize',
               cols: terminal.cols,
               rows: terminal.rows
@@ -290,9 +258,9 @@ const CinCoutUI = (function() {
     
     // Listen for window resize events
     window.addEventListener('resize', () => {
-      if (window.fitAddon) {
+      if ((window as any).fitAddon) {
         try {
-          window.fitAddon.fit();
+          (window as any).fitAddon.fit();
         } catch (e) {
           console.error('Error fitting terminal on resize:', e);
         }
@@ -301,8 +269,8 @@ const CinCoutUI = (function() {
 
     // After terminal is opened, send size information to the server
     terminal.onResize(({ cols, rows }: { cols: number, rows: number }) => {
-      if (window.CinCoutSocket.isConnected() && isRunning) {
-        window.CinCoutSocket.sendData({
+      if ((window as any).CinCoutSocket.isConnected() && isRunning) {
+        (window as any).CinCoutSocket.sendData({
           type: 'resize',
           cols: cols,
           rows: rows
@@ -317,13 +285,13 @@ const CinCoutUI = (function() {
   function setupTerminalInput(): void {
     // Simplified terminal input handling, letting backend handle echo
     terminal.onData((data: string) => {
-      if (!isRunning || !window.CinCoutSocket.isConnected()) {
+      if (!isRunning || !(window as any).CinCoutSocket.isConnected()) {
         console.log('Not sending terminal input: program not running or socket closed');
         return;
       }
 
       // Send all input characters to the server for PTY to handle
-      window.CinCoutSocket.sendData({
+      (window as any).CinCoutSocket.sendData({
         type: 'input',
         input: data
       });
@@ -335,7 +303,6 @@ const CinCoutUI = (function() {
    * @returns {Promise<void>}
    */
   async function takeCodeSnap(): Promise<void> {
-    console.log("Taking code snapshot...");
     
     // Get the CodeMirror editor element
     const editorElement = document.querySelector('.CodeMirror');
@@ -375,7 +342,7 @@ const CinCoutUI = (function() {
       
       // Calculate width based on longest line
       const lines = fullContent.split('\n');
-      const longestLine = lines.reduce((longest, line) => line.length > longest.length ? line : longest, '');
+      const longestLine = lines.reduce((longest: string, line: string) => line.length > longest.length ? line : longest, '');
       
       // Measure line width
       const measureEl = document.createElement('div');
@@ -602,7 +569,7 @@ const CinCoutUI = (function() {
           return;
         }
         
-        const code = window.editor.getValue();
+        const code = (window as any).editor.getValue();
         const lang = (domElements.language as HTMLSelectElement)?.value;
         const compiler = (document.getElementById('compiler') as HTMLSelectElement)?.value;
         const optimization = (document.getElementById('optimization') as HTMLSelectElement)?.value;
@@ -617,7 +584,24 @@ const CinCoutUI = (function() {
         }
         
         try {
-          await window.CinCoutSocket.sendData({
+          // Ensure output panel is visible
+          if (domElements.outputPanel) {
+            domElements.outputPanel.style.display = 'flex';
+          }
+          document.querySelector('.editor-panel')?.classList.add('with-output');
+          domElements.outputTab?.click();
+          
+          if (domElements.output) {
+            domElements.output.innerHTML = '<div class="loading">Connecting...</div>';
+          }
+          
+          // Connect to WebSocket server for compilation
+          await (window as any).CinCoutSocket.connect();
+          if (domElements.output) {
+            domElements.output.innerHTML = '<div class="loading">Sending code for compilation...</div>';
+          }
+          
+          await (window as any).CinCoutSocket.sendData({
             type: 'compile',
             code: code,
             lang: lang,
@@ -625,11 +609,17 @@ const CinCoutUI = (function() {
             optimization: optimization
           });
         } catch (error) {
-          console.error('WebSocket connection failed:', error);
+          console.error('WebSocket operation failed:', error);
           if (domElements.output) {
             domElements.output.innerHTML = '<div class="error-output">Error: WebSocket connection failed. Please try again.</div>';
           }
-          updateStatus('Connection Failed');
+          
+          // Ensure connection is closed on error
+          try {
+            (window as any).CinCoutSocket.disconnect();
+          } catch (e) {
+            console.error('Error disconnecting after failure:', e);
+          }
         }
       });
     }
@@ -637,23 +627,31 @@ const CinCoutUI = (function() {
     // Close output panel event - send cleanup signal to backend
     if (domElements.closeOutput) {
       domElements.closeOutput.addEventListener('click', async function() {
-        
         try {
-          const sessionId = window.CinCoutSocket.getSessionId();
-          if (sessionId) {
-            console.log(`Sending cleanup request for session ${sessionId}`);
-            // Send cleanup request to backend
-            await window.CinCoutSocket.sendData({
-              action: 'cleanup',
-              sessionId: sessionId
-            });
+          // Check if there's an active session to clean up
+          const sessionId = (window as any).CinCoutSocket.getSessionId();
+          if (sessionId && (window as any).CinCoutSocket.isConnected()) {
+            console.log(`Sending cleanup request for session ${sessionId} and disconnecting...`);
             
-            // Reset state
-            isRunning = false;
-            isCompiling = false;
+            try {
+              // Send cleanup request
+              await (window as any).CinCoutSocket.sendData({
+                type: 'cleanup',
+                sessionId: sessionId
+              });
+            } catch (e) {
+              console.error('Error sending cleanup message:', e);
+            }
+            
+            // Disconnect regardless of cleanup success
+            (window as any).CinCoutSocket.disconnect();
           }
+          
+          // Reset state
+          isRunning = false;
+          isCompiling = false;
         } catch (error) {
-          console.log('Failed to send cleanup request:', error);
+          console.error('Failed to handle cleanup:', error);
         }
       });
     }
@@ -661,7 +659,7 @@ const CinCoutUI = (function() {
     // View Assembly button click handler
     if (domElements.viewAssembly) {
       domElements.viewAssembly.addEventListener('click', function() {
-        const code = window.editor.getValue();
+        const code = (window as any).editor.getValue();
         const lang = (domElements.language as HTMLSelectElement)?.value;
         const compiler = (document.getElementById("compiler") as HTMLSelectElement)?.value;
         const optimization = (document.getElementById("optimization") as HTMLSelectElement)?.value;
@@ -729,7 +727,7 @@ const CinCoutUI = (function() {
     // Memory check button click handler
     if (domElements.memcheck) {
       domElements.memcheck.addEventListener('click', function() {
-        const code = window.editor.getValue();
+        const code = (window as any).editor.getValue();
         const lang = (domElements.language as HTMLSelectElement)?.value;
         const compiler = (document.getElementById("compiler") as HTMLSelectElement)?.value;
         const optimization = (document.getElementById("optimization") as HTMLSelectElement)?.value;
@@ -770,8 +768,8 @@ const CinCoutUI = (function() {
     // Format button click handler
     if (domElements.format) {
       domElements.format.addEventListener('click', function() {
-        const code = window.editor.getValue();
-        const cursor = window.editor.getCursor();
+        const code = (window as any).editor.getValue();
+        const cursor = (window as any).editor.getCursor();
         const lang = (domElements.language as HTMLSelectElement)?.value;
 
         fetch('/api/format', {
@@ -788,11 +786,11 @@ const CinCoutUI = (function() {
         .then(data => {
           // Remove leading and trailing newlines
           const formattedData = data.replace(/^\n+/, '').replace(/\n+$/, '');
-          const scrollInfo = window.editor.getScrollInfo();
-          window.editor.setValue(formattedData);
-          window.editor.setCursor(cursor);
-          window.editor.scrollTo(scrollInfo.left, scrollInfo.top);
-          window.editor.refresh();
+          const scrollInfo = (window as any).editor.getScrollInfo();
+          (window as any).editor.setValue(formattedData);
+          (window as any).editor.setCursor(cursor);
+          (window as any).editor.scrollTo(scrollInfo.left, scrollInfo.top);
+          (window as any).editor.refresh();
         })
         .catch(error => {
           console.error("Format error:", error);
@@ -803,7 +801,7 @@ const CinCoutUI = (function() {
     // Style check button click handler
     if (domElements.styleCheck) {
       domElements.styleCheck.addEventListener('click', function() {
-        const code = window.editor.getValue();
+        const code = (window as any).editor.getValue();
         const lang = (domElements.language as HTMLSelectElement)?.value;
 
         domElements.outputTab?.click();
@@ -861,8 +859,8 @@ const CinCoutUI = (function() {
     if (domElements.themeSelect) {
       domElements.themeSelect.addEventListener('change', function(this: HTMLSelectElement) {
         const theme = this.value;
-        if (window.editor) {
-          window.editor.setOption('theme', theme);
+        if ((window as any).editor) {
+          (window as any).editor.setOption('theme', theme);
         }
         if (window.assemblyView) {
           window.assemblyView.setOption('theme', theme);
@@ -873,8 +871,8 @@ const CinCoutUI = (function() {
     // Initialize Vim mode toggle
     if (domElements.vimMode) {
       domElements.vimMode.addEventListener('change', function(this: HTMLInputElement) {
-        if (window.editor) {
-          window.editor.setOption('keyMap', this.checked ? 'vim' : 'default');
+        if ((window as any).editor) {
+          (window as any).editor.setOption('keyMap', this.checked ? 'vim' : 'default');
         }
       });
     }
@@ -889,8 +887,8 @@ const CinCoutUI = (function() {
    * Initialize all components
    */
   function init(): void {
-    // Initialize WebSocket connection with handler
-    window.CinCoutSocket.init(handleWebSocketMessage, updateStatus);
+    // Initialize WebSocket handler but don't connect yet
+    (window as any).CinCoutSocket.init(handleWebSocketMessage);
     
     // Initialize event handlers
     initEventHandlers();
@@ -898,11 +896,7 @@ const CinCoutUI = (function() {
   
   // Public API
   return {
-    init: init,
-    reconnect: function(): void {
-      // Public method to force reconnection
-      window.CinCoutSocket.reconnect();
-    }
+    init: init
   };
 })();
 

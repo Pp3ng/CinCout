@@ -3,151 +3,73 @@ const CinCoutSocket = (function() {
   // Private variables
   let socket: WebSocket | null = null;
   let sessionId: string | null = null;
-  let pingInterval: number | null = null;
-  let reconnectTimeout: number | null = null;
-  let isReconnecting: boolean = false;
   let messageHandler: ((event: MessageEvent) => void) | null = null;
-  let statusUpdateCallback: ((status: string) => void) | null = null;
   
   /**
    * Initialize WebSocket connection
+   * @returns {Promise<WebSocket>} Promise that resolves with WebSocket
    */
-  function initWebSocket(): void {
-    // Clear any existing ping intervals and reconnect timeouts
-    if (pingInterval) {
-      clearInterval(pingInterval);
-    }
-    
-    if (reconnectTimeout) {
-      clearTimeout(reconnectTimeout);
-    }
-    
-    // Close any existing connection
-    if (socket) {
+  function initWebSocket(): Promise<WebSocket> {
+    return new Promise((resolve, reject) => {
+      // Ensure no existing connection
+      if (socket) {
+        try {
+          socket.onclose = null;
+          socket.close();
+          socket = null;
+        } catch (e) {
+          console.error('Error closing existing WebSocket:', e);
+        }
+      }
+      
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      
       try {
-        socket.close();
-      } catch (e) {
-        console.error('Error closing existing WebSocket:', e);
-      }
-    }
-    
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    
-    try {
-      socket = new WebSocket(`${protocol}//${host}`);
-      
-      socket.onopen = () => {
-        updateStatus('Ready');
-        isReconnecting = false;
+        console.log('Creating new WebSocket connection...');
+        socket = new WebSocket(`${protocol}//${host}`);
         
-        // Set up ping interval to keep connection alive
-        pingInterval = window.setInterval(() => {
-          if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
-              type: 'ping',
-              timestamp: Date.now()
-            }));
+        socket.onopen = () => {
+          console.log('WebSocket connection established');
+          resolve(socket);
+        };
+        
+        socket.onmessage = (event: MessageEvent) => {
+          if (messageHandler) {
+            messageHandler(event);
           }
-        }, 20000); // Send ping every 20 seconds
-      };
-      
-      socket.onmessage = (event: MessageEvent) => {
-        console.log('WebSocket message received:', event.data.substring(0, 100) + (event.data.length > 100 ? '...' : ''));
-        if (messageHandler) {
-          messageHandler(event);
-        }
-      };
-      
-      socket.onclose = (event: CloseEvent) => {
-        console.log('WebSocket connection closed', event.code, event.reason);
-        updateStatus('Disconnected');
+        };
         
-        // Clear ping interval
-        if (pingInterval) {
-          clearInterval(pingInterval);
-        }
+        socket.onclose = (event: CloseEvent) => {
+          console.log('WebSocket connection closed', event.code, event.reason);
+          socket = null;
+          sessionId = null;
+        };
         
-        // Only try to reconnect if page is still active and we're not already reconnecting
-        if (document.visibilityState === 'visible' && !isReconnecting) {
-          isReconnecting = true;
-          reconnectTimeout = window.setTimeout(() => {
-            initWebSocket(); // Try to reconnect
-          }, 3000);
-        }
-      };
-      
-      socket.onerror = (error: Event) => {
-        console.error('WebSocket error:', error);
-        updateStatus('Connection Error');
-      };
-    } catch (error) {
-      console.error('Error creating WebSocket:', error);
-      updateStatus('Connection Failed');
-      
-      // Try to reconnect if page is still active
-      if (document.visibilityState === 'visible' && !isReconnecting) {
-        isReconnecting = true;
-        reconnectTimeout = window.setTimeout(() => {
-          initWebSocket(); // Try to reconnect
-        }, 5000); // Wait longer after an error
+        socket.onerror = (error: Event) => {
+          console.error('WebSocket error:', error);
+          reject(error);
+        };
+      } catch (error) {
+        console.error('Error creating WebSocket:', error);
+        reject(error);
       }
-    }
+    });
   }
   
   /**
-   * Check WebSocket connection and reconnect if needed
-   * @returns {Promise<void>} Resolves when connection is ready
+   * Connect to the WebSocket server
+   * @returns {Promise<void>} Promise that resolves when connection is ready
    */
-  function ensureConnection(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      // If socket exists and is open, we're good to go
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        resolve();
-        return;
-      }
-      
-      // If socket exists but is connecting, wait for it
-      if (socket && socket.readyState === WebSocket.CONNECTING) {
-        const onOpen = () => {
-          if (socket) {
-            socket.removeEventListener('open', onOpen);
-            socket.removeEventListener('error', onError);
-          }
-          resolve();
-        };
-        
-        const onError = (err: Event) => {
-          if (socket) {
-            socket.removeEventListener('open', onOpen);
-            socket.removeEventListener('error', onError);
-          }
-          reject(new Error('Connection failed while waiting'));
-        };
-        
-        socket.addEventListener('open', onOpen);
-        socket.addEventListener('error', onError);
-        return;
-      }
-      
-      // Otherwise, try to reconnect
-      initWebSocket();
-      
-      // Set up listener for connection
-      const checkConnection = window.setInterval(() => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          clearInterval(checkConnection);
-          clearTimeout(connectionTimeout);
-          resolve();
-        }
-      }, 100);
-      
-      // Set a timeout for connection attempts
-      const connectionTimeout = window.setTimeout(() => {
-        clearInterval(checkConnection);
-        reject(new Error('Connection timed out'));
-      }, 5000);
-    });
+  function connect(): Promise<void> {
+    console.log('Connecting to WebSocket server...');
+    return initWebSocket()
+      .then(() => {
+        return Promise.resolve();
+      })
+      .catch(error => {
+        return Promise.reject(error);
+      });
   }
 
   /**
@@ -156,7 +78,12 @@ const CinCoutSocket = (function() {
    * @returns {Promise<void>} Resolves when data is sent
    */
   function sendData(data: any): Promise<void> {
-    return ensureConnection().then(() => {
+    return new Promise((resolve, reject) => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        reject(new Error('WebSocket is not connected'));
+        return;
+      }
+
       // Add session ID to all messages
       if (sessionId) {
         data.sessionId = sessionId;
@@ -166,88 +93,56 @@ const CinCoutSocket = (function() {
       data.timestamp = Date.now();
       
       // Send data
-      if (socket) {
+      try {
         socket.send(JSON.stringify(data));
+        resolve();
+      } catch (error) {
+        reject(error);
       }
     });
   }
   
   /**
-   * Reconnect the WebSocket connection and restore session if possible
+   * Close the WebSocket connection
    */
-  function reconnect(): void {
-    const previousSessionId = sessionId;
-    initWebSocket();
+  function disconnect(): void {
+    console.log('Disconnecting WebSocket...');
     
-    // After connection, try to restore the session
-    if (previousSessionId) {
-      ensureConnection().then(() => {
-        sendData({
-          type: 'restore_session',
-          previousSessionId: previousSessionId
-        });
-      }).catch(err => {
-        console.error('Failed to restore session:', err);
-      });
-    }
-  }
-
-  /**
-   * Update status display
-   * @param {string} status - Status text to display
-   */
-  function updateStatus(status: string): void {
-    if (statusUpdateCallback) {
-      statusUpdateCallback(status);
-    }
-  }
-  
-  // Add document visibility event listener
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      // Check if we need to reconnect
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        initWebSocket();
-      }
-    }
-  });
-  
-  // Add visibility change handler for better reconnection on tab focus
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      // Check connection health when the tab becomes visible
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.log('Tab visible, reconnecting WebSocket...');
-        reconnect();
-      } else {
-        // Check if the connection is still responsive by sending a ping
-        console.log('Tab visible, checking connection health...');
+    if (socket) {
+      // Send cleanup message
+      if (socket.readyState === WebSocket.OPEN && sessionId) {
         try {
-          sendData({
-            type: 'ping',
+          socket.send(JSON.stringify({
+            type: 'cleanup',
+            sessionId: sessionId,
             timestamp: Date.now()
-          }).catch(() => {
-            console.log('Ping failed, reconnecting...');
-            reconnect();
-          });
+          }));
         } catch (e) {
-          console.error('Error sending ping:', e);
-          reconnect();
+          console.error('Error sending cleanup message:', e);
         }
       }
+      
+      // Close the connection
+      try {
+        socket.onclose = null; 
+        socket.close();
+      } catch (e) {
+        console.error('Error closing WebSocket:', e);
+      }
+      
+      socket = null;
+      sessionId = null;
     }
-  });
+  }
   
   // Public API
   return {
-    init: function(msgHandler: (event: MessageEvent) => void, statusCallback: (status: string) => void): void {
+    init: function(msgHandler: (event: MessageEvent) => void): void {
       messageHandler = msgHandler;
-      statusUpdateCallback = statusCallback;
-      initWebSocket();
     },
-    reconnect: reconnect,
+    connect: connect,
+    disconnect: disconnect,
     sendData: sendData,
-    ensureConnection: ensureConnection,
     getSessionId: function(): string | null {
       return sessionId;
     },

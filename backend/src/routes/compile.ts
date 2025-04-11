@@ -19,8 +19,6 @@ import {
   startCompilationSession,
   sendInputToSession,
   createCompilationEnvironment,
-  preserveSession,
-  tryRestoreSession,
   resizeTerminal
 } from '../utils/sessionManager';
 
@@ -28,88 +26,44 @@ const router = express.Router();
 
 // Extended WebSocket interface to add properties
 interface ExtendedWebSocket extends WebSocket {
-  isAlive?: boolean;
   sessionId?: string;
 }
 
 // WebSocket setup functions
 function setupWebSocketHandlers(wss: WebSocketServer): void {
-  // Set up interval to ping clients and clean up dead connections
-  const interval = setInterval(() => {
-    wss.clients.forEach(ws => {
-      const extWs = ws as ExtendedWebSocket;
-      if (extWs.isAlive === false) {
-        console.log('Terminating inactive WebSocket connection');
-        
-        // If this socket has a session ID, preserve it temporarily instead of terminating
-        if (extWs.sessionId) {
-          preserveSession(extWs.sessionId);
-        }
-        
-        return extWs.terminate();
-      }
-      
-      extWs.isAlive = false;
-      extWs.ping(() => {});
-    });
-  }, 30000);
-  
-  // Clean up interval on server close
-  wss.on('close', () => {
-    clearInterval(interval);
-  });
-
   wss.on('connection', (ws: WebSocket) => {
     const extWs = ws as ExtendedWebSocket;
     console.log('New WebSocket connection established for compilation');
     
-    // Set up heartbeat mechanism
-    extWs.isAlive = true;
-    
-    extWs.on('pong', () => {
-      // Mark the connection as alive when pong is received
-      extWs.isAlive = true;
-    });
-    
     // Create unique session ID for each connection
     const sessionId = uuidv4();
-    extWs.sessionId = sessionId; // Store sessionId on the ws object for reference
+    extWs.sessionId = sessionId;
     
+    // Set up auto-close timeout - if 3 minutes with no activity, close connection
+    const autoCloseTimeout = setTimeout(() => {
+      if (extWs.readyState === WebSocket.OPEN) {
+        console.log(`Auto-closing idle WebSocket connection ${sessionId} after timeout`);
+        extWs.close();
+      }
+    }, 180000); // 3 minutes timeout
+    
+    // Handle incoming messages
     extWs.on('message', (message: Buffer | string | ArrayBuffer | Buffer[]) => {
       try {
+        // Reset timeout on any message
+        clearTimeout(autoCloseTimeout);
+        
         const data = JSON.parse(typeof message === 'string' ? message : message.toString());
         console.log(`Received ${data.type || data.action} from ${sessionId}`);
         
         switch(data.type || data.action) {
-          case 'ping':
-            // Handle ping from client
-            console.log(`Received ping from client ${sessionId}`);
-            extWs.send(JSON.stringify({
-              type: 'pong',
-              timestamp: Date.now()
-            }));
-            break;
-            
-          case 'restore_session':
-            // Try to restore a previously disconnected session
-            if (data.previousSessionId && data.previousSessionId !== sessionId) {
-              const restored = tryRestoreSession(data.previousSessionId, sessionId, extWs);
-              if (restored) {
-                console.log(`Successfully restored session ${data.previousSessionId} as ${sessionId}`);
-              } else {
-                console.log(`Failed to restore session ${data.previousSessionId}`);
-              }
-            }
-            break;
-            
           case 'compile':
             // Compile and run code using PTY
             compileAndRunWithPTY(extWs, sessionId, data.code, data.lang, data.compiler, data.optimization);
             break;
             
           case 'input':
-            // Send user input to the program without handling echo
-            // The PTY will automatically send back the program's echo to the frontend
+            // Send user input to the program
             if (sendInputToSession(sessionId, data.input, extWs)) {
               console.log(`Input sent to session ${sessionId}`);
             } else {
@@ -158,13 +112,15 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
       }
     });
     
+    // Handle WebSocket close
     extWs.on('close', () => {
       console.log(`WebSocket session ${sessionId} closed`);
+      clearTimeout(autoCloseTimeout);
       
-      // Instead of immediately terminating, preserve the session briefly
-      // to allow for reconnection (e.g., page refresh, network hiccup)
+      // Immediately terminate any active session when WebSocket closes
       if (activeSessions.has(sessionId)) {
-        preserveSession(sessionId);
+        console.log(`Terminating session ${sessionId} on WebSocket close`);
+        terminateSession(sessionId);
       }
     });
     
@@ -212,7 +168,7 @@ function compileAndRunWithPTY(ws: WebSocket, sessionId: string, code: string, la
     const standardOption = getStandardOption(lang);
     const optimizationOption = optimization || '-O0';
     
-    // Compile command
+    // Compile command - no resource limiting
     const compileCmd = `${compilerCmd} ${standardOption} ${optimizationOption} "${sourceFile}" -o "${outputFile}"`;
     console.log(`Compiling with command: ${compileCmd}`);
     
@@ -313,25 +269,17 @@ router.post('/', async (req: Request, res: Response) => {
           return res.status(400).send(`Compilation Error:\n${sanitizeOutput(error as string)}`);
         }
         
-        // Execute compiled program with resource limits
+        // Execute the compiled program
         const command = `\"${outputFile}\" 2>&1`;
 
         try {
-          const { stdout } = await executeCommand(command, { timeout: 10000 });
+          const { stdout } = await executeCommand(command);
           res.send(stdout);
         } catch (error) {
           let errorMessage = '';
           const errorStr = (error as Error).toString();
           
-          if (typeof error === 'string' && errorStr.includes('bad_alloc')) {
-            errorMessage = 'Error: Program exceeded memory limit (100MB)';
-          } else if (typeof error === 'string' && errorStr.includes('Killed')) {
-            errorMessage = 'Error: Program killed (exceeded memory limit)';
-          } else if ((error as any).code === 124 || (error as any).code === 142) {
-            errorMessage = 'Error: Program execution timed out (10 seconds)';
-          } else {
-            errorMessage = errorStr;
-          }
+          errorMessage = errorStr;
           res.status(400).send(errorMessage);
         }
       } else if (action === 'assembly') {

@@ -18,9 +18,6 @@ interface Session {
 // Store active terminal sessions
 const activeSessions = new Map<string, Session>();
 
-// Track disconnected but preserved sessions
-const preservedSessions = new Map<string, Session>();
-
 /**
  * Terminate a specific session
  * @param {string} sessionId - ID of the session to terminate
@@ -33,14 +30,22 @@ function terminateSession(sessionId: string): void {
       if (session.pty) {
         // Force kill the process to ensure it's terminated
         try {
+          // SIGKILL is more forceful than the default termination signal
           session.pty.kill('SIGKILL');
+          
+          // Clean up resources immediately
+          cleanupSession(sessionId);
         } catch (e) {
           console.error(`Error killing process for session ${sessionId}:`, e);
+          // Still try to clean up even if kill failed
+          cleanupSession(sessionId);
         }
+      } else {
+        // No PTY process, just clean up
+        cleanupSession(sessionId);
       }
     } catch (e) {
       console.error(`Error during process termination for session ${sessionId}:`, e);
-    } finally {
       // Always clean up the session even if termination failed
       cleanupSession(sessionId);
     }
@@ -85,7 +90,7 @@ function cleanupSession(sessionId: string): void {
 }
 
 /**
- * Create a PTY instance with resource limitations
+ * Create a PTY instance
  * @param {string} command - Command to run
  * @param {pty.IPtyForkOptions} options - PTY options
  * @returns {pty.IPty} PTY process
@@ -101,9 +106,7 @@ function createPtyProcess(command: string, options: pty.IPtyForkOptions = {}): p
   
   const ptyOptions = { ...defaultOptions, ...options };
   
-  return pty.spawn('bash', ['-c', 
-    `${command}` // Use bash to execute the command
-  ], ptyOptions);
+  return pty.spawn('bash', ['-c', command], ptyOptions);
 }
 
 interface ValidationResult {
@@ -150,13 +153,13 @@ function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirRe
     
     // Create PTY instance with correct terminal type and size
     const ptyProcess = createPtyProcess(`"${outputFile}"`, {
-      name: 'xterm-256color', // Use more complete terminal type support
+      name: 'xterm-256color',
       cols: cols,
       rows: rows,
       cwd: tmpDir.name,
       env: {
         ...(process.env as { [key: string]: string }),
-        TERM: 'xterm-256color' // Ensure program knows the correct terminal type
+        TERM: 'xterm-256color'
       }
     });
     
@@ -203,16 +206,11 @@ function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirRe
         console.error(`Error sending exit message for session ${sessionId}:`, e);
       }
       
-      // Add a slight delay before cleanup to prevent race conditions
-      setTimeout(() => {
-        // Clean up session and temporary files
-        if (activeSessions.has(sessionId)) {
-          console.log(`Cleaning up session ${sessionId} after exit`);
-          cleanupSession(sessionId);
-        } else {
-          console.log(`Session ${sessionId} already cleaned up`);
-        }
-      }, 100);
+      // Clean up resources immediately after program exit
+      if (activeSessions.has(sessionId)) {
+        console.log(`Cleaning up session ${sessionId} immediately after exit`);
+        cleanupSession(sessionId);
+      }
     });
 
     return true;
@@ -276,92 +274,6 @@ function createCompilationEnvironment(lang: string): CompilationEnvironment {
 }
 
 /**
- * Try to restore a previously disconnected session
- * @param {string} previousSessionId - Previous session ID
- * @param {string} newSessionId - New session ID
- * @param {WebSocket} ws - WebSocket connection
- * @returns {boolean} Whether the session was restored
- */
-function tryRestoreSession(previousSessionId: string, newSessionId: string, ws: WebSocket): boolean {
-  const preservedSession = preservedSessions.get(previousSessionId);
-  
-  if (preservedSession) {
-    // We found a preserved session, transfer it to the active sessions
-    console.log(`Restoring session ${previousSessionId} as ${newSessionId}`);
-    
-    activeSessions.set(newSessionId, preservedSession);
-    preservedSessions.delete(previousSessionId);
-    
-    // Reconnect the PTY's output to the new WebSocket
-    if (preservedSession.pty) {
-      preservedSession.pty.onData((data: string) => {
-        try {
-          ws.send(JSON.stringify({
-            type: 'output',
-            output: data,
-            timestamp: Date.now()
-          }));
-        } catch (e) {
-          console.error(`Error sending output for restored session ${newSessionId}:`, e);
-        }
-      });
-      
-      // Send notification that session was restored
-      ws.send(JSON.stringify({
-        type: 'session_restored',
-        message: 'Previous session restored'
-      }));
-      
-      return true;
-    }
-  }
-  
-  return false;
-}
-
-/**
- * Temporarily preserve a session instead of terminating it immediately
- * Useful for brief disconnections
- * @param {string} sessionId - Session ID to preserve
- */
-function preserveSession(sessionId: string): void {
-  const session = activeSessions.get(sessionId);
-  if (session) {
-    console.log(`Preserving session ${sessionId} for potential reconnection`);
-    // Move from active to preserved
-    preservedSessions.set(sessionId, session);
-    activeSessions.delete(sessionId);
-    
-    // Set a timeout to actually terminate the session if not reclaimed
-    setTimeout(() => {
-      if (preservedSessions.has(sessionId)) {
-        console.log(`Preserved session ${sessionId} timed out, terminating`);
-        const preservedSession = preservedSessions.get(sessionId);
-        
-        // Clean up the preserved session
-        if (preservedSession && preservedSession.pty) {
-          try {
-            preservedSession.pty.kill('SIGKILL');
-          } catch (e) {
-            console.error(`Error killing preserved process for session ${sessionId}:`, e);
-          }
-        }
-        
-        if (preservedSession && preservedSession.tmpDir) {
-          try {
-            preservedSession.tmpDir.removeCallback();
-          } catch (e) {
-            console.error(`Error removing temporary directory for preserved session ${sessionId}:`, e);
-          }
-        }
-        
-        preservedSessions.delete(sessionId);
-      }
-    }, 30000); // Preserve for 30 seconds
-  }
-}
-
-/**
  * Resize terminal dimensions
  * @param {string} sessionId - Session ID
  * @param {number} cols - Number of columns
@@ -392,8 +304,6 @@ export {
   startCompilationSession,
   sendInputToSession,
   createCompilationEnvironment,
-  preserveSession,
-  tryRestoreSession,
   resizeTerminal,
   Session,
   ValidationResult,

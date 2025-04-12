@@ -247,7 +247,7 @@ router.post('/', async (req: Request, res: Response) => {
     try {
       if (action === 'assembly' || action === 'both') {
         // Generate assembly code
-        const asmCmd = `${compiler} -S -masm=intel -fno-asynchronous-unwind-tables ${optimizationOption} ${standardOption} "${sourceFile}" -o "${asmFile}"`;
+        const asmCmd = `${compiler} -S -fno-asynchronous-unwind-tables ${optimizationOption} ${standardOption} "${sourceFile}" -o "${asmFile}"`;
         
         try {
           await executeCommand(asmCmd);

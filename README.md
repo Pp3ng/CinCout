@@ -14,48 +14,33 @@ http://39.105.45.170
 
 # Architecture
 
-This is the architecture diagram of the project.
+This is the architecture diagram of the project.Following frontend and backend isolated architecture.
 ![architecture](README/Architecture.png)
 
 ---
 
 # Features ✨
 
-## Frontend Features
-
-| Category         | Feature              | Description                                 | Implementation                |
-| ---------------- | -------------------- | ------------------------------------------- | ----------------------------- |
-| **Editor**       | Syntax Highlighting  | Language-specific highlighting for C/C++    | `frontend/ts/editor.ts`       |
-|                  | Code Folding         | Collapsible code blocks                     | `frontend/ts/editor.ts`       |
-|                  | Auto Brackets        | Automatic closing of brackets               | `frontend/ts/editor.ts`       |
-|                  | Font Size Control    | Ctrl + Mouse Wheel to adjust font size      | `frontend/ts/editor.ts`       |
-|                  | Code Snapshot        | Save code as image with syntax highlighting | `frontend/ts/handlers.ts`     |
-| **UI/UX**        | Multiple Themes      | Different color themes                      | `frontend/ts/themes.ts`       |
-|                  | Responsive Design    | Mobile-friendly layout                      | `frontend/css/responsive.css` |
-|                  | Custom Scrollbars    | Themed scrollbar design                     | `frontend/css/utilities.css`  |
-|                  | Terminal Emulation   | Full terminal emulation with xterm.js       | `frontend/ts/handlers.ts`     |
-| **Connectivity** | WebSocket Heartbeat  | Keep-alive ping/pong mechanism              | `frontend/ts/handlers.ts`     |
-|                  | Auto-Reconnection    | Reconnect when connection drops             | `frontend/ts/websocket.ts`    |
-|                  | Visibility Detection | Resume connections on tab focus             | `frontend/ts/handlers.ts`     |
-| **Templates**    | Code Examples        | Built-in code templates                     | `frontend/ts/templates.ts`    |
-|                  | Template Selection   | Quick-access template dropdown              | `frontend/index.html`         |
-
-## Backend Features
-
-| Category               | Feature              | Description                         | Implementation                        |
-| ---------------------- | -------------------- | ----------------------------------- | ------------------------------------- |
-| **Compilation**        | Multiple Compilers   | Support for GCC and Clang           | `backend/src/routes/compile.ts`       |
-|                        | Optimization Levels  | -O0 to -O3 and -Os options          | `backend/src/routes/compile.ts`       |
-|                        | Assembly View        | View generated assembly code        | `backend/src/routes/compile.ts`       |
-|                        | Interactive Terminal | Real-time program interaction       | `backend/src/utils/sessionManager.ts` |
-| **Code Analysis**      | Style Checking       | Static code analysis with cppcheck  | `backend/src/routes/styleCheck.ts`    |
-|                        | Memory Check         | Memory leak detection with valgrind | `backend/src/routes/memcheck.ts`      |
-|                        | Code Formatting      | Automatic code formatting           | `backend/src/routes/format.ts`        |
-| **Connection**         | WebSocket Management | Server-side connection monitoring   | `backend/src/server.ts`               |
-|                        | Ping/Pong Protocol   | Keep-alive detection system         | `backend/src/routes/compile.ts`       |
-|                        | Resource Limits      | Memory, CPU and timeout controls    | `backend/src/utils/sessionManager.ts` |
-| **Session Management** | Temporary Files      | Secure creation and cleanup         | `backend/src/utils/helpers.ts`        |
-|                        | Process Isolation    | Session-based process management    | `backend/src/utils/sessionManager.ts` |
+| Category          | Feature                 | Description                                  | Implementation                        |
+| ----------------- | ----------------------- | -------------------------------------------- | ------------------------------------- |
+| **Code Editor**   | Syntax Highlighting     | Language-specific highlighting for C/C++     | `frontend/ts/editor.ts`               |
+|                   | Code Folding            | Collapsible code blocks and sections         | `frontend/ts/editor.ts`               |
+|                   | Vim Mode                | Optional Vim keybindings for editor          | `frontend/ts/editor.ts`               |
+|                   | Code Snapshot           | Save code as image with syntax highlighting  | `frontend/ts/handlers.ts`             |
+| **Compilation**   | Multiple Compilers      | Support for GCC and Clang                    | `backend/src/routes/compile.ts`       |
+|                   | Optimization Levels     | Various optimization flags (-O0 to -O3, -Os) | `backend/src/routes/compile.ts`       |
+|                   | Assembly Generation     | View generated assembly code                 | `backend/src/routes/compile.ts`       |
+| **Execution**     | Real-time Output        | Live program output via terminal             | `frontend/ts/handlers.ts`             |
+|                   | Interactive Terminal    | PTY-based terminal for interactive programs  | `backend/src/utils/sessionManager.ts` |
+|                   | WebSocket Communication | Bidirectional real-time communication        | `frontend/ts/websocket.ts`            |
+|                   | Session Management      | Isolated execution environments per session  | `backend/src/utils/sessionManager.ts` |
+| **Code Analysis** | Style Checking          | Static code analysis with cppcheck           | `backend/src/routes/styleCheck.ts`    |
+|                   | Memory Analysis         | Memory leak detection with Valgrind          | `backend/src/routes/memcheck.ts`      |
+|                   | Code Formatting         | Automatic code formatting with clang-format  | `backend/src/routes/format.ts`        |
+| **UI/UX**         | Multiple Themes         | Various editor and terminal color schemes    | `frontend/ts/themes.ts`               |
+|                   | Responsive Design       | Mobile-friendly interface and layout         | `frontend/css/responsive.css`         |
+|                   | Tab System              | Tabbed interface for outputs and assembly    | `frontend/css/layout.css`             |
+|                   | Keyboard Shortcuts      | Customized shortcuts for common actions      | `frontend/ts/shortcuts.ts`            |
 
 ---
 
@@ -74,22 +59,6 @@ This is the architecture diagram of the project.
 | Format Code      | Alt + 2       | ^ + 2      |
 | Style Check      | Alt + 3       | ^ + 3      |
 | Memory Check     | Alt + 4       | ^ + 4      |
-
----
-
-# Themes 🎨
-
-| Theme        | Description                                            |
-| ------------ | ------------------------------------------------------ |
-| Default      | Clean and minimalist design with balanced contrast     |
-| Nord         | Arctic-inspired color scheme with cool, soothing tones |
-| Dracula      | Dark theme with vivid, high-contrast colors            |
-| Monokai      | Classic dark theme favored by developers               |
-| Material     | Modern design following Material guidelines            |
-| Ayu Dark     | Soft dark theme with warm accents                      |
-| Gruvbox Dark | Retro-style theme with earthy colors                   |
-| Seti         | Modern dark theme with bright accent colors            |
-| Panda Syntax | Friendly dark theme with pastel accents                |
 
 ---
 
@@ -114,14 +83,14 @@ sudo apt install nodejs npm gcc g++ clang clang-format valgrind cppcheck
 git clone https://github.com/Pp3ng/CinCout.git
 ```
 
-2. build
+2. Build and start the application:
 
 ```bash
-# install dependencies
+# Install dependencies and build both frontend and backend
 npm install
-# build frontend and backend
 npm run build
-# start the server
+
+# Start the server
 npm start
 ```
 
@@ -129,51 +98,28 @@ npm start
 
 ---
 
-## Run as a Background Service (Optional)
+## Run with Docker (Recommended)
 
-### Using PM2 to Manage the Application
+Docker provides an isolated environment with all dependencies pre-installed, making deployment simple and ensures safety and security.
 
-1. Install PM2:
+please make sure you have Docker installed on your system. You can follow the official [Docker installation guide](https://docs.docker.com/get-docker/) for your operating system.
 
-```bash
-# Install PM2 globally
-npm install pm2 -g
-```
+This project provides a Dockerfile that allows you to run the application in a Docker container.
 
-2. Start the application with PM2:
+### Build the Docker Image
 
 ```bash
-# Build the TypeScript code
-npm run build
-
-# Start the application
-pm2 start dist/server.js --name "CinCout"
-
-# Set up startup script to run on server boot
-pm2 startup
-pm2 save
+# Navigate to the project directory
+cd CinCout
+# Build the Docker image
+docker build -t cincout:latest .
+# run the Docker container
+docker run -d -p 9527:9527 --name cincout --restart unless-stopped cincout:latest
 ```
 
-3. Common PM2 commands:
+Then you can access the application at http://localhost:9527
 
-```bash
-# Check application status
-pm2 status
-
-# Restart application
-pm2 restart CinCout
-
-# View logs
-pm2 logs CinCout
-
-# Stop application
-pm2 stop CinCout
-
-# Delete application from PM2
-pm2 delete CinCout
-```
-
-### Using Nginx as a Reverse Proxy (Recommended)
+### Using Nginx as a Reverse Proxy (Optional)
 
 1. Install Nginx:
 

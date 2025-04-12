@@ -1,39 +1,49 @@
 @startuml Architecture
 
-' Define actors and components
+!define LAYOUT_TOP_DOWN
+skinparam nodesep 30
+skinparam ranksep 35
+skinparam padding 2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+' Define main actors and components
 actor "User" as User
 component "Browser" as Browser
 
-rectangle "Frontend" {
-  component "HTML/CSS/TS" as StaticFiles
-  component "CodeMirror Editor" as Editor
-  component "Xterm.js Terminal" as Terminal
+' Define Frontend UI layer
+rectangle "Frontend (UI)" {
+  component "Code Editor (CodeMirror)" as Editor
+  component "Terminal (Xterm.js)" as Terminal
   component "Result Display" as Display
-  component "Request Processing" as FrontProc
-  component "Asset Bundling (Webpack)" as AssetBundle
   
-  component "WebSocket Connection Manager" as WsManager {
-    component "Heartbeat System" as HeartbeatClient
-    component "Auto-Reconnection" as Reconnect
+  ' User action buttons
+  component "Actions" {
+    component "Compile & Run" as CompileAction
+    component "Memory Check" as MemcheckAction
+    component "Format" as FormatAction
+    component "Style Check" as StyleCheckAction
+    component "View Assembly" as AssemblyAction
   }
+  
+  component "WebSocket Client" as WSClient
 }
 
-rectangle "Backend" {
+' Define Backend layer
+rectangle "Backend (Server)" {
   component "Express Server" as Express
   component "WebSocket Server" as WSServer
   
-  component "WebSocket Health Monitor" as WsMonitor {
-    component "Connection Tracking" as ConnTracker
-    component "Ping/Pong System" as HeartbeatServer
-  }
-  
-  package "API Routes (routes/)" {
+  ' API Routes layer
+  package "API Routes" {
     component "Compile API" as CompileAPI
     component "Memory Check API" as MemcheckAPI
     component "Format API" as FormatAPI
     component "Style Check API" as StyleAPI
+    component "Templates API" as TemplatesAPI
   }
   
+  ' Services layer
   package "Services" {
     component "Compilation Service" as CompileService
     component "Memory Check Service" as MemcheckService
@@ -42,11 +52,16 @@ rectangle "Backend" {
     component "PTY Service" as PTYService
   }
   
+  package "Utilities" {
+    component "Helpers" as Utils
+    component "Session Manager" as SessionMgr
+  }
+  
+  component "Templates Repository" as Templates
   component "Temp File Manager" as TempMgr
-  component "Session Manager" as SessionMgr
-  component "Utilities (utils/)" as Utils
 }
 
+' Define External Tools layer
 rectangle "External Tools" {
   component "GCC/G++" as GCC
   component "Clang/Clang++" as Clang
@@ -56,102 +71,82 @@ rectangle "External Tools" {
   component "Node-PTY" as NodePTY
 }
 
-rectangle "Server Infrastructure" {
-  component "Nginx (Reverse Proxy)" as Nginx
+' Define Deployment layer
+rectangle "Deployment" {
+  component "Docker" as Docker
+  component "Nginx" as Nginx
 }
 
 database "Temporary Files" as TempFiles
 database "Active Sessions" as Sessions
 
 ' Define relationships
-User --> Browser
-Browser --> StaticFiles : Loads
-Browser --> Editor : Inputs code
+
+' User interaction
+User --> Browser : Interacts with
+Browser --> Editor : Writes code
+
+' User actions trigger frontend actions
+User --> CompileAction : Clicks
+User --> MemcheckAction : Clicks
+User --> FormatAction : Clicks
+User --> StyleCheckAction : Clicks
+User --> AssemblyAction : Clicks
+
+' Frontend actions to API calls
+CompileAction --> WSClient : Triggers
+MemcheckAction --> CompileAPI : HTTP Request
+FormatAction --> FormatAPI : HTTP Request
+StyleCheckAction --> StyleAPI : HTTP Request
+AssemblyAction --> CompileAPI : HTTP Request
+
+' Frontend to Backend communication
+WSClient <--> WSServer : WebSocket connection
+Browser <--> Express : HTTP/RESTful API
+
+' API routes to Services calls
+CompileAPI --> CompileService : Invokes
+MemcheckAPI --> MemcheckService : Invokes
+FormatAPI --> FormatService : Invokes
+StyleAPI --> StyleService : Invokes
+CompileAPI --> PTYService : For interactive execution
+
+' Services to External Tools calls
+CompileService --> GCC : Executes
+CompileService --> Clang : Executes
+MemcheckService --> Valgrind : Executes
+FormatService --> ClangFormat : Executes
+StyleService --> Cppcheck : Executes
+PTYService --> NodePTY : Creates terminal
+
+' File and Session management
+CompileService --> TempMgr : Creates temp files
+MemcheckService --> TempMgr : Creates temp files
+FormatService --> TempMgr : Creates temp files
+StyleService --> TempMgr : Creates temp files
+TempMgr --> TempFiles : Manages
+SessionMgr --> Sessions : Tracks
+PTYService --> SessionMgr : Uses
+
+' Results return to frontend
+CompileService --> CompileAPI : Returns results
+MemcheckService --> MemcheckAPI : Returns results
+FormatService --> FormatAPI : Returns results
+StyleService --> StyleAPI : Returns results
+
+CompileAPI --> Display : Updates UI
+MemcheckAPI --> Display : Updates UI
+FormatAPI --> Editor : Updates code
+StyleAPI --> Display : Updates UI
+
+' Interactive terminal
+WSServer --> Terminal : Streams output
+Terminal --> WSServer : Sends input
 Browser <--> Terminal : Interactive I/O
 
-' Frontend connections
-AssetBundle --> StaticFiles : Bundles JS/CSS
-Editor --> FrontProc : Submit for processing
-FrontProc --> Express : HTTP POST requests
-FrontProc --> WsManager : Send code for interactive execution
-FrontProc --> Display : Present results
-
-' WebSocket Connection Management
-WsManager --> WSServer : Maintains persistent connection
-HeartbeatClient --> HeartbeatServer : Sends periodic pings
-HeartbeatServer --> HeartbeatClient : Responds with pongs
-Reconnect --> WsManager : Handles connection failures
-WsManager --> Reconnect : Triggers on disconnect
-
-' Nginx connections
-Browser --> Nginx : HTTP/HTTPS requests
-Browser <--> WSServer : WebSocket connection
-Nginx --> Express : Proxy requests to port 9527
-Nginx --> WSServer : Proxy WebSocket connections
-
-' Backend routing
-Express --> CompileAPI : Route compile requests
-Express --> MemcheckAPI : Route memory check requests
-Express --> FormatAPI : Route format requests
-Express --> StyleAPI : Route style check requests
-
-' WebSocket server and monitoring
-WSServer --> ConnTracker : Tracks connection status
-ConnTracker --> HeartbeatServer : Manages timeout detection
-WSServer --> WsMonitor : Inactivity detection
-
-' API to Service connections
-CompileAPI --> CompileService : Process
-MemcheckAPI --> MemcheckService : Process
-FormatAPI --> FormatService : Process
-StyleAPI --> StyleService : Process
-
-' Service connections
-CompileService --> TempMgr : Create files
-MemcheckService --> TempMgr : Create files
-FormatService --> TempMgr : Create files
-StyleService --> TempMgr : Create files
-PTYService --> TempMgr : Create files
-
-' External tool connections
-CompileService --> GCC : Execute
-CompileService --> Clang : Execute
-MemcheckService --> Valgrind : Execute
-FormatService --> ClangFormat : Execute
-StyleService --> Cppcheck : Execute
-
-' File and session management
-TempMgr --> TempFiles : Write/Read/Manage
-TempMgr --> Utils : Helper functions
-SessionMgr --> Sessions : Track active sessions
-SessionMgr --> TempMgr : Cleanup after sessions
-TempMgr ..> TempFiles : Auto-cleanup after request
-SessionMgr ..> Sessions : Auto-cleanup after disconnect
-
-' WebSocket and PTY connections
-WSServer --> SessionMgr : Create/manage sessions
-WSServer --> PTYService : Interactive execution
-PTYService --> NodePTY : Create pseudo-terminal
-PTYService --> Sessions : Store active terminals
-NodePTY --> TempFiles : Execute compiled program
-WSServer --> Terminal : Send real-time output
-Terminal --> WSServer : Send user input
-
-' Results
-CompileService --> FrontProc : Return results
-MemcheckService --> FrontProc : Return results
-FormatService --> FrontProc : Return results
-StyleService --> FrontProc : Return results
-FrontProc --> Display : Present results
-Display --> Browser : Show output
-
-' Resource limits note
-note right of NodePTY
-  Resource limits:
-  - Memory: 100MB
-  - CPU time: 10 seconds
-  - Stack size: 8MB
-  - Auto-termination for long-running processes
-end note
+' Deployment related
+Nginx --> Express : Reverse proxy
+Docker --> Express : Contains
+Docker --> WSServer : Contains
 
 @enduml

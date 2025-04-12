@@ -239,10 +239,3 @@
   70% { box-shadow: 0 0 0 6px rgba(114, 241, 184, 0); }
   100% { box-shadow: 0 0 0 0 rgba(114, 241, 184, 0); }
 }
-
-/* Remove duplicate animation and replace with enhanced version */
-@keyframes error-pulse {
-  0% { background-color: rgba(255, 85, 85, 0.15); }
-  50% { background-color: rgba(255, 85, 85, 0.4); }
-  100% { background-color: rgba(255, 85, 85, 0.15); }
-}

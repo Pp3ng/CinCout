@@ -16,6 +16,7 @@
 button {
   background: linear-gradient(45deg, var(--accent), var(--accent-hover));
   color: var(--text-primary);
+  font-family: 'Fira Code', monospace;
   border: none;
   padding: 5.4px 10.8px;
   border-radius: 5.4px;
@@ -108,23 +109,6 @@ button#clear:hover {
   background: linear-gradient(45deg, #b33c3c, #e65c5c);
 }
 
-/* Ripple effect */
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.4);
-  transform: scale(0);
-  animation: ripple-animation 0.6s linear;
-  pointer-events: none;
-}
-
-@keyframes ripple-animation {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
-
 /* Loading animation for buttons */
 button.loading {
   position: relative;
@@ -211,10 +195,12 @@ button:disabled {
 
 input:checked + .slider {
   background-color: var(--accent);
+  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
 }
 
 input:checked + .slider:before {
   transform: translateX(18px);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 #toggle-shortcuts,
@@ -231,6 +217,10 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 #toggle-shortcuts:hover,
@@ -238,6 +228,28 @@ input:checked + .slider:before {
 .dropdown-btn:hover {
   border-color: var(--accent);
   background-color: rgba(14, 99, 156, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#toggle-shortcuts::before,
+#learn-btn::before,
+.dropdown-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.05)
+  );
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 /* Dropdown styles */
@@ -262,6 +274,7 @@ input:checked + .slider:before {
 /* Improved dropdown content display */
 .dropdown-content {
   display: none;
+  font-family: 'Fira Code', monospace;
   position: absolute;
   background-color: var(--bg-secondary);
   min-width: 220px;

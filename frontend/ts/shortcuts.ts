@@ -66,12 +66,12 @@
     common: {
       [`${CMD_KEY}+Enter`]: {
         action: () => triggerButton(DOM_IDS.COMPILE),
-        description: "Compile and run code",
+        description: "Compile and run",
         displayKeys: IS_MAC ? ['⌘', 'return'] : ['Ctrl', 'Enter']
       },
       [`${CMD_KEY}+l`]: {
         action: () => triggerButton(DOM_IDS.CLEAR),
-        description: "Clear terminal output",
+        description: "Clear output",
         displayKeys: IS_MAC ? ['⌘', 'L'] : ['Ctrl', 'L']
       },
       [`${CMD_KEY}+s`]: {

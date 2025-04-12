@@ -1,30 +1,46 @@
 /* Memory check specific styles */
 .memcheck-leak {
-  border-left: 3px solid #ff5555;
-  background: rgba(255, 85, 85, 0.1);
-  padding: 5px 10px;
-  margin: 5px 0;
+  border-left: 3px solid #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+  padding: 12px 16px;
+  margin: 12px 0;
   display: block;
-  border-radius: 3px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.memcheck-leak:hover {
+  background: rgba(239, 68, 68, 0.08);
+  transform: translateX(3px);
+  box-shadow: var(--shadow-md);
 }
 
 .memcheck-output {
   background-color: var(--bg-secondary);
-  padding: 10px;
+  padding: 16px;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   line-height: 1.5;
   overflow-x: auto;
   white-space: pre-wrap;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+  margin-bottom: 12px;
 }
 
 .leak-headline {
-  color: #ff5555;
+  color: #ef4444;
   font-weight: bold;
   display: block;
-  margin-top: 10px;
-  margin-bottom: 5px;
-  padding-left: 5px;
-  border-left: 2px solid #ff5555;
-  background-color: rgba(255, 85, 85, 0.05);
-  border-radius: 2px;
+  margin: 16px 0 12px;
+  padding: 8px 12px;
+  border-left: 4px solid #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
 }

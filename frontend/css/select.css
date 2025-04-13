@@ -5,14 +5,14 @@ select {
   color: var(--text-primary);
   border: 2px solid var(--border);
   padding: 7.2px 31.5px 7.2px 10.8px;
-  border-radius: 5.4px;
+  border-radius: var(--radius-sm);
   font-size: 12.6px;
   cursor: pointer;
   min-width: 0;
   width: 117px;
   height: 32.4px;
   background-image: none; /* Remove default arrow */
-  transition: all 0.2s ease;
+  transition: all var(--transition-normal);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -31,7 +31,7 @@ select {
   border-bottom: 1.5px solid var(--text-secondary);
   transform: translateY(-70%) rotate(45deg);
   pointer-events: none;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+  transition: all var(--transition-normal);
 }
 
 /* Add arrow rotation and bounce animation on hover - match buttons style */
@@ -51,11 +51,11 @@ select {
   overflow-y: auto;
   background: var(--bg-secondary);
   border: 2px solid var(--accent);
-  border-radius: 5.4px;
+  border-radius: var(--radius-sm);
   z-index: 1000;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
   display: none;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn var(--transition-normal);
 }
 
 /* Reuse the fadeIn animation from buttons.css */
@@ -110,13 +110,13 @@ select#optimization {
 select:hover {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-hover);
-  animation: selectHover 0.3s ease;
+  animation: selectHover var(--transition-normal);
 }
 
 select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(14, 99, 156, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 select option {

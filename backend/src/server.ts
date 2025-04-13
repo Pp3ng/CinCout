@@ -1,9 +1,10 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import path from 'path';
 import http from 'http';
 import { WebSocketServer } from 'ws';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const port = 9527;
@@ -18,10 +19,30 @@ const wss = new WebSocketServer({
   clientTracking: true
 });
 
+
+// Global rate limiter for all API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 30, // Limit each IP to 30 requests per minute
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: 'Too many requests from this IP, please try again after a minute',
+  handler: (req: Request, res: Response, _next: NextFunction) => {
+    console.log(`Rate limit exceeded for IP: ${req.ip}`);
+    return res.status(429).json({
+      error: 'Rate limit exceeded',
+      message: 'Too many requests from this IP, please try again after a minute',
+    });
+  }
+});
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Apply rate limiting to all API endpoints
+app.use('/api/', apiLimiter);
 
 app.use(express.static(path.join(__dirname, '../../frontend')));
 
@@ -47,6 +68,17 @@ const interval = setInterval(function ping() {
     ws.ping();
   });
 }, 30000); // check every 30 seconds
+
+// Handle connection events
+wss.on('connection', function connection(ws: any) {
+  // Initialize the isAlive property when a connection is established
+  ws.isAlive = true;
+  
+  // Handle pong messages from this connection
+  ws.on('pong', function() {
+    ws.isAlive = true;
+  });
+});
 
 // Clean up on server close
 wss.on('close', function close() {

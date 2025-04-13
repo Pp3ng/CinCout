@@ -43,12 +43,12 @@
 
 ::-webkit-scrollbar-track {
   background: var(--bg-secondary);
-  border-radius: 3.6px;
+  border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--accent);
-  border-radius: 3.6px;
+  border-radius: var(--radius-sm);
   transition: background 0.3s;
 }
 

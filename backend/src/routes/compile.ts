@@ -27,6 +27,7 @@ const router = express.Router();
 // Extended WebSocket interface to add properties
 interface ExtendedWebSocket extends WebSocket {
   sessionId?: string;
+  isAlive?: boolean;
 }
 
 // WebSocket setup functions
@@ -38,6 +39,15 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
     // Create unique session ID for each connection
     const sessionId = uuidv4();
     extWs.sessionId = sessionId;
+    
+    // Set isAlive flag for heartbeat
+    extWs.isAlive = true;
+    
+    // Handle pong messages - client is alive
+    extWs.on('pong', () => {
+      extWs.isAlive = true;
+      console.log(`Received pong from session ${sessionId}`);
+    });
     
     // Set up auto-close timeout - if 3 minutes with no activity, close connection
     const autoCloseTimeout = setTimeout(() => {

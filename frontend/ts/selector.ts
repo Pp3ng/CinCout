@@ -50,6 +50,11 @@ function enhanceSelect(select: HTMLSelectElement): void {
     updateSelectedOption(this, optionsContainer);
   });
   
+  // Also check and update on initial render in case the select was already set programmatically
+  setTimeout(() => {
+    updateSelectedOption(select, optionsContainer);
+  }, 0);
+  
   // Fix for mouse leaving the options but remaining over the select
   container.addEventListener('mouseleave', function() {
     // Hide options after a short delay

@@ -87,6 +87,27 @@ async function loadSingleTemplate(language: string, templateName: string): Promi
         option.textContent = name;
         templateSelect.appendChild(option);
     }
+    
+    // Try to select Hello World template if it exists, regardless of which language
+    if (templateSelect.options.length > 0) {
+        const helloWorldOption = Array.from(templateSelect.options).find(
+            option => option.value === 'Hello World'
+        );
+        
+        if (helloWorldOption) {
+            templateSelect.value = 'Hello World';
+            // Manually trigger the change event to update the custom selector UI
+            templateSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            // Select first available template
+            templateSelect.selectedIndex = 0;
+            // Ensure the UI is updated
+            templateSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        
+        // Load and set the template
+        await (window as any).setTemplate();
+    }
 };
 
 // Set editor content based on selected template
@@ -121,6 +142,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (helloWorldOption) {
             templateSelect.value = 'Hello World';
+            // Manually trigger the change event to update the custom selector UI
+            templateSelect.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
             // Select first available template
             templateSelect.selectedIndex = 0;

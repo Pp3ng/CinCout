@@ -1,3 +1,13 @@
+// Import utility functions from utils.ts
+import { 
+  triggerButton, 
+  detectOS, 
+  saveCodeToFile, 
+  openCodeFromFile, 
+  toggleCodeFolding, 
+  normalizeKeyCombo 
+} from './utils';
+
 (() => {
   //=============================================================================
   // Constants and Configuration
@@ -23,12 +33,6 @@
 
   interface KeyHandler {
     (e: KeyboardEvent): boolean;
-  }
-
-  // Detect operating system
-  function detectOS(): string {
-    const userAgent = window.navigator.userAgent;
-    return /Mac/.test(userAgent) ? 'MacOS' : 'Other';
   }
 
   // Platform detection (Mac or other platforms)
@@ -187,15 +191,6 @@
   //=============================================================================
   
   /**
-   * Triggers a click event on an element with the specified ID
-   * @param {string} id - The ID of the element to click
-   */
-  function triggerButton(id: string): void {
-    const element = document.getElementById(id);
-    if (element) element.click();
-  }
-  
-  /**
    * Closes the output panel and restores focus to the editor
    */
   function closeOutputPanel(): void {
@@ -208,90 +203,11 @@
       }, 10);
     }
   }
-  
-  /**
-   * Saves the current code to a file
-   */
-  function saveCodeToFile(): void {
-    const editor = (window as any).editor;
-    const code = editor.getValue();
-    const fileType = (document.getElementById(DOM_IDS.LANGUAGE) as HTMLSelectElement).value === 'cpp' ? 'cpp' : 'c';
-    const blob = new Blob([code], {type: 'text/plain'});
-    const downloadLink = document.createElement('a');
-    
-    downloadLink.href = URL.createObjectURL(blob);
-    downloadLink.download = `code.${fileType}`;
-    downloadLink.click();
-  }
-  
-  /**
-   * Opens code from a file
-   */
-  function openCodeFromFile(): void {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.c,.cpp';
-    
-    fileInput.onchange = function(this: HTMLInputElement) {
-      const selectedFile = this.files?.[0];
-      if (!selectedFile) return;
-      
-      const reader = new FileReader();
-      reader.onload = function() {
-        if ((window as any).editor) {
-          (window as any).editor.setValue(reader.result as string);
-        }
-      };
-      reader.readAsText(selectedFile);
-    };
-    
-    fileInput.click();
-  }
-  
-  /**
-   * Toggles code folding at the cursor position
-   */
-  function toggleCodeFolding(): void {
-    if ((window as any).editor) {
-      (window as any).editor.foldCode((window as any).editor.getCursor());
-    }
-  }
 
   //=============================================================================
   // Keyboard Event Handling
   //=============================================================================
   
-  /**
-   * Normalizes a keyboard event into a format usable for shortcut lookup
-   * @param {KeyboardEvent} event - The keyboard event
-   * @returns {string} - Normalized key representation
-   */
-  function normalizeKeyCombo(event: KeyboardEvent): string {
-    const key = event.key.toLowerCase();
-    
-    // Handle special keys
-    if (key === 'enter') return 'Enter';
-    if (key === 'escape') return 'Escape';
-    
-    // Build key combination prefix
-    let prefix = '';
-    if (event.ctrlKey) prefix += 'ctrl+';
-    if (event.altKey) prefix += 'alt+';
-    if (event.metaKey) prefix += 'meta+';
-    if (event.shiftKey) prefix += 'shift+';
-    
-    // Handle letter and number keys
-    if (prefix) {
-      // Use lowercase for letter keys
-      if (key.length === 1) return prefix + key;
-      
-      // Single number keys
-      if (/^[0-9]$/.test(key)) return prefix + key;
-    }
-    
-    // For keys without modifiers, return as is
-    return event.key;
-  }
   
   /**
    * Main keyboard event handler

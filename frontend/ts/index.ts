@@ -9,7 +9,7 @@ import '../css/memcheck.css';
 import '../css/responsive.css';
 import '../css/select.css';
 import '../css/terminal.css';
-import '../css/utilities.css';
+import '../css/utils.css';
 
 // Import all application modules in dependency order
 import './themes';      // Theme functionality

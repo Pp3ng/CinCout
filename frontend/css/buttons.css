@@ -1,10 +1,10 @@
 /* Button container styles */
 .button-container {
   display: flex;
-  gap: 9px;
+  gap: var(--spacing-sm);
   align-items: center;
   flex-wrap: wrap;
-  padding: 4.5px 0;
+  padding: var(--spacing-xs) 0;
 }
 
 /* Right-aligned button container */
@@ -19,10 +19,10 @@ button {
   font-family: 'Fira Code', monospace;
   border: none;
   padding: 5.4px 10.8px;
-  border-radius: 5.4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 12.6px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-normal);
   display: flex;
   align-items: center;
   gap: 5.4px;
@@ -31,7 +31,7 @@ button {
   position: relative;
   overflow: hidden;
   min-width: 0;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Button variants */
@@ -47,7 +47,7 @@ button {
 .tab-btn {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
 .tab-btn.active {
@@ -58,19 +58,19 @@ button {
 /* Hover effects */
 button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   filter: brightness(1.1);
 }
 
 button:active {
   transform: translateY(1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   filter: brightness(0.95);
 }
 
 /* Icon animation */
 button i {
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-normal);
 }
 
 button:hover i {
@@ -79,7 +79,7 @@ button:hover i {
 
 /* Existing button SVG animation */
 button svg {
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-normal);
   font-size: 1.1em;
 }
 
@@ -177,7 +177,7 @@ button:disabled {
   bottom: 0;
   background-color: var(--bg-primary);
   transition: .3s;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   border: 2px solid var(--border);
 }
 
@@ -210,7 +210,7 @@ input:checked + .slider:before {
   color: var(--text-primary);
   border: 1px solid var(--border);
   padding: 7.2px 14.4px;
-  border-radius: 3.6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 12.6px;
   transition: all 0.2s ease;
@@ -279,7 +279,7 @@ input:checked + .slider:before {
   background-color: var(--bg-secondary);
   min-width: 220px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   z-index: 101;
   margin-top: 5px;
   animation: fadeIn 0.3s ease;

@@ -1,3 +1,6 @@
+// Import utility functions
+import { debounce, takeCodeSnap } from './utils';
+
 // Define WebSocket-related interfaces
 interface CinCoutSocket {
     init: (messageHandler: (event: MessageEvent) => void) => void;
@@ -299,219 +302,6 @@ const CinCoutUI = (function() {
   }
   
   /**
-   * Take a code snapshot of the code editor
-   * @returns {Promise<void>}
-   */
-  async function takeCodeSnap(): Promise<void> {
-    
-    // Get the CodeMirror editor element
-    const editorElement = document.querySelector('.CodeMirror');
-    
-    if (!editorElement) {
-      console.error('CodeMirror editor element not found');
-      return;
-    }
-    
-    try {
-      // Show loading indicator
-      const loadingIndicator = document.createElement('div');
-      loadingIndicator.className = 'codesnap-loading';
-      loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...';
-      loadingIndicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
-      document.body.appendChild(loadingIndicator);
-      
-      // Get the CodeMirror instance
-      const cm = (editorElement as any).CodeMirror;
-      if (!cm) {
-        throw new Error('CodeMirror instance not found');
-      }
-      
-      // Get code content and language
-      const fullContent = cm.getValue();
-      const lang = (domElements.language as HTMLSelectElement)?.value || 'code';
-
-      // Create filename with timestamp
-      const timestamp = (() => {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} at ${String(now.getHours()).padStart(2, '0')}.${String(now.getMinutes()).padStart(2, '0')}.${String(now.getSeconds()).padStart(2, '0')}`
-      })();
-      const filename = `${lang}-${timestamp}.png`;
-      
-      // Get current theme directly from theme selector
-      const currentTheme = (document.getElementById('theme-select') as HTMLSelectElement)?.value || 'default';
-      
-      // Calculate width based on longest line
-      const lines = fullContent.split('\n');
-      const longestLine = lines.reduce((longest: string, line: string) => line.length > longest.length ? line : longest, '');
-      
-      // Measure line width
-      const measureEl = document.createElement('div');
-      measureEl.style.cssText = 'position: absolute; left: -9999px; visibility: hidden; white-space: pre;';
-      measureEl.style.fontFamily = window.getComputedStyle(editorElement).fontFamily;
-      measureEl.style.fontSize = window.getComputedStyle(editorElement).fontSize;
-      measureEl.textContent = longestLine;
-      document.body.appendChild(measureEl);
-      const longestLineWidth = measureEl.clientWidth;
-      document.body.removeChild(measureEl);
-      
-      // Calculate total width including line numbers
-      const lineNumbersWidth = editorElement.querySelector('.CodeMirror-linenumbers')?.clientWidth || 0;
-      const totalWidth = longestLineWidth + lineNumbersWidth + 40;
-      
-      // Create temporary container for new editor
-      const tempContainer = document.createElement('div');
-      tempContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; opacity: 1; width: ${totalWidth}px;`;
-      document.body.appendChild(tempContainer);
-      
-      // Get original editor styling
-      const computedStyle = window.getComputedStyle(editorElement);
-      const editorStyles = {
-        fontFamily: computedStyle.getPropertyValue('font-family'),
-        fontSize: computedStyle.getPropertyValue('font-size'),
-        lineHeight: computedStyle.getPropertyValue('line-height')
-      };
-      
-      // Copy editor options that matter for rendering
-      const currentOptions = {};
-      const relevantOptions = ['mode', 'lineWrapping', 'lineNumbers', 'foldGutter', 'theme', 'indentUnit', 'indentWithTabs', 'smartIndent'];
-      
-      for (const option of relevantOptions) {
-        try {
-          const value = cm.getOption(option);
-          if (value !== undefined) {
-            (currentOptions as any)[option] = value;
-          }
-        } catch (e) {
-          console.warn(`Couldn't get option ${option}:`, e);
-        }
-      }
-      
-      // Create new CodeMirror instance for snapshot
-      const newCm = (window as any).CodeMirror(tempContainer, {
-        ...currentOptions,
-        value: fullContent,
-        readOnly: true,
-        viewportMargin: Infinity,
-        theme: currentTheme !== 'default' ? currentTheme : 'default'
-      });
-      
-      // Wait for theme CSS to load and apply
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Style the new editor element
-      const newEditorElement = tempContainer.querySelector('.CodeMirror') as HTMLElement;
-      if (!newEditorElement) {
-        throw new Error('New editor element not found');
-      }
-      
-      // Apply necessary styling
-      newEditorElement.style.fontFamily = editorStyles.fontFamily;
-      newEditorElement.style.fontSize = editorStyles.fontSize;
-      newEditorElement.style.lineHeight = editorStyles.lineHeight;
-      newEditorElement.style.width = `${totalWidth}px`;
-      
-      // Make content fully visible without scrolling
-      const scrollElement = newEditorElement.querySelector('.CodeMirror-scroll') as HTMLElement;
-      if (scrollElement) {
-        scrollElement.style.height = 'auto';
-        scrollElement.style.maxHeight = 'none';
-        scrollElement.style.overflow = 'visible';
-        scrollElement.style.width = `${totalWidth}px`;
-      }
-      
-      const sizerElement = newEditorElement.querySelector('.CodeMirror-sizer') as HTMLElement;
-      if (sizerElement) {
-        sizerElement.style.marginBottom = '0';
-        sizerElement.style.minWidth = `${totalWidth - lineNumbersWidth}px`;
-      }
-      
-      const codeArea = newEditorElement.querySelector('.CodeMirror-lines') as HTMLElement;
-      if (codeArea) {
-        codeArea.style.width = `${totalWidth - lineNumbersWidth}px`;
-      }
-      
-      // Force refresh and wait for it to complete
-      newCm.refresh();
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Take screenshot
-      const canvas = await window.html2canvas(newEditorElement, {
-        backgroundColor: null,
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        height: newEditorElement.scrollHeight,
-        width: totalWidth,
-        windowHeight: newEditorElement.scrollHeight + 100
-      });
-      
-      // Convert to blob and download
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-      if (!blob) {
-        throw new Error('Failed to create blob from canvas');
-      }
-      
-      // Download the image
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      // Clean up
-      document.body.removeChild(tempContainer);
-      document.body.removeChild(loadingIndicator);
-      
-      // Show success notification
-      showNotification(true, 'Code snapshot saved!');
-      
-    } catch (error) {
-      console.error('CodeSnap error:', error);
-      
-      // Make sure loading indicator is removed in case of error
-      const existingIndicator = document.querySelector('.codesnap-loading');
-      if (existingIndicator && existingIndicator.parentNode) {
-        existingIndicator.parentNode.removeChild(existingIndicator);
-      }
-      
-      // Show error notification
-      showNotification(false, 'Failed to create code snapshot');
-    }
-  }
-  
-  /**
-   * Show a notification message
-   * @param success - Whether this is a success or error notification
-   * @param message - The message to display
-   */
-  function showNotification(success: boolean, message: string): void {
-    const notification = document.createElement('div');
-    notification.className = success ? 'codesnap-notification' : 'codesnap-error';
-    
-    const icon = success ? 'fa-check-circle' : 'fa-exclamation-circle';
-    const bgColor = success ? 'rgba(40,167,69,0.9)' : 'rgba(220,53,69,0.9)';
-    
-    notification.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-    notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: ${bgColor}; color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;`;
-    
-    document.body.appendChild(notification);
-    
-    // Remove notification after a delay
-    setTimeout(() => {
-      notification.style.opacity = '0';
-      setTimeout(() => {
-        if (notification.parentNode) {
-          document.body.removeChild(notification);
-        }
-      }, 500);
-    }, 3000);
-  }
-
-  /**
    * Initialize event handlers
    */
   function initEventHandlers(): void {
@@ -524,29 +314,6 @@ const CinCoutUI = (function() {
         // Update available templates for the selected language
         if (typeof window.updateTemplates === 'function') {
           await window.updateTemplates();
-          
-          // Set default template
-          const templateSelect = document.getElementById('template') as HTMLSelectElement;
-          if (templateSelect) {
-            // Try to select Hello World template if it exists
-            const helloWorldOption = Array.from(templateSelect.options).find(
-              option => option.value === 'Hello World'
-            );
-            
-            if (helloWorldOption) {
-              templateSelect.value = 'Hello World';
-              // Call setTemplate to update editor content
-              if (typeof window.setTemplate === 'function') {
-                window.setTemplate();
-              }
-            } else if (templateSelect.options.length > 0) {
-              // Select first available template
-              templateSelect.selectedIndex = 0;
-              if (typeof window.setTemplate === 'function') {
-                window.setTemplate();
-              }
-            }
-          }
         }
       });
     }
@@ -560,10 +327,14 @@ const CinCoutUI = (function() {
       });
     }
     
-    // Compile button event
+    // Initialize CodeSnap button
+    if (domElements.codesnap) {
+      domElements.codesnap.addEventListener('click', debounce(takeCodeSnap, 300));
+    }
+
+    // Compile button event with debounce only
     if (domElements.compile) {
-      domElements.compile.addEventListener('click', async function() {
-        
+      domElements.compile.addEventListener('click', debounce(async function() {
         if (isCompiling || isRunning) {
           console.log('A process is already running, ignoring compile request');
           return;
@@ -621,7 +392,7 @@ const CinCoutUI = (function() {
             console.error('Error disconnecting after failure:', e);
           }
         }
-      });
+      }, 300)); // 300ms debounce
     }
     
     // Close output panel event - send cleanup signal to backend
@@ -656,9 +427,9 @@ const CinCoutUI = (function() {
       });
     }
     
-    // View Assembly button click handler
+    // View Assembly button click handler with debounce only
     if (domElements.viewAssembly) {
-      domElements.viewAssembly.addEventListener('click', function() {
+      domElements.viewAssembly.addEventListener('click', debounce(function() {
         const code = (window as any).editor.getValue();
         const lang = (domElements.language as HTMLSelectElement)?.value;
         const compiler = (document.getElementById("compiler") as HTMLSelectElement)?.value;
@@ -721,12 +492,12 @@ const CinCoutUI = (function() {
             window.assemblyView.setValue("Error: " + error);
           }
         });
-      });
+      }, 300)); // 300ms debounce
     }
 
-    // Memory check button click handler
+    // Memory check button click handler with debounce only
     if (domElements.memcheck) {
-      domElements.memcheck.addEventListener('click', function() {
+      domElements.memcheck.addEventListener('click', debounce(function() {
         const code = (window as any).editor.getValue();
         const lang = (domElements.language as HTMLSelectElement)?.value;
         const compiler = (document.getElementById("compiler") as HTMLSelectElement)?.value;
@@ -762,12 +533,12 @@ const CinCoutUI = (function() {
               `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
           }
         });
-      });
+      }, 300)); // 300ms debounce
     }
 
-    // Format button click handler
+    // Format button click handler with debounce only
     if (domElements.format) {
-      domElements.format.addEventListener('click', function() {
+      domElements.format.addEventListener('click', debounce(function() {
         const code = (window as any).editor.getValue();
         const cursor = (window as any).editor.getCursor();
         const lang = (domElements.language as HTMLSelectElement)?.value;
@@ -795,12 +566,12 @@ const CinCoutUI = (function() {
         .catch(error => {
           console.error("Format error:", error);
         });
-      });
+      }, 300)); // 300ms debounce
     }
 
-    // Style check button click handler
+    // Style check button click handler with debounce only
     if (domElements.styleCheck) {
-      domElements.styleCheck.addEventListener('click', function() {
+      domElements.styleCheck.addEventListener('click', debounce(function() {
         const code = (window as any).editor.getValue();
         const lang = (domElements.language as HTMLSelectElement)?.value;
 
@@ -840,7 +611,7 @@ const CinCoutUI = (function() {
             domElements.output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
           }
         });
-      });
+      }, 300)); // 300ms debounce
     }
 
     // Clear button click handler
@@ -877,10 +648,6 @@ const CinCoutUI = (function() {
       });
     }
 
-    // Initialize CodeSnap button
-    if (domElements.codesnap) {
-      domElements.codesnap.addEventListener('click', takeCodeSnap);
-    }
   }
   
   /**

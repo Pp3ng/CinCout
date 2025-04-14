@@ -1,58 +1,86 @@
-// TypeScript definitions for global objects
+// codemirror-setup.ts
 declare const CodeMirror: any;
 
-// Initialize editor globally so it can be accessed by layout.js
-(window as any).editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-    lineNumbers: true,
-    mode: "text/x-c++src",
-    keyMap: "default",
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    indentUnit: 4,
-    tabSize: 4,
-    indentWithTabs: true,
-    lineWrapping: true,
-    foldGutter: true,
-    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-    extraKeys: {
-        "Ctrl-Space": "autocomplete"
-    },
-    foldOptions: {
-        widget: '...'
+type EditorInstances = {
+    editor: any;
+    assemblyView: any;
+};
+
+const setupEditors = (): EditorInstances => {
+    const codeElement = document.getElementById("code");
+    const asmElement = document.getElementById("assembly");
+
+    if (!codeElement || !asmElement) {
+        throw new Error("Required DOM elements not found");
     }
-});
 
-// Initialize assembly view globally so it can be accessed by layout.js
-(window as any).assemblyView = CodeMirror(document.getElementById("assembly"), {
-    lineNumbers: true,
-    mode: "gas",
-    readOnly: true,
-    lineWrapping: true
-});
-
-(window as any).assemblyView.setSize(null, "100%");
-
-//Init font size
-let fontSize: number = 14;
-
-document.addEventListener('wheel', function(e: WheelEvent) {
-    if (e.ctrlKey) {
-        e.preventDefault();
-        
-        // Change font size according to direction of scroll
-        if (e.deltaY < 0) {
-            fontSize = Math.min(fontSize + 1, 24);// Max font size is 24px
-        } else {
-            fontSize = Math.max(fontSize - 1, 8); // Min font size is 8px
+    const editor = CodeMirror.fromTextArea(codeElement, {
+        lineNumbers: true,
+        mode: "text/x-c++src",
+        keyMap: "default",
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: true,
+        lineWrapping: true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        extraKeys: {
+            "Ctrl-Space": "autocomplete"
+        },
+        foldOptions: {
+            widget: "..."
         }
+    });
 
-        (window as any).editor.getWrapperElement().style.fontSize = `${fontSize}px`;
-        (window as any).assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;
-        
-        (window as any).editor.refresh();
-        (window as any).assemblyView.refresh();
+    const assemblyView = CodeMirror(asmElement, {
+        lineNumbers: true,
+        mode: "gas",
+        readOnly: true,
+        lineWrapping: true
+    });
+
+    assemblyView.setSize(null, "100%");
+
+    return { editor, assemblyView };
+};
+
+const setupFontZoomHandler = (editor: any, assemblyView: any) => {
+    let fontSize = 14;
+
+    const applyFontSize = () => {
+        editor.getWrapperElement().style.fontSize = `${fontSize}px`;
+        assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;
+        editor.refresh();
+        assemblyView.refresh();
+    };
+
+    applyFontSize();
+
+    document.addEventListener(
+        "wheel",
+        function (e: WheelEvent) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                fontSize = e.deltaY < 0 ? Math.min(fontSize + 1, 24) : Math.max(fontSize - 1, 8);
+                applyFontSize();
+            }
+        },
+        { passive: false }
+    );
+};
+
+(() => {
+    try {
+        const { editor, assemblyView } = setupEditors();
+
+        // attach to global window so layout.js can use it
+        (window as any).editor = editor;
+        (window as any).assemblyView = assemblyView;
+
+        setupFontZoomHandler(editor, assemblyView);
+    } catch (e) {
+        console.error("Editor setup failed:", e);
     }
-}, { passive: false });
-
-(window as any).editor.getWrapperElement().style.fontSize = `${fontSize}px`;
-(window as any).assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;
+})();

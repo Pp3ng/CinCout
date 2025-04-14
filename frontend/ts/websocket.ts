@@ -28,11 +28,9 @@ const CinCoutSocket = (function() {
       const host = window.location.host;
       
       try {
-        console.log('Creating new WebSocket connection...');
         socket = new WebSocket(`${protocol}//${host}`);
         
         socket.onopen = () => {
-          console.log('WebSocket connection established');
           resolve(socket);
         };
         
@@ -65,7 +63,6 @@ const CinCoutSocket = (function() {
    * @returns {Promise<void>} Promise that resolves when connection is ready
    */
   function connect(): Promise<void> {
-    console.log('Connecting to WebSocket server...');
     return initWebSocket()
       .then(() => {
         return Promise.resolve();
@@ -115,8 +112,6 @@ const CinCoutSocket = (function() {
    * Close the WebSocket connection
    */
   function disconnect(): void {
-    console.log('Disconnecting WebSocket...');
-    
     if (socket) {
       // Send cleanup message
       if (socket.readyState === WebSocket.OPEN && sessionId) {
@@ -151,7 +146,6 @@ const CinCoutSocket = (function() {
   function resetState(): void {
     isProcessRunning = false;
     compilationState = 'idle';
-    console.log('Reset WebSocket state: process not running, compilation state idle');
   }
   
   /**

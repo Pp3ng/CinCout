@@ -1,0 +1,10 @@
+services:
+  cincout:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cincout:latest
+    container_name: cincout
+    ports:
+      - "9527:9527"
+    restart: unless-stopped

@@ -23,7 +23,6 @@ const activeSessions = new Map<string, Session>();
  * @param {string} sessionId - ID of the session to terminate
  */
 function terminateSession(sessionId: string): void {
-  console.log(`Terminating session ${sessionId}`);
   const session = activeSessions.get(sessionId);
   if (session) {
     try {
@@ -57,14 +56,12 @@ function terminateSession(sessionId: string): void {
  * @param {string} sessionId - ID of the session to clean up
  */
 function cleanupSession(sessionId: string): void {
-  console.log(`Cleaning up session ${sessionId}`);
   const session = activeSessions.get(sessionId);
   if (session) {
     if (session.tmpDir) {
       try {
         // Force removal of temporary directory
         session.tmpDir.removeCallback();
-        console.log(`Removed temporary directory for session ${sessionId}`);
       } catch (e) {
         console.error(`Error removing temporary directory for session ${sessionId}:`, e);
         // Try a different approach if the callback method fails
@@ -73,8 +70,6 @@ function cleanupSession(sessionId: string): void {
           exec(`rm -rf "${session.tmpDir.name}"`, (err: Error) => {
             if (err) {
               console.error(`Failed to forcefully remove temp dir ${session.tmpDir.name}:`, err);
-            } else {
-              console.log(`Forcefully removed temp dir ${session.tmpDir.name}`);
             }
           });
         } catch (execErr) {
@@ -85,7 +80,6 @@ function cleanupSession(sessionId: string): void {
     
     // Always remove the session from active sessions map
     activeSessions.delete(sessionId);
-    console.log(`Removed session ${sessionId} from active sessions`);
   }
 }
 
@@ -194,8 +188,6 @@ function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirRe
     
     // Handle PTY exit
     ptyProcess.onExit(({ exitCode }) => {
-      console.log(`Process exited with code ${exitCode} for session ${sessionId}`);
-      
       try {
         ws.send(JSON.stringify({
           type: 'exit',
@@ -208,7 +200,6 @@ function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirRe
       
       // Clean up resources immediately after program exit
       if (activeSessions.has(sessionId)) {
-        console.log(`Cleaning up session ${sessionId} immediately after exit`);
         cleanupSession(sessionId);
       }
     });

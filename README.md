@@ -106,15 +106,14 @@ please make sure you have Docker installed on your system. You can follow the of
 
 This project provides a Dockerfile that allows you to run the application in a Docker container.
 
-### Build the Docker Image
+### Build and Run the Docker Image
 
 ```bash
-# Navigate to the project directory
+# Navigate to project directory
 cd CinCout
-# Build the Docker image
-docker build -t cincout:latest .
-# run the Docker container
-docker run -d -p 9527:9527 --name cincout --restart unless-stopped cincout:latest
+# Build and run
+docker-compose up --build -d
+
 ```
 
 Then you can access the application at http://localhost:9527

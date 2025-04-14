@@ -34,8 +34,6 @@ interface ExtendedWebSocket extends WebSocket {
 function setupWebSocketHandlers(wss: WebSocketServer): void {
   wss.on('connection', (ws: WebSocket) => {
     const extWs = ws as ExtendedWebSocket;
-    console.log('New WebSocket connection established for compilation');
-    
     // Create unique session ID for each connection
     const sessionId = uuidv4();
     extWs.sessionId = sessionId;
@@ -46,13 +44,11 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
     // Handle pong messages - client is alive
     extWs.on('pong', () => {
       extWs.isAlive = true;
-      console.log(`Received pong from session ${sessionId}`);
     });
     
     // Set up auto-close timeout - if 3 minutes with no activity, close connection
     const autoCloseTimeout = setTimeout(() => {
       if (extWs.readyState === WebSocket.OPEN) {
-        console.log(`Auto-closing idle WebSocket connection ${sessionId} after timeout`);
         extWs.close();
       }
     }, 180000); // 3 minutes timeout
@@ -64,7 +60,6 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
         clearTimeout(autoCloseTimeout);
         
         const data = JSON.parse(typeof message === 'string' ? message : message.toString());
-        console.log(`Received ${data.type || data.action} from ${sessionId}`);
         
         switch(data.type || data.action) {
           case 'compile':
@@ -74,10 +69,7 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
             
           case 'input':
             // Send user input to the program
-            if (sendInputToSession(sessionId, data.input, extWs)) {
-              console.log(`Input sent to session ${sessionId}`);
-            } else {
-              console.log(`Failed to send input to session ${sessionId}: Session not active`);
+            if (!sendInputToSession(sessionId, data.input, extWs)) {
               extWs.send(JSON.stringify({
                 type: 'error',
                 message: 'No active session to receive input',
@@ -89,17 +81,12 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
           case 'resize':
             // Handle terminal resize request
             if (data.cols && data.rows) {
-              if (resizeTerminal(sessionId, data.cols, data.rows)) {
-                console.log(`Terminal resized for session ${sessionId} to ${data.cols}x${data.rows}`);
-              } else {
-                console.log(`Failed to resize terminal for session ${sessionId}`);
-              }
+              resizeTerminal(sessionId, data.cols, data.rows);
             }
             break;
             
           case 'cleanup':
             // Handle explicit cleanup request
-            console.log(`Received cleanup request for session ${sessionId}`);
             if (activeSessions.has(sessionId)) {
               terminateSession(sessionId);
               extWs.send(JSON.stringify({
@@ -108,9 +95,6 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
               }));
             }
             break;
-            
-          default:
-            console.log(`Unhandled message type: ${data.type || data.action}`);
         }
       } catch (error) {
         console.error('Error processing message:', error);
@@ -124,12 +108,10 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
     
     // Handle WebSocket close
     extWs.on('close', () => {
-      console.log(`WebSocket session ${sessionId} closed`);
       clearTimeout(autoCloseTimeout);
       
       // Immediately terminate any active session when WebSocket closes
       if (activeSessions.has(sessionId)) {
-        console.log(`Terminating session ${sessionId} on WebSocket close`);
         terminateSession(sessionId);
       }
     });
@@ -145,8 +127,6 @@ function setupWebSocketHandlers(wss: WebSocketServer): void {
 
 // Compile and run code with PTY for true terminal experience
 function compileAndRunWithPTY(ws: WebSocket, sessionId: string, code: string, lang: string, compiler?: string, optimization?: string): void {
-  console.log(`Compile request received for session ${sessionId}`);
-  
   // Security checks
   const validation = validateCodeSecurity(code);
   if (!validation.valid) {
@@ -159,7 +139,6 @@ function compileAndRunWithPTY(ws: WebSocket, sessionId: string, code: string, la
 
   // Check if session already exists and terminate it
   if (activeSessions.has(sessionId)) {
-    console.log(`Session ${sessionId} already exists, terminating first`);
     terminateSession(sessionId);
   }
   
@@ -180,13 +159,11 @@ function compileAndRunWithPTY(ws: WebSocket, sessionId: string, code: string, la
     
     // Compile command - no resource limiting
     const compileCmd = `${compilerCmd} ${standardOption} ${optimizationOption} "${sourceFile}" -o "${outputFile}"`;
-    console.log(`Compiling with command: ${compileCmd}`);
     
     // Execute compilation
     executeCommand(compileCmd)
       .then(() => {
         // Compilation successful, notify client
-        console.log(`Compilation successful, preparing to run session ${sessionId}`);
         ws.send(JSON.stringify({ type: 'compile-success' }));
         
         // Start compilation session with PTY

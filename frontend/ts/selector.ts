@@ -1,154 +1,206 @@
-/**
- * Enhanced select dropdown that works with hover and allows selection
- */
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize selectors
-  initializeSelectDropdowns();
-  
-  // Also set up a mutation observer to handle dynamic option changes
-  setupOptionChangeObservers();
-});
-
-function initializeSelectDropdowns(): void {
-  // Find all the select elements to enhance
-  const selects = document.querySelectorAll('select');
-  
-  selects.forEach(select => {
-    enhanceSelect(select as HTMLSelectElement);
-  });
-}
-
-function enhanceSelect(select: HTMLSelectElement): void {
-  // Skip if already enhanced
-  if (select.parentNode?.classList.contains('custom-select-container')) {
-    return;
+// Use Immediately Invoked Function Expression (IIFE) to create closure and avoid global namespace pollution
+(function() {
+  // Define interfaces and types
+  interface SelectOptions {
+    container: HTMLElement;
+    optionsContainer: HTMLElement;
   }
-  
-  // Create the wrapper container
-  const container = document.createElement('div');
-  container.className = 'custom-select-container';
-  
-  // Add data attribute to link back to the original select
-  container.setAttribute('data-for', select.id);
-  
-  // Position the container where the select is
-  select.parentNode!.insertBefore(container, select);
-  
-  // Move the select into our container
-  container.appendChild(select);
-  
-  // Create the options container
-  const optionsContainer = document.createElement('div');
-  optionsContainer.className = 'select-options';
-  container.appendChild(optionsContainer);
-  
-  // Build the custom options initially
-  rebuildCustomOptions(select, optionsContainer);
-  
-  // When select changes programmatically, update our custom UI
-  select.addEventListener('change', function() {
-    updateSelectedOption(this, optionsContainer);
-  });
-  
-  // Also check and update on initial render in case the select was already set programmatically
-  setTimeout(() => {
-    updateSelectedOption(select, optionsContainer);
-  }, 0);
-  
-  // Fix for mouse leaving the options but remaining over the select
-  container.addEventListener('mouseleave', function() {
-    // Hide options after a short delay
-    setTimeout(() => {
-      // Only hide if we're not hovering the container again
-      if (!container.matches(':hover')) {
-        optionsContainer.style.display = 'none';
-      }
-    }, 100);
-  });
-  
-  // Reshow options when entering the container
-  container.addEventListener('mouseenter', function() {
-    optionsContainer.style.display = 'block';
-  });
-}
 
-// Function to update the selected option in the custom UI
-function updateSelectedOption(select: HTMLSelectElement, optionsContainer: HTMLElement): void {
-  const selectedIndex = select.selectedIndex;
-  
-  // Update selected state in custom options
-  optionsContainer.querySelectorAll('.custom-option').forEach((opt, index) => {
-    if (index === selectedIndex) {
-      opt.classList.add('selected');
-    } else {
-      opt.classList.remove('selected');
-    }
-  });
-}
+  type SelectMap = Map<HTMLSelectElement, SelectOptions>;
 
-// Function to rebuild custom options
-function rebuildCustomOptions(select: HTMLSelectElement, optionsContainer: HTMLElement): void {
-  // Clear existing options
-  optionsContainer.innerHTML = '';
-  
-  // Add custom options to match the real select options
-  Array.from(select.options).forEach((option, index) => {
-    const customOption = document.createElement('div');
-    customOption.className = 'custom-option';
-    if (option.selected) {
-      customOption.classList.add('selected');
-    }
-    customOption.textContent = option.text;
-    customOption.setAttribute('data-value', option.value);
-    customOption.setAttribute('data-index', index.toString());
+  // Use class to encapsulate core functionality
+  class EnhancedSelect {
+    private selectMap: SelectMap = new Map();
+    private observers: Map<string, MutationObserver> = new Map();
     
-    // Handle option selection
-    customOption.addEventListener('click', function(this: HTMLElement) {
-      // Update the real select element
-      select.selectedIndex = parseInt(this.getAttribute('data-index') || '0');
+    constructor() {
+      document.addEventListener('DOMContentLoaded', () => {
+        this.initialize();
+      });
+    }
+    
+    // Initialize all selectors and set up listeners
+    private initialize(): void {
+      this.initializeSelectDropdowns();
+      this.setupOptionChangeObservers();
+    }
+    
+    // Initialize all select elements
+    private initializeSelectDropdowns(): void {
+      const selects = document.querySelectorAll('select');
+      selects.forEach(select => {
+        this.enhanceSelect(select as HTMLSelectElement);
+      });
+    }
+    
+    // Enhance a single select element
+
+    private enhanceSelect(select: HTMLSelectElement): void {
+      // Skip if already enhanced
+      if (select.parentNode?.classList.contains('custom-select-container')) {
+        return;
+      }
       
-      // Trigger a change event for any listeners
+      // Create wrapper container
+      const container = document.createElement('div');
+      container.className = 'custom-select-container';
+      container.setAttribute('data-for', select.id);
+      
+      // Place the container
+      select.parentNode!.insertBefore(container, select);
+      container.appendChild(select);
+      
+      // Create options container
+      const optionsContainer = document.createElement('div');
+      optionsContainer.className = 'select-options';
+      container.appendChild(optionsContainer);
+      
+      // Save references for future access
+      this.selectMap.set(select, {
+        container,
+        optionsContainer
+      });
+      
+      // Build custom options
+      this.rebuildCustomOptions(select);
+      
+      // Add event listeners
+      this.setupEventListeners(select);
+      
+      // Initialize selected item
+      setTimeout(() => {
+        this.updateSelectedOption(select);
+      }, 0);
+    }
+    
+    // Set up event listeners for select element
+    private setupEventListeners(select: HTMLSelectElement): void {
+      const options = this.selectMap.get(select);
+      if (!options) return;
+      
+      const { container, optionsContainer } = options;
+      
+      // Update UI when select changes
+      select.addEventListener('change', () => {
+        this.updateSelectedOption(select);
+      });
+      
+      // Hide options when mouse leaves
+      container.addEventListener('mouseleave', () => {
+        setTimeout(() => {
+          if (!container.matches(':hover')) {
+            optionsContainer.style.display = 'none';
+          }
+        }, 100);
+      });
+      
+      // Show options when mouse enters
+      container.addEventListener('mouseenter', () => {
+        optionsContainer.style.display = 'block';
+      });
+    }
+    
+    // Update the selected option
+    private updateSelectedOption(select: HTMLSelectElement): void {
+      const options = this.selectMap.get(select);
+      if (!options) return;
+      
+      const { optionsContainer } = options;
+      const selectedIndex = select.selectedIndex;
+      
+      optionsContainer.querySelectorAll('.custom-option').forEach((opt, index) => {
+        if (index === selectedIndex) {
+          opt.classList.add('selected');
+        } else {
+          opt.classList.remove('selected');
+        }
+      });
+    }
+    
+    // Rebuild custom option list
+    private rebuildCustomOptions(select: HTMLSelectElement): void {
+      const options = this.selectMap.get(select);
+      if (!options) return;
+      
+      const { optionsContainer } = options;
+      
+      // Clear existing options
+      optionsContainer.innerHTML = '';
+      
+      // Add custom options
+      Array.from(select.options).forEach((option, index) => {
+        const customOption = this.createCustomOption(select, option, index);
+        optionsContainer.appendChild(customOption);
+      });
+    }
+    
+    // Create a single custom option
+    private createCustomOption(select: HTMLSelectElement, option: HTMLOptionElement, index: number): HTMLElement {
+      const customOption = document.createElement('div');
+      customOption.className = 'custom-option';
+      if (option.selected) {
+        customOption.classList.add('selected');
+      }
+      
+      customOption.textContent = option.text;
+      customOption.setAttribute('data-value', option.value);
+      customOption.setAttribute('data-index', index.toString());
+      
+      // Handle option selection
+      customOption.addEventListener('click', () => {
+        this.handleOptionClick(select, customOption, index);
+      });
+      
+      return customOption;
+    }
+    
+    // Handle option click event
+    private handleOptionClick(select: HTMLSelectElement, customOption: HTMLElement, index: number): void {
+      const options = this.selectMap.get(select);
+      if (!options) return;
+      
+      const { optionsContainer } = options;
+      
+      // Update actual select element
+      select.selectedIndex = index;
+      
+      // Trigger change event
       const event = new Event('change', { bubbles: true });
       select.dispatchEvent(event);
       
-      // Update the selected option styling
+      // Update selected style
       optionsContainer.querySelectorAll('.custom-option').forEach(opt => {
         opt.classList.remove('selected');
       });
-      this.classList.add('selected');
+      customOption.classList.add('selected');
       
-      // Hide the options (optional)
+      // Hide options
       setTimeout(() => {
         optionsContainer.style.display = 'none';
       }, 100);
-    });
+    }
     
-    optionsContainer.appendChild(customOption);
-  });
-}
-
-// Monitor for changes to the options of the select elements
-function setupOptionChangeObservers(): void {
-  // Monitor template select for changes
-  const templateSelect = document.getElementById('template');
-  if (templateSelect) {
-    // Set up mutation observer
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          // Find the associated custom container
-          const container = document.querySelector(`.custom-select-container[data-for="${templateSelect.id}"]`);
-          if (container) {
-            const optionsContainer = container.querySelector('.select-options');
-            if (optionsContainer) {
-              rebuildCustomOptions(templateSelect as HTMLSelectElement, optionsContainer as HTMLElement);
-            }
+    // Setup option change listeners
+    private setupOptionChangeObservers(): void {
+      const templateSelect = document.getElementById('template') as HTMLSelectElement;
+      if (!templateSelect) return;
+      
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            this.rebuildCustomOptions(templateSelect);
           }
-        }
+        });
       });
-    });
-    
-    // Start observing the template select for child changes
-    observer.observe(templateSelect, { childList: true });
+      
+      // Start observing template select's child element changes
+      observer.observe(templateSelect, { childList: true });
+      
+      // Save observer reference for possible future cleanup
+      this.observers.set(templateSelect.id, observer);
+    }
   }
-}
+  
+  // Create singleton instance
+  new EnhancedSelect();
+})();

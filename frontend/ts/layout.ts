@@ -31,6 +31,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // Only handle the panel visibility with capture phase
             // This ensures the panel is shown BEFORE the original event handler is executed
             button.addEventListener('click', function showPanel(e) {
+                // If there's a running process and we're switching to a different panel
+                // disconnect the WebSocket and reset flags
+                if ((window as any).CinCoutSocket && 
+                    (window as any).CinCoutSocket.isProcessRunning && 
+                    (window as any).CinCoutSocket.isConnected()) {
+                    
+                    console.log('Disconnecting WebSocket due to panel change');
+                    (window as any).CinCoutSocket.disconnect();
+                }
+                
                 // Only handle panel visibility, don't call original handlers
                 if (outputPanel.style.display === 'none') {
                     outputPanel.style.display = 'flex';
@@ -57,6 +67,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Tab switching
     document.getElementById('outputTab')!.addEventListener('click', function() {
+        // If switching from terminal panel to another panel, disconnect WebSocket and reset flags
+        if (document.getElementById('assemblyTab')!.classList.contains('active') &&
+            (window as any).CinCoutSocket && 
+            (window as any).CinCoutSocket.isProcessRunning && 
+            (window as any).CinCoutSocket.isConnected()) {
+            
+            console.log('Disconnecting WebSocket due to tab switch from terminal to output');
+            (window as any).CinCoutSocket.disconnect();
+        }
+        
         this.classList.add('active');
         document.getElementById('assemblyTab')!.classList.remove('active');
         (document.getElementById('output') as HTMLElement).style.display = 'block';
@@ -64,6 +84,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     document.getElementById('assemblyTab')!.addEventListener('click', function() {
+        // If switching from terminal panel to another panel, disconnect WebSocket and reset flags
+        if (document.getElementById('outputTab')!.classList.contains('active') &&
+            (window as any).CinCoutSocket && 
+            (window as any).CinCoutSocket.isProcessRunning && 
+            (window as any).CinCoutSocket.isConnected()) {
+            
+            console.log('Disconnecting WebSocket due to tab switch from output to assembly');
+            (window as any).CinCoutSocket.disconnect();
+        }
+        
         this.classList.add('active');
         document.getElementById('outputTab')!.classList.remove('active');
         (document.getElementById('output') as HTMLElement).style.display = 'none';

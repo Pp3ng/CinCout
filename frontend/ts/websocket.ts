@@ -4,6 +4,8 @@ const CinCoutSocket = (function() {
   let socket: WebSocket | null = null;
   let sessionId: string | null = null;
   let messageHandler: ((event: MessageEvent) => void) | null = null;
+  let isProcessRunning: boolean = false; // Track if a process is currently running
+  let compilationState: 'idle' | 'compiling' | 'running' = 'idle'; // More granular state tracking
   
   /**
    * Initialize WebSocket connection
@@ -44,6 +46,7 @@ const CinCoutSocket = (function() {
           console.log('WebSocket connection closed', event.code, event.reason);
           socket = null;
           sessionId = null;
+          resetState();
         };
         
         socket.onerror = (error: Event) => {
@@ -92,6 +95,12 @@ const CinCoutSocket = (function() {
       // Add timestamp
       data.timestamp = Date.now();
       
+      // Track compilation state
+      if (data.type === 'compile') {
+        isProcessRunning = true;
+        compilationState = 'compiling';
+      }
+      
       // Send data
       try {
         socket.send(JSON.stringify(data));
@@ -132,6 +141,39 @@ const CinCoutSocket = (function() {
       
       socket = null;
       sessionId = null;
+      resetState();
+    }
+  }
+  
+  /**
+   * Reset all state variables
+   */
+  function resetState(): void {
+    isProcessRunning = false;
+    compilationState = 'idle';
+    console.log('Reset WebSocket state: process not running, compilation state idle');
+  }
+  
+  /**
+   * Update process state based on incoming messages
+   * @param {string} messageType - Message type from WebSocket
+   */
+  function updateStateFromMessage(messageType: string): void {
+    switch (messageType) {
+      case 'compiling':
+        isProcessRunning = true;
+        compilationState = 'compiling';
+        break;
+        
+      case 'compile-success':
+        isProcessRunning = true;
+        compilationState = 'running';
+        break;
+        
+      case 'compile-error':
+      case 'exit':
+        resetState();
+        break;
     }
   }
   
@@ -151,7 +193,15 @@ const CinCoutSocket = (function() {
     },
     isConnected: function(): boolean {
       return !!(socket && socket.readyState === WebSocket.OPEN);
-    }
+    },
+    isProcessRunning: function(): boolean {
+      return isProcessRunning;
+    },
+    getCompilationState: function(): 'idle' | 'compiling' | 'running' {
+      return compilationState;
+    },
+    updateStateFromMessage: updateStateFromMessage,
+    resetState: resetState
   };
 })();
 

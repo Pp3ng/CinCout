@@ -10,6 +10,10 @@ interface CinCoutSocket {
     setSessionId: (id: string) => void;
     connect: () => Promise<void>;
     disconnect: () => void;
+    setProcessRunning: (running: boolean) => void;
+    isProcessRunning: () => boolean;
+    updateStateFromMessage: (type: string) => void;
+    getCompilationState: () => string;
 }
 
 // Define message types
@@ -37,6 +41,7 @@ declare global {
         updateTemplates: () => Promise<void>;
         setTemplate: () => Promise<void>;
         html2canvas: any;
+        resetCompilationState: () => void;
     }
 }
 
@@ -45,8 +50,6 @@ const CinCoutUI = (function() {
   // Private variables
   let terminal: any;
   window.fitAddon = null; // Make fitAddon global for layout.js
-  let isCompiling = false;
-  let isRunning = false;
   
   // DOM element cache for performance
   const domElements: DomElements = {
@@ -76,15 +79,15 @@ const CinCoutUI = (function() {
   function handleWebSocketMessage(event: MessageEvent): void {
     const data = JSON.parse(event.data) as WebSocketMessage;
     
+    // Update state in the CinCoutSocket module
+    (window as any).CinCoutSocket.updateStateFromMessage(data.type);
+    
     switch(data.type) {
       case 'connected':
         (window as any).CinCoutSocket.setSessionId(data.sessionId);
         break;
         
       case 'compiling':
-        isCompiling = true;
-        isRunning = false;
-        
         // Make sure the output panel is visible
         if (domElements.outputPanel) {
           domElements.outputPanel.style.display = 'flex';
@@ -103,9 +106,6 @@ const CinCoutUI = (function() {
         break;
         
       case 'compile-error':
-        isCompiling = false;
-        isRunning = false;
-        
         // The output is already formatted by the backend
         if (domElements.output) {
           domElements.output.innerHTML = 
@@ -117,9 +117,6 @@ const CinCoutUI = (function() {
         break;
         
       case 'compile-success':
-        isCompiling = false;
-        isRunning = true;
-        
         // Clear any previous terminal instance to prevent double execution
         if (terminal) {
           try {
@@ -160,8 +157,6 @@ const CinCoutUI = (function() {
         break;
         
       case 'exit':
-        isRunning = false;
-        
         if (terminal) {
           terminal.write(`\r\n\x1b[90m[Program exited with code: ${data.code}]\x1b[0m\r\n`);
         }
@@ -232,7 +227,8 @@ const CinCoutUI = (function() {
         try {
           (window as any).fitAddon.fit();
           // Send the adjusted size to the server
-          if ((window as any).CinCoutSocket.isConnected() && isRunning) {
+          if ((window as any).CinCoutSocket.isConnected() && 
+              (window as any).CinCoutSocket.getCompilationState() === 'running') {
             (window as any).CinCoutSocket.sendData({
               type: 'resize',
               cols: terminal.cols,
@@ -272,7 +268,8 @@ const CinCoutUI = (function() {
 
     // After terminal is opened, send size information to the server
     terminal.onResize(({ cols, rows }: { cols: number, rows: number }) => {
-      if ((window as any).CinCoutSocket.isConnected() && isRunning) {
+      if ((window as any).CinCoutSocket.isConnected() && 
+          (window as any).CinCoutSocket.getCompilationState() === 'running') {
         (window as any).CinCoutSocket.sendData({
           type: 'resize',
           cols: cols,
@@ -288,7 +285,8 @@ const CinCoutUI = (function() {
   function setupTerminalInput(): void {
     // Simplified terminal input handling, letting backend handle echo
     terminal.onData((data: string) => {
-      if (!isRunning || !(window as any).CinCoutSocket.isConnected()) {
+      if (!(window as any).CinCoutSocket.getCompilationState() === 'running' || 
+          !(window as any).CinCoutSocket.isConnected()) {
         console.log('Not sending terminal input: program not running or socket closed');
         return;
       }
@@ -335,7 +333,8 @@ const CinCoutUI = (function() {
     // Compile button event with debounce only
     if (domElements.compile) {
       domElements.compile.addEventListener('click', debounce(async function() {
-        if (isCompiling || isRunning) {
+        // Check if a process is already running using the single source of truth
+        if ((window as any).CinCoutSocket.isProcessRunning()) {
           console.log('A process is already running, ignoring compile request');
           return;
         }
@@ -417,10 +416,6 @@ const CinCoutUI = (function() {
             // Disconnect regardless of cleanup success
             (window as any).CinCoutSocket.disconnect();
           }
-          
-          // Reset state
-          isRunning = false;
-          isCompiling = false;
         } catch (error) {
           console.error('Failed to handle cleanup:', error);
         }

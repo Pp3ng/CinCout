@@ -15,7 +15,7 @@ import morgan from "morgan";
 // Routes & WebSockets
 import {
   router as compileRouter,
-  setupWebSocketHandlers,
+  setupCompileWebSocketHandlers,
 } from "./routes/compile";
 import memcheckRouter from "./routes/memcheck";
 import formatRouter from "./routes/format";
@@ -159,35 +159,7 @@ if (cluster.isPrimary) {
 
   // WebSocket
   const wss = new WebSocketServer({ server, clientTracking: true });
-  setupWebSocketHandlers(wss);
-
-  // Stricter heartbeat check
-  const interval = setInterval(() => {
-    wss.clients.forEach((ws: any) => {
-      if (!ws.isAlive) {
-        console.log(
-          `Terminating stale WS connection (${ws._socket.remoteAddress})`
-        );
-        return ws.terminate();
-      }
-      ws.isAlive = false;
-      ws.ping();
-      // If no pong within 10s, will be terminated in next round
-      ws._pongTimeout = setTimeout(() => {
-        if (!ws.isAlive) ws.terminate();
-      }, 10000);
-    });
-  }, 30000);
-
-  wss.on("connection", (ws: any) => {
-    ws.isAlive = true;
-    ws.on("pong", () => {
-      ws.isAlive = true;
-      clearTimeout(ws._pongTimeout);
-    });
-  });
-
-  wss.on("close", () => clearInterval(interval));
+  setupCompileWebSocketHandlers(wss);
 
   // Mount routes
   app.use("/api/compile", compileRouter);

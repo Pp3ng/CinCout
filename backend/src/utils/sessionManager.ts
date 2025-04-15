@@ -6,6 +6,7 @@ import * as path from "path";
 import * as tmp from "tmp";
 import { DirResult } from "tmp";
 import { WebSocket } from "ws";
+import { webSocketEvents } from "./webSocketHandler";
 
 // Define session interface
 interface Session {
@@ -17,6 +18,13 @@ interface Session {
 
 // Store active terminal sessions
 const activeSessions = new Map<string, Session>();
+
+// Set up WebSocket close event listener
+webSocketEvents.on("websocket-close", ({ sessionId }) => {
+  if (activeSessions.has(sessionId)) {
+    terminateSession(sessionId);
+  }
+});
 
 /**
  * Terminate a specific session
@@ -113,41 +121,6 @@ function createPtyProcess(
   const ptyOptions = { ...defaultOptions, ...options };
 
   return pty.spawn("bash", ["-c", command], ptyOptions);
-}
-
-interface ValidationResult {
-  valid: boolean;
-  error?: string;
-}
-
-/**
- * Validate code for security concerns
- * @param {string} code - Source code to validate
- * @returns {ValidationResult} Validation result
- */
-function validateCodeSecurity(code: string): ValidationResult {
-  // Basic validation
-  if (!code || code.trim() === "") {
-    return { valid: false, error: "Error: No code provided" };
-  }
-
-  // Check code length
-  if (code.length > 50000) {
-    return {
-      valid: false,
-      error: "Error: Code exceeds maximum length of 50,000 characters",
-    };
-  }
-
-  // Check line count
-  if (code.split("\n").length > 1000) {
-    return {
-      valid: false,
-      error: "Error: Code exceeds maximum of 1,000 lines",
-    };
-  }
-
-  return { valid: true };
 }
 
 /**
@@ -331,12 +304,10 @@ export {
   terminateSession,
   cleanupSession,
   createPtyProcess,
-  validateCodeSecurity,
   startCompilationSession,
   sendInputToSession,
   createCompilationEnvironment,
   resizeTerminal,
   Session,
-  ValidationResult,
   CompilationEnvironment,
 };

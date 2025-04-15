@@ -1,6 +1,7 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { asyncRouteHandler } from "../utils/routeHandler";
 
 const router = express.Router();
 
@@ -17,8 +18,20 @@ let templatesCache: TemplateCollection | null = null;
 let lastCacheTime = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
-// Get a list of available templates for a specific language
-async function getTemplateList(language: string): Promise<string[]> {
+/**
+ * Middleware to validate requested language
+ */
+async function validateLanguage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const language = req.params.language;
+
+  if (!language) {
+    return res.status(400).json({ error: "Language parameter is required" });
+  }
+
   try {
     const langPath = path.join(TEMPLATES_DIR, language);
     const exists = await fs
@@ -27,9 +40,26 @@ async function getTemplateList(language: string): Promise<string[]> {
       .catch(() => false);
 
     if (!exists) {
-      return [];
+      return res.status(404).json({
+        error: `Language '${language}' not supported or has no templates`,
+      });
     }
 
+    next();
+  } catch (error) {
+    console.error(`Error validating language ${language}:`, error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * Get a list of available templates for a specific language
+ * @param {string} language - Programming language
+ * @returns {Promise<string[]>} - List of template names
+ */
+async function getTemplateList(language: string): Promise<string[]> {
+  try {
+    const langPath = path.join(TEMPLATES_DIR, language);
     const templateFiles = await fs.readdir(langPath);
     return templateFiles.map((file) => path.basename(file, path.extname(file)));
   } catch (error) {
@@ -38,7 +68,12 @@ async function getTemplateList(language: string): Promise<string[]> {
   }
 }
 
-// Load a single template by language and name
+/**
+ * Load a single template by language and name
+ * @param {string} language - Programming language
+ * @param {string} templateName - Template name
+ * @returns {Promise<string | null>} - Template content
+ */
 async function loadSingleTemplate(
   language: string,
   templateName: string
@@ -91,10 +126,12 @@ async function loadSingleTemplate(
 }
 
 // Route to get a list of template names for a language
-router.get("/:language/list", async (req: Request, res: Response) => {
-  const language = req.params.language;
+router.get(
+  "/:language/list",
+  validateLanguage,
+  asyncRouteHandler(async (req: Request, res: Response) => {
+    const language = req.params.language;
 
-  try {
     const templateNames = await getTemplateList(language);
 
     if (templateNames.length === 0) {
@@ -104,17 +141,16 @@ router.get("/:language/list", async (req: Request, res: Response) => {
     }
 
     res.json(templateNames);
-  } catch (error) {
-    console.error(`Error listing templates for ${language}:`, error);
-    res.status(500).json({ error: `Failed to list templates for ${language}` });
-  }
-});
+  })
+);
 
 // Route to get a single template by language and name
-router.get("/:language/:templateName", async (req: Request, res: Response) => {
-  const { language, templateName } = req.params;
+router.get(
+  "/:language/:templateName",
+  validateLanguage,
+  asyncRouteHandler(async (req: Request, res: Response) => {
+    const { language, templateName } = req.params;
 
-  try {
     const templateContent = await loadSingleTemplate(language, templateName);
 
     if (templateContent === null) {
@@ -124,15 +160,7 @@ router.get("/:language/:templateName", async (req: Request, res: Response) => {
     }
 
     res.json({ content: templateContent });
-  } catch (error) {
-    console.error(
-      `Error loading template ${templateName} for ${language}:`,
-      error
-    );
-    res.status(500).json({
-      error: `Failed to load template ${templateName} for ${language}`,
-    });
-  }
-});
+  })
+);
 
 export default router;

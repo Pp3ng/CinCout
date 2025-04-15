@@ -3,169 +3,49 @@
  */
 import express, { Request, Response } from "express";
 import fs from "fs-extra";
-import { WebSocket, WebSocketServer } from "ws";
-import { v4 as uuidv4 } from "uuid";
+import { WebSocketServer } from "ws";
 import {
   sanitizeOutput,
   getCompilerCommand,
   getStandardOption,
   executeCommand,
   formatOutput,
-} from "../utils/helpers";
+  createCompilationEnvironment,
+  asyncRouteHandler,
+  CodeRequest,
+  validateCode,
+} from "../utils/routeHandler";
 import {
   activeSessions,
-  terminateSession,
-  validateCodeSecurity,
   startCompilationSession,
   sendInputToSession,
-  createCompilationEnvironment,
   resizeTerminal,
 } from "../utils/sessionManager";
+import {
+  ExtendedWebSocket,
+  setupWebSocketServer,
+  sendWebSocketMessage,
+} from "../utils/webSocketHandler";
 
 const router = express.Router();
 
-// Extended WebSocket interface to add properties
-interface ExtendedWebSocket extends WebSocket {
-  sessionId?: string;
-  isAlive?: boolean;
-}
-
-// WebSocket setup functions
-function setupWebSocketHandlers(wss: WebSocketServer): void {
-  wss.on("connection", (ws: WebSocket) => {
-    const extWs = ws as ExtendedWebSocket;
-    // Create unique session ID for each connection
-    const sessionId = uuidv4();
-    extWs.sessionId = sessionId;
-
-    // Set isAlive flag for heartbeat
-    extWs.isAlive = true;
-
-    // Handle pong messages - client is alive
-    extWs.on("pong", () => {
-      extWs.isAlive = true;
-    });
-
-    // Set up auto-close timeout - if 3 minutes with no activity, close connection
-    const autoCloseTimeout = setTimeout(() => {
-      if (extWs.readyState === WebSocket.OPEN) {
-        extWs.close();
-      }
-    }, 180000); // 3 minutes timeout
-
-    // Handle incoming messages
-    extWs.on("message", (message: Buffer | string | ArrayBuffer | Buffer[]) => {
-      try {
-        // Reset timeout on any message
-        clearTimeout(autoCloseTimeout);
-
-        const data = JSON.parse(
-          typeof message === "string" ? message : message.toString()
-        );
-
-        switch (data.type || data.action) {
-          case "compile":
-            // Compile and run code using PTY
-            compileAndRunWithPTY(
-              extWs,
-              sessionId,
-              data.code,
-              data.lang,
-              data.compiler,
-              data.optimization
-            );
-            break;
-
-          case "input":
-            // Send user input to the program
-            if (!sendInputToSession(sessionId, data.input, extWs)) {
-              extWs.send(
-                JSON.stringify({
-                  type: "error",
-                  message: "No active session to receive input",
-                  timestamp: Date.now(),
-                })
-              );
-            }
-            break;
-
-          case "resize":
-            // Handle terminal resize request
-            if (data.cols && data.rows) {
-              resizeTerminal(sessionId, data.cols, data.rows);
-            }
-            break;
-
-          case "cleanup":
-            // Handle explicit cleanup request
-            if (activeSessions.has(sessionId)) {
-              terminateSession(sessionId);
-              extWs.send(
-                JSON.stringify({
-                  type: "cleanup-complete",
-                  timestamp: Date.now(),
-                })
-              );
-            }
-            break;
-        }
-      } catch (error) {
-        console.error("Error processing message:", error);
-        extWs.send(
-          JSON.stringify({
-            type: "error",
-            message: "Error processing request: " + (error as Error).message,
-            timestamp: Date.now(),
-          })
-        );
-      }
-    });
-
-    // Handle WebSocket close
-    extWs.on("close", () => {
-      clearTimeout(autoCloseTimeout);
-
-      // Immediately terminate any active session when WebSocket closes
-      if (activeSessions.has(sessionId)) {
-        terminateSession(sessionId);
-      }
-    });
-
-    // Send session ID back to client
-    extWs.send(
-      JSON.stringify({
-        type: "connected",
-        sessionId,
-        timestamp: Date.now(),
-      })
-    );
-  });
-}
-
 // Compile and run code with PTY for true terminal experience
 function compileAndRunWithPTY(
-  ws: WebSocket,
+  ws: ExtendedWebSocket,
   sessionId: string,
   code: string,
   lang: string,
   compiler?: string,
   optimization?: string
 ): void {
-  // Security checks
-  const validation = validateCodeSecurity(code);
+  // Security checks - Use validateCode and pass true to enable error field
+  const validation = validateCode(code, true);
   if (!validation.valid) {
-    ws.send(
-      JSON.stringify({
-        type: "compile-error",
-        output: validation.error,
-      })
-    );
+    sendWebSocketMessage(ws, {
+      type: "compile-error",
+      output: validation.error,
+    });
     return;
-  }
-
-  // Check if session already exists and terminate it
-  if (activeSessions.has(sessionId)) {
-    terminateSession(sessionId);
   }
 
   // Create compilation environment
@@ -176,7 +56,7 @@ function compileAndRunWithPTY(
     fs.writeFileSync(sourceFile, code);
 
     // Notify client that compilation has started
-    ws.send(JSON.stringify({ type: "compiling" }));
+    sendWebSocketMessage(ws, { type: "compiling" });
 
     // Determine compiler options
     const compilerCmd = getCompilerCommand(lang, compiler);
@@ -190,7 +70,7 @@ function compileAndRunWithPTY(
     executeCommand(compileCmd)
       .then(() => {
         // Compilation successful, notify client
-        ws.send(JSON.stringify({ type: "compile-success" }));
+        sendWebSocketMessage(ws, { type: "compile-success" });
 
         // Start compilation session with PTY
         const success = startCompilationSession(
@@ -215,12 +95,10 @@ function compileAndRunWithPTY(
           "default"
         );
 
-        ws.send(
-          JSON.stringify({
-            type: "compile-error",
-            output: formattedError,
-          })
-        );
+        sendWebSocketMessage(ws, {
+          type: "compile-error",
+          output: formattedError,
+        });
 
         // Clean up temporary directory
         tmpDir.removeCallback();
@@ -230,43 +108,109 @@ function compileAndRunWithPTY(
       `Error setting up compilation for session ${sessionId}:`,
       error
     );
-    ws.send(
-      JSON.stringify({
-        type: "error",
-        message: "Error setting up compilation: " + (error as Error).message,
-      })
-    );
+    sendWebSocketMessage(ws, {
+      type: "error",
+      message: "Error setting up compilation: " + (error as Error).message,
+    });
 
     // Clean up temporary directory
     tmpDir.removeCallback();
   }
 }
 
-interface CompileRequest {
-  code: string;
-  lang: string;
-  compiler?: string;
-  optimization?: string;
-  action?: string;
-}
+// Message handler for WebSocket connections
+function handleWebSocketMessage(ws: ExtendedWebSocket, data: any): void {
+  const sessionId = ws.sessionId;
 
-// Regular HTTP endpoint for compilation (assembly, etc.)
-router.post("/", async (req: Request, res: Response) => {
-  const {
-    code,
-    lang,
-    compiler: selectedCompiler,
-    optimization,
-    action,
-  } = req.body as CompileRequest;
-
-  // Validate code
-  const validation = validateCodeSecurity(code);
-  if (!validation.valid) {
-    return res.status(400).send(validation.error);
+  if (!sessionId) {
+    sendWebSocketMessage(ws, {
+      type: "error",
+      message: "Session ID not found",
+    });
+    return;
   }
 
   try {
+    switch (data.type || data.action) {
+      case "compile":
+        // Compile and run code using PTY
+        compileAndRunWithPTY(
+          ws,
+          sessionId,
+          data.code,
+          data.lang,
+          data.compiler,
+          data.optimization
+        );
+        break;
+
+      case "input":
+        // Send user input to the program
+        if (!sendInputToSession(sessionId, data.input, ws)) {
+          sendWebSocketMessage(ws, {
+            type: "error",
+            message: "No active session to receive input",
+          });
+        }
+        break;
+
+      case "resize":
+        // Handle terminal resize request
+        if (data.cols && data.rows) {
+          resizeTerminal(sessionId, data.cols, data.rows);
+        }
+        break;
+
+      case "cleanup":
+        // Handle explicit cleanup request
+        if (activeSessions.has(sessionId)) {
+          // The session will be terminated through the event listener in sessionManager.ts
+          ws.close();
+          sendWebSocketMessage(ws, {
+            type: "cleanup-complete",
+          });
+        }
+        break;
+
+      default:
+        sendWebSocketMessage(ws, {
+          type: "error",
+          message: "Unknown action type: " + (data.type || data.action),
+        });
+        break;
+    }
+  } catch (error) {
+    console.error("Error processing message:", error);
+    sendWebSocketMessage(ws, {
+      type: "error",
+      message: "Error processing request: " + (error as Error).message,
+    });
+  }
+}
+
+// Setup WebSocket handlers using the new utility
+function setupCompileWebSocketHandlers(wss: WebSocketServer): void {
+  setupWebSocketServer(wss, handleWebSocketMessage);
+}
+
+// Regular HTTP endpoint for compilation (assembly, etc.)
+router.post(
+  "/",
+  asyncRouteHandler(async (req: Request, res: Response) => {
+    const {
+      code,
+      lang,
+      compiler: selectedCompiler,
+      optimization,
+      action,
+    } = req.body as CodeRequest;
+
+    // Validate code - Use validateCode and pass true to enable error field
+    const validation = validateCode(code, true);
+    if (!validation.valid) {
+      return res.status(400).send(validation.error);
+    }
+
     // Create compilation environment
     const { tmpDir, sourceFile, outputFile, asmFile } =
       createCompilationEnvironment(lang);
@@ -274,13 +218,13 @@ router.post("/", async (req: Request, res: Response) => {
     // Write code to temporary file
     fs.writeFileSync(sourceFile, code);
 
-    // Determine compiler and options
-    const compiler = getCompilerCommand(lang, selectedCompiler);
-    const standardOption = getStandardOption(lang);
-    const optimizationOption = optimization || "-O0";
-
     try {
-      if (action === "assembly" || action === "both") {
+      // Determine compiler and options
+      const compiler = getCompilerCommand(lang, selectedCompiler);
+      const standardOption = getStandardOption(lang);
+      const optimizationOption = optimization || "-O0";
+
+      if (action === "assembly") {
         // Generate assembly code
         const asmCmd = `${compiler} -S -fno-asynchronous-unwind-tables ${optimizationOption} ${standardOption} "${sourceFile}" -o "${asmFile}"`;
 
@@ -292,9 +236,14 @@ router.post("/", async (req: Request, res: Response) => {
           const formattedError = formatOutput(sanitizedError, "default");
           return res.status(400).send(`Compilation Error:\n${formattedError}`);
         }
-      }
 
-      if (action === "compile" || action === "both") {
+        // Return assembly code
+        if (!asmFile) {
+          return res.status(500).send("Assembly file path is undefined");
+        }
+        const assemblyCode = fs.readFileSync(asmFile, "utf8");
+        res.send(assemblyCode);
+      } else if (action === "compile") {
         // Compile code
         const compileCmd = `${compiler} ${standardOption} ${optimizationOption} "${sourceFile}" -o "${outputFile}"`;
 
@@ -319,18 +268,12 @@ router.post("/", async (req: Request, res: Response) => {
           errorMessage = errorStr;
           res.status(400).send(errorMessage);
         }
-      } else if (action === "assembly") {
-        // Return assembly code
-        const assemblyCode = fs.readFileSync(asmFile, "utf8");
-        res.send(assemblyCode);
       }
     } finally {
       // Clean up temporary files
       tmpDir.removeCallback();
     }
-  } catch (error) {
-    res.status(500).send(`Error: ${(error as Error).message || error}`);
-  }
-});
+  })
+);
 
-export { router, setupWebSocketHandlers };
+export { router, setupCompileWebSocketHandlers };

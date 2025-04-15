@@ -8,25 +8,25 @@ import {
   createTempDirectory,
   writeCodeToFile,
   executeCommand,
-} from "../utils/helpers";
+  asyncRouteHandler,
+  CodeRequest,
+} from "../utils/routeHandler";
 
 const router = express.Router();
 
-interface FormatRequest {
-  code: string;
-  lang: string;
-}
+interface FormatRequest extends CodeRequest {}
 
-router.post("/", async (req: Request, res: Response) => {
-  const { code, lang } = req.body as FormatRequest;
+router.post(
+  "/",
+  asyncRouteHandler(async (req: Request, res: Response) => {
+    const { code, lang } = req.body as FormatRequest;
 
-  // Validate code
-  const validation = validateCode(code);
-  if (!validation.valid) {
-    return res.status(400).send(validation.message);
-  }
+    // Validate code
+    const validation = validateCode(code);
+    if (!validation.valid) {
+      return res.status(400).send(validation.message);
+    }
 
-  try {
     // Create temporary directory
     const tmpDir = createTempDirectory();
     const inFile = writeCodeToFile(tmpDir.name, "input.c", code);
@@ -43,9 +43,7 @@ router.post("/", async (req: Request, res: Response) => {
       // Clean up temporary files
       tmpDir.removeCallback();
     }
-  } catch (error) {
-    res.status(500).send(`Error: ${(error as Error).message || error}`);
-  }
-});
+  })
+);
 
 export default router;

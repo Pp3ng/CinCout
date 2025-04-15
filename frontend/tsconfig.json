@@ -4,27 +4,21 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    
+
     /* Bundler related */
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    
+
     /* Type checking */
     "strict": true,
     "esModuleInterop": true,
-    
+
     /* Support for vite.config.ts */
     "allowJs": true,
     "types": ["node"]
   },
-  "include": [
-    "ts/**/*.ts",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["ts/**/*.ts", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

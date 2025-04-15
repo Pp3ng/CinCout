@@ -1,12 +1,12 @@
 // WebSocket handling module
-const CinCoutSocket = (function() {
+const CinCoutSocket = (function () {
   // Private variables
   let socket: WebSocket | null = null;
   let sessionId: string | null = null;
   let messageHandler: ((event: MessageEvent) => void) | null = null;
   let isProcessRunning: boolean = false; // Track if a process is currently running
-  let compilationState: 'idle' | 'compiling' | 'running' = 'idle'; // More granular state tracking
-  
+  let compilationState: "idle" | "compiling" | "running" = "idle"; // More granular state tracking
+
   /**
    * Initialize WebSocket connection
    * @returns {Promise<WebSocket>} Promise that resolves with WebSocket
@@ -20,44 +20,44 @@ const CinCoutSocket = (function() {
           socket.close();
           socket = null;
         } catch (e) {
-          console.error('Error closing existing WebSocket:', e);
+          console.error("Error closing existing WebSocket:", e);
         }
       }
-      
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const host = window.location.host;
-      
+
       try {
         socket = new WebSocket(`${protocol}//${host}`);
-        
+
         socket.onopen = () => {
           resolve(socket);
         };
-        
+
         socket.onmessage = (event: MessageEvent) => {
           if (messageHandler) {
             messageHandler(event);
           }
         };
-        
+
         socket.onclose = (event: CloseEvent) => {
-          console.log('WebSocket connection closed', event.code, event.reason);
+          console.log("WebSocket connection closed", event.code, event.reason);
           socket = null;
           sessionId = null;
           resetState();
         };
-        
+
         socket.onerror = (error: Event) => {
-          console.error('WebSocket error:', error);
+          console.error("WebSocket error:", error);
           reject(error);
         };
       } catch (error) {
-        console.error('Error creating WebSocket:', error);
+        console.error("Error creating WebSocket:", error);
         reject(error);
       }
     });
   }
-  
+
   /**
    * Connect to the WebSocket server
    * @returns {Promise<void>} Promise that resolves when connection is ready
@@ -67,7 +67,7 @@ const CinCoutSocket = (function() {
       .then(() => {
         return Promise.resolve();
       })
-      .catch(error => {
+      .catch((error) => {
         return Promise.reject(error);
       });
   }
@@ -80,7 +80,7 @@ const CinCoutSocket = (function() {
   function sendData(data: any): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!socket || socket.readyState !== WebSocket.OPEN) {
-        reject(new Error('WebSocket is not connected'));
+        reject(new Error("WebSocket is not connected"));
         return;
       }
 
@@ -88,16 +88,16 @@ const CinCoutSocket = (function() {
       if (sessionId) {
         data.sessionId = sessionId;
       }
-      
+
       // Add timestamp
       data.timestamp = Date.now();
-      
+
       // Track compilation state
-      if (data.type === 'compile') {
+      if (data.type === "compile") {
         isProcessRunning = true;
-        compilationState = 'compiling';
+        compilationState = "compiling";
       }
-      
+
       // Send data
       try {
         socket.send(JSON.stringify(data));
@@ -107,7 +107,7 @@ const CinCoutSocket = (function() {
       }
     });
   }
-  
+
   /**
    * Close the WebSocket connection
    */
@@ -116,86 +116,88 @@ const CinCoutSocket = (function() {
       // Send cleanup message
       if (socket.readyState === WebSocket.OPEN && sessionId) {
         try {
-          socket.send(JSON.stringify({
-            type: 'cleanup',
-            sessionId: sessionId,
-            timestamp: Date.now()
-          }));
+          socket.send(
+            JSON.stringify({
+              type: "cleanup",
+              sessionId: sessionId,
+              timestamp: Date.now(),
+            })
+          );
         } catch (e) {
-          console.error('Error sending cleanup message:', e);
+          console.error("Error sending cleanup message:", e);
         }
       }
-      
+
       // Close the connection
       try {
-        socket.onclose = null; 
+        socket.onclose = null;
         socket.close();
       } catch (e) {
-        console.error('Error closing WebSocket:', e);
+        console.error("Error closing WebSocket:", e);
       }
-      
+
       socket = null;
       sessionId = null;
       resetState();
     }
   }
-  
+
   /**
    * Reset all state variables
    */
   function resetState(): void {
     isProcessRunning = false;
-    compilationState = 'idle';
+    compilationState = "idle";
   }
-  
+
   /**
    * Update process state based on incoming messages
    * @param {string} messageType - Message type from WebSocket
    */
   function updateStateFromMessage(messageType: string): void {
     switch (messageType) {
-      case 'compiling':
+      case "compiling":
         isProcessRunning = true;
-        compilationState = 'compiling';
+        compilationState = "compiling";
         break;
-        
-      case 'compile-success':
+
+      case "compile-success":
         isProcessRunning = true;
-        compilationState = 'running';
+        compilationState = "running";
         break;
-        
-      case 'compile-error':
-      case 'exit':
+
+      case "compile-error":
+      case "exit":
         resetState();
         break;
     }
   }
-  
+
   // Public API
   return {
-    init: function(msgHandler: (event: MessageEvent) => void): void {
+    init: function (msgHandler: (event: MessageEvent) => void): void {
       messageHandler = msgHandler;
     },
     connect: connect,
     disconnect: disconnect,
     sendData: sendData,
-    getSessionId: function(): string | null {
+    getSessionId: function (): string | null {
       return sessionId;
     },
-    setSessionId: function(id: string): void {
+    setSessionId: function (id: string): void {
       sessionId = id;
     },
-    isConnected: function(): boolean {
+    isConnected: function (): boolean {
       return !!(socket && socket.readyState === WebSocket.OPEN);
     },
-    isProcessRunning: function(): boolean {
+    isProcessRunning: function (): boolean {
       return isProcessRunning;
     },
-    getCompilationState: function(): 'idle' | 'compiling' | 'running' {
+    getCompilationState: function (): "idle" | "compiling" | "running" {
       return compilationState;
     },
     updateStateFromMessage: updateStateFromMessage,
-    resetState: resetState
+    resetState: resetState,
   };
 })();
 

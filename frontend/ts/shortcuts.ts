@@ -1,18 +1,18 @@
 // Import utility functions from utils.ts
-import { 
-  triggerButton, 
-  detectOS, 
-  saveCodeToFile, 
-  openCodeFromFile, 
-  toggleCodeFolding, 
-  normalizeKeyCombo 
-} from './utils';
+import {
+  triggerButton,
+  detectOS,
+  saveCodeToFile,
+  openCodeFromFile,
+  toggleCodeFolding,
+  normalizeKeyCombo,
+} from "./utils";
 
 (() => {
   //=============================================================================
   // Constants and Configuration
   //=============================================================================
-  
+
   // Types
   interface ShortcutDefinition {
     action: () => void;
@@ -37,11 +37,11 @@ import {
 
   // Platform detection (Mac or other platforms)
   const OS: string = detectOS();
-  const IS_MAC: boolean = OS === 'MacOS';
-  
+  const IS_MAC: boolean = OS === "MacOS";
+
   // Get primary command key (Command for Mac, Ctrl for others)
-  const CMD_KEY: string = IS_MAC ? 'meta' : 'ctrl';
-  
+  const CMD_KEY: string = IS_MAC ? "meta" : "ctrl";
+
   // Define DOM element ID constants for easier reference
   const DOM_IDS = {
     COMPILE: "compile",
@@ -54,13 +54,13 @@ import {
     OUTPUT_PANEL: "outputPanel",
     LANGUAGE: "language",
     SHORTCUTS_CONTENT: "shortcuts-content",
-    CODESNAP: "codeSnap"
+    CODESNAP: "codeSnap",
   };
 
   //=============================================================================
   // Shortcut Definitions
   //=============================================================================
-  
+
   /**
    * Shortcut configuration
    * Each shortcut contains an action function and description text
@@ -71,91 +71,91 @@ import {
       [`${CMD_KEY}+Enter`]: {
         action: () => triggerButton(DOM_IDS.COMPILE),
         description: "Compile and run",
-        displayKeys: IS_MAC ? ['⌘', 'return'] : ['Ctrl', 'Enter']
+        displayKeys: IS_MAC ? ["⌘", "return"] : ["Ctrl", "Enter"],
       },
       [`${CMD_KEY}+l`]: {
         action: () => triggerButton(DOM_IDS.CLEAR),
         description: "Clear output",
-        displayKeys: IS_MAC ? ['⌘', 'L'] : ['Ctrl', 'L']
+        displayKeys: IS_MAC ? ["⌘", "L"] : ["Ctrl", "L"],
       },
       [`${CMD_KEY}+s`]: {
         action: saveCodeToFile,
         description: "Save code to file",
-        displayKeys: IS_MAC ? ['⌘', 'S'] : ['Ctrl', 'S']
+        displayKeys: IS_MAC ? ["⌘", "S"] : ["Ctrl", "S"],
       },
       [`${CMD_KEY}+o`]: {
         action: openCodeFromFile,
         description: "Open code from file",
-        displayKeys: IS_MAC ? ['⌘', 'O'] : ['Ctrl', 'O']
+        displayKeys: IS_MAC ? ["⌘", "O"] : ["Ctrl", "O"],
       },
       [`${CMD_KEY}+k`]: {
         action: toggleCodeFolding,
         description: "Toggle code folding",
-        displayKeys: IS_MAC ? ['⌘', 'K'] : ['Ctrl', 'K']
+        displayKeys: IS_MAC ? ["⌘", "K"] : ["Ctrl", "K"],
       },
       [`${CMD_KEY}+p`]: {
         action: () => triggerButton(DOM_IDS.CODESNAP),
         description: "Take code snapshot",
-        displayKeys: IS_MAC ? ['⌘', 'P'] : ['Ctrl', 'P']
-      }
+        displayKeys: IS_MAC ? ["⌘", "P"] : ["Ctrl", "P"],
+      },
     },
-    
+
     // Mac-specific shortcuts
     mac: {
-      'ctrl+1': {
+      "ctrl+1": {
         action: () => triggerButton(DOM_IDS.VIEW_ASSEMBLY),
         description: "View assembly code",
-        displayKeys: ['^', '1']
+        displayKeys: ["^", "1"],
       },
-      'ctrl+2': {
+      "ctrl+2": {
         action: () => triggerButton(DOM_IDS.FORMAT),
         description: "Format code",
-        displayKeys: ['^', '2']
+        displayKeys: ["^", "2"],
       },
-      'ctrl+3': {
+      "ctrl+3": {
         action: () => triggerButton(DOM_IDS.STYLE_CHECK),
         description: "Style check",
-        displayKeys: ['^', '3']
+        displayKeys: ["^", "3"],
       },
-      'ctrl+4': {
+      "ctrl+4": {
         action: () => triggerButton(DOM_IDS.MEMORY_CHECK),
         description: "Memory check",
-        displayKeys: ['^', '4']
-      }
+        displayKeys: ["^", "4"],
+      },
     },
-    
+
     // Other platforms (Windows/Linux) shortcuts
     other: {
-      'alt+1': {
+      "alt+1": {
         action: () => triggerButton(DOM_IDS.VIEW_ASSEMBLY),
         description: "View assembly code",
-        displayKeys: ['Alt', '1']
+        displayKeys: ["Alt", "1"],
       },
-      'alt+2': {
+      "alt+2": {
         action: () => triggerButton(DOM_IDS.FORMAT),
         description: "Format code",
-        displayKeys: ['Alt', '2']
+        displayKeys: ["Alt", "2"],
       },
-      'alt+3': {
+      "alt+3": {
         action: () => triggerButton(DOM_IDS.STYLE_CHECK),
         description: "Style check",
-        displayKeys: ['Alt', '3']
+        displayKeys: ["Alt", "3"],
       },
-      'alt+4': {
+      "alt+4": {
         action: () => triggerButton(DOM_IDS.MEMORY_CHECK),
         description: "Memory check",
-        displayKeys: ['Alt', '4']
-      }
+        displayKeys: ["Alt", "4"],
+      },
     },
-    
+
     // Special keys
     special: {
-      'Escape': {
+      Escape: {
         action: closeOutputPanel,
         description: "Close output panel",
-        displayKeys: ['Esc']
-      }
-    }
+        displayKeys: ["Esc"],
+      },
+    },
   };
 
   /**
@@ -163,39 +163,39 @@ import {
    * These handlers execute before standard shortcut handling and work
    * even when the terminal has focus
    */
-  const SPECIAL_KEY_HANDLERS: {[key: string]: KeyHandler} = {
+  const SPECIAL_KEY_HANDLERS: { [key: string]: KeyHandler } = {
     // Escape key handler (works with terminal focus)
-    'Escape': (e) => {
+    Escape: (e) => {
       const outputPanel = document.getElementById(DOM_IDS.OUTPUT_PANEL);
-      if (outputPanel && outputPanel.style.display !== 'none') {
+      if (outputPanel && outputPanel.style.display !== "none") {
         e.preventDefault();
         closeOutputPanel();
         return true; // Handled
       }
       return false; // Not handled
     },
-    
+
     // Compile shortcut (Ctrl+Enter or Cmd+Enter)
-    'Enter': (e) => {
+    Enter: (e) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         triggerButton(DOM_IDS.COMPILE);
         return true; // Handled
       }
       return false; // Not handled
-    }
+    },
   };
 
   //=============================================================================
   // Core Functions
   //=============================================================================
-  
+
   /**
    * Closes the output panel and restores focus to the editor
    */
   function closeOutputPanel(): void {
     const outputPanel = document.getElementById(DOM_IDS.OUTPUT_PANEL);
-    if (outputPanel && outputPanel.style.display !== 'none') {
+    if (outputPanel && outputPanel.style.display !== "none") {
       triggerButton(DOM_IDS.CLOSE_OUTPUT);
       // Restore editor focus after closing panel
       setTimeout(() => {
@@ -207,8 +207,7 @@ import {
   //=============================================================================
   // Keyboard Event Handling
   //=============================================================================
-  
-  
+
   /**
    * Main keyboard event handler
    * @param {KeyboardEvent} event - The keyboard event
@@ -219,13 +218,13 @@ import {
     if (specialHandler && specialHandler(event)) {
       return; // Handled by special handler
     }
-    
+
     // Normalize the key combination
     const normalizedKey = normalizeKeyCombo(event);
-    
+
     // Get platform-specific shortcut map
     const platformMap = IS_MAC ? SHORTCUTS.mac : SHORTCUTS.other;
-    
+
     // Check common shortcut map
     const commonShortcut = SHORTCUTS.common[normalizedKey];
     if (commonShortcut) {
@@ -233,7 +232,7 @@ import {
       commonShortcut.action();
       return;
     }
-    
+
     // Check platform-specific shortcut map
     const platformShortcut = platformMap[normalizedKey];
     if (platformShortcut) {
@@ -242,76 +241,88 @@ import {
       return;
     }
   }
-  
+
   //=============================================================================
   // Shortcuts Display
   //=============================================================================
-  
+
   /**
    * Generates the shortcuts list for display in the UI
    */
   function generateShortcutsList(): void {
-    const shortcutsContainer = document.getElementById(DOM_IDS.SHORTCUTS_CONTENT);
+    const shortcutsContainer = document.getElementById(
+      DOM_IDS.SHORTCUTS_CONTENT
+    );
     if (!shortcutsContainer) return;
-    
+
     // Clear existing content
-    shortcutsContainer.innerHTML = '';
-    
+    shortcutsContainer.innerHTML = "";
+
     // Create list
-    const ul = document.createElement('ul');
-    
+    const ul = document.createElement("ul");
+
     // Add common shortcuts
-    Object.values(SHORTCUTS.common).forEach(shortcut => {
-      const li = document.createElement('li');
-      const keyHtml = shortcut.displayKeys.map(key => `<kbd>${key}</kbd>`).join(' + ');
+    Object.values(SHORTCUTS.common).forEach((shortcut) => {
+      const li = document.createElement("li");
+      const keyHtml = shortcut.displayKeys
+        .map((key) => `<kbd>${key}</kbd>`)
+        .join(" + ");
       li.innerHTML = `${keyHtml} - ${shortcut.description}`;
       ul.appendChild(li);
     });
-    
+
     // Add platform-specific shortcuts
     const platformShortcuts = IS_MAC ? SHORTCUTS.mac : SHORTCUTS.other;
-    Object.values(platformShortcuts).forEach(shortcut => {
-      const li = document.createElement('li');
-      const keyHtml = shortcut.displayKeys.map(key => `<kbd>${key}</kbd>`).join(' + ');
+    Object.values(platformShortcuts).forEach((shortcut) => {
+      const li = document.createElement("li");
+      const keyHtml = shortcut.displayKeys
+        .map((key) => `<kbd>${key}</kbd>`)
+        .join(" + ");
       li.innerHTML = `${keyHtml} - ${shortcut.description}`;
       ul.appendChild(li);
     });
-    
+
     // Add special keys
-    Object.values(SHORTCUTS.special).forEach(shortcut => {
-      const li = document.createElement('li');
-      const keyHtml = shortcut.displayKeys.map(key => `<kbd>${key}</kbd>`).join(' + ');
+    Object.values(SHORTCUTS.special).forEach((shortcut) => {
+      const li = document.createElement("li");
+      const keyHtml = shortcut.displayKeys
+        .map((key) => `<kbd>${key}</kbd>`)
+        .join(" + ");
       li.innerHTML = `${keyHtml} - ${shortcut.description}`;
       ul.appendChild(li);
     });
-    
+
     shortcutsContainer.appendChild(ul);
   }
-  
+
   //=============================================================================
   // Initialization
   //=============================================================================
-  
+
   /**
    * Initialize the keyboard shortcuts system
    */
   function initializeShortcuts(): void {
     // Register main shortcut handler (bubbling phase)
-    document.addEventListener('keydown', handleKeyboardEvent);
-    
+    document.addEventListener("keydown", handleKeyboardEvent);
+
     // Register special Escape key handler (capture phase)
     // This ensures Escape works even when terminal has focus
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        const handled = SPECIAL_KEY_HANDLERS.Escape(event);
-        if (handled) return;
-      }
-    }, true); // true enables capture phase
-    
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "Escape") {
+          const handled = SPECIAL_KEY_HANDLERS.Escape(event);
+          if (handled) return;
+        }
+      },
+      true
+    ); // true enables capture phase
+
     // Generate shortcuts list when DOM is ready
-    document.addEventListener('DOMContentLoaded', generateShortcutsList);
+    document.addEventListener("DOMContentLoaded", generateShortcutsList);
   }
-  
+
   // Initialize the shortcuts system
   initializeShortcuts();
 })();

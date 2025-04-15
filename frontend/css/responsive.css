@@ -5,14 +5,14 @@
     height: auto;
     min-height: auto;
   }
-  
-  .editor-panel, 
+
+  .editor-panel,
   .editor-panel.with-output {
     flex: none;
     width: 100%;
     height: 50vh;
   }
-  
+
   .output-panel {
     flex: none;
     width: 100%;
@@ -24,16 +24,16 @@
   .main-container {
     gap: 13.5px;
   }
-  
+
   .panel {
     padding: 9px;
   }
-  
-  .editor-panel, 
+
+  .editor-panel,
   .editor-panel.with-output {
     height: 45vh;
   }
-  
+
   .output-panel {
     height: 35vh;
   }
@@ -43,37 +43,37 @@
   .header {
     flex-direction: column;
   }
-  
+
   .title-shortcuts {
     width: 100%;
   }
-  
+
   .controls {
     width: 100%;
   }
-  
+
   select {
     min-width: 70px;
   }
-  
+
   button {
     padding: 4.5px 9px;
   }
-  
+
   .toggle-container {
     font-size: 10.8px;
   }
-  
+
   button span {
     display: none;
   }
-  
+
   button {
     width: 33px;
     justify-content: center;
   }
-  
+
   button svg {
     margin: 0;
   }
-} 
+}

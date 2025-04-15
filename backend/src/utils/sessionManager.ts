@@ -1,11 +1,11 @@
 /**
  * Session management for terminal sessions
  */
-import * as pty from 'node-pty';
-import * as path from 'path';
-import * as tmp from 'tmp';
-import { DirResult } from 'tmp';
-import { WebSocket } from 'ws';
+import * as pty from "node-pty";
+import * as path from "path";
+import * as tmp from "tmp";
+import { DirResult } from "tmp";
+import { WebSocket } from "ws";
 
 // Define session interface
 interface Session {
@@ -30,8 +30,8 @@ function terminateSession(sessionId: string): void {
         // Force kill the process to ensure it's terminated
         try {
           // SIGKILL is more forceful than the default termination signal
-          session.pty.kill('SIGKILL');
-          
+          session.pty.kill("SIGKILL");
+
           // Clean up resources immediately
           cleanupSession(sessionId);
         } catch (e) {
@@ -44,7 +44,10 @@ function terminateSession(sessionId: string): void {
         cleanupSession(sessionId);
       }
     } catch (e) {
-      console.error(`Error during process termination for session ${sessionId}:`, e);
+      console.error(
+        `Error during process termination for session ${sessionId}:`,
+        e
+      );
       // Always clean up the session even if termination failed
       cleanupSession(sessionId);
     }
@@ -63,13 +66,19 @@ function cleanupSession(sessionId: string): void {
         // Force removal of temporary directory
         session.tmpDir.removeCallback();
       } catch (e) {
-        console.error(`Error removing temporary directory for session ${sessionId}:`, e);
+        console.error(
+          `Error removing temporary directory for session ${sessionId}:`,
+          e
+        );
         // Try a different approach if the callback method fails
         try {
-          const { exec } = require('child_process');
+          const { exec } = require("child_process");
           exec(`rm -rf "${session.tmpDir.name}"`, (err: Error) => {
             if (err) {
-              console.error(`Failed to forcefully remove temp dir ${session.tmpDir.name}:`, err);
+              console.error(
+                `Failed to forcefully remove temp dir ${session.tmpDir.name}:`,
+                err
+              );
             }
           });
         } catch (execErr) {
@@ -77,7 +86,7 @@ function cleanupSession(sessionId: string): void {
         }
       }
     }
-    
+
     // Always remove the session from active sessions map
     activeSessions.delete(sessionId);
   }
@@ -89,18 +98,21 @@ function cleanupSession(sessionId: string): void {
  * @param {pty.IPtyForkOptions} options - PTY options
  * @returns {pty.IPty} PTY process
  */
-function createPtyProcess(command: string, options: pty.IPtyForkOptions = {}): pty.IPty {
+function createPtyProcess(
+  command: string,
+  options: pty.IPtyForkOptions = {}
+): pty.IPty {
   const defaultOptions: pty.IPtyForkOptions = {
-    name: 'xterm-color',
+    name: "xterm-color",
     cols: 80,
     rows: 24,
     cwd: process.cwd(),
-    env: process.env as { [key: string]: string } // Type assertion
+    env: process.env as { [key: string]: string }, // Type assertion
   };
-  
+
   const ptyOptions = { ...defaultOptions, ...options };
-  
-  return pty.spawn('bash', ['-c', command], ptyOptions);
+
+  return pty.spawn("bash", ["-c", command], ptyOptions);
 }
 
 interface ValidationResult {
@@ -115,18 +127,24 @@ interface ValidationResult {
  */
 function validateCodeSecurity(code: string): ValidationResult {
   // Basic validation
-  if (!code || code.trim() === '') {
-    return { valid: false, error: 'Error: No code provided' };
+  if (!code || code.trim() === "") {
+    return { valid: false, error: "Error: No code provided" };
   }
 
   // Check code length
   if (code.length > 50000) {
-    return { valid: false, error: 'Error: Code exceeds maximum length of 50,000 characters' };
+    return {
+      valid: false,
+      error: "Error: Code exceeds maximum length of 50,000 characters",
+    };
   }
 
   // Check line count
-  if (code.split('\n').length > 1000) {
-    return { valid: false, error: 'Error: Code exceeds maximum of 1,000 lines' };
+  if (code.split("\n").length > 1000) {
+    return {
+      valid: false,
+      error: "Error: Code exceeds maximum of 1,000 lines",
+    };
   }
 
   return { valid: true };
@@ -139,32 +157,37 @@ function validateCodeSecurity(code: string): ValidationResult {
  * @param {DirResult} tmpDir - Temporary directory
  * @param {string} outputFile - Path to compiled executable
  */
-function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirResult, outputFile: string): boolean {
+function startCompilationSession(
+  ws: WebSocket,
+  sessionId: string,
+  tmpDir: DirResult,
+  outputFile: string
+): boolean {
   try {
     // Set standard terminal size: 80 columns, 24 rows
     const cols = 80;
     const rows = 24;
-    
+
     // Create PTY instance with correct terminal type and size
     const ptyProcess = createPtyProcess(`"${outputFile}"`, {
-      name: 'xterm-256color',
+      name: "xterm-256color",
       cols: cols,
       rows: rows,
       cwd: tmpDir.name,
       env: {
         ...(process.env as { [key: string]: string }),
-        TERM: 'xterm-256color'
-      }
+        TERM: "xterm-256color",
+      },
     });
-    
+
     // Store PTY process and temporary directory
-    activeSessions.set(sessionId, { 
+    activeSessions.set(sessionId, {
       pty: ptyProcess,
       tmpDir: tmpDir,
       lastActivity: Date.now(),
-      dimensions: { cols, rows }
+      dimensions: { cols, rows },
     });
-    
+
     // Handle PTY output
     ptyProcess.onData((data: string) => {
       try {
@@ -173,31 +196,38 @@ function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirRe
         if (session) {
           session.lastActivity = Date.now();
         }
-        
+
         // Send output to client without any filtering
         // PTY will handle echo correctly
-        ws.send(JSON.stringify({
-          type: 'output',
-          output: data,
-          timestamp: Date.now()
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "output",
+            output: data,
+            timestamp: Date.now(),
+          })
+        );
       } catch (e) {
         console.error(`Error sending output for session ${sessionId}:`, e);
       }
     });
-    
+
     // Handle PTY exit
     ptyProcess.onExit(({ exitCode }) => {
       try {
-        ws.send(JSON.stringify({
-          type: 'exit',
-          code: exitCode,
-          timestamp: Date.now()
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "exit",
+            code: exitCode,
+            timestamp: Date.now(),
+          })
+        );
       } catch (e) {
-        console.error(`Error sending exit message for session ${sessionId}:`, e);
+        console.error(
+          `Error sending exit message for session ${sessionId}:`,
+          e
+        );
       }
-      
+
       // Clean up resources immediately after program exit
       if (activeSessions.has(sessionId)) {
         cleanupSession(sessionId);
@@ -207,11 +237,13 @@ function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirRe
     return true;
   } catch (ptyError) {
     console.error(`Error creating PTY for session ${sessionId}:`, ptyError);
-    ws.send(JSON.stringify({
-      type: 'error',
-      output: `Error executing program: ${(ptyError as Error).message}`
-    }));
-    
+    ws.send(
+      JSON.stringify({
+        type: "error",
+        output: `Error executing program: ${(ptyError as Error).message}`,
+      })
+    );
+
     return false;
   }
 }
@@ -223,13 +255,17 @@ function startCompilationSession(ws: WebSocket, sessionId: string, tmpDir: DirRe
  * @param {WebSocket} ws - WebSocket connection
  * @returns {boolean} Whether the input was sent successfully
  */
-function sendInputToSession(sessionId: string, input: string, ws: WebSocket): boolean {
+function sendInputToSession(
+  sessionId: string,
+  input: string,
+  ws: WebSocket
+): boolean {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     // In PTY, input is automatically echoed by the program (if using standard IO)
     // So we don't need to handle echo separately, just send the input
     session.pty.write(input);
-    
+
     // Update last activity time
     session.lastActivity = Date.now();
     return true;
@@ -250,17 +286,17 @@ interface CompilationEnvironment {
  * @returns {CompilationEnvironment} Object containing directory and file paths
  */
 function createCompilationEnvironment(lang: string): CompilationEnvironment {
-  const tmpDir = tmp.dirSync({ prefix: 'CinCout-', unsafeCleanup: true });
-  const sourceExtension = lang === 'cpp' ? 'cpp' : 'c';
+  const tmpDir = tmp.dirSync({ prefix: "CinCout-", unsafeCleanup: true });
+  const sourceExtension = lang === "cpp" ? "cpp" : "c";
   const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
-  const outputFile = path.join(tmpDir.name, 'program.out');
-  const asmFile = path.join(tmpDir.name, 'program.s');
-  
+  const outputFile = path.join(tmpDir.name, "program.out");
+  const asmFile = path.join(tmpDir.name, "program.s");
+
   return {
     tmpDir,
     sourceFile,
     outputFile,
-    asmFile
+    asmFile,
   };
 }
 
@@ -271,7 +307,11 @@ function createCompilationEnvironment(lang: string): CompilationEnvironment {
  * @param {number} rows - Number of rows
  * @returns {boolean} Whether resize was successful
  */
-function resizeTerminal(sessionId: string, cols: number, rows: number): boolean {
+function resizeTerminal(
+  sessionId: string,
+  cols: number,
+  rows: number
+): boolean {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     try {
@@ -298,5 +338,5 @@ export {
   resizeTerminal,
   Session,
   ValidationResult,
-  CompilationEnvironment
+  CompilationEnvironment,
 };

@@ -2,17 +2,17 @@
 
 // Debounce function to prevent rapid clicks
 export function debounce<T extends (...args: any[]) => any>(
-  func: T, 
+  func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: number | null = null;
-  
-  return function(...args: Parameters<T>) {
+
+  return function (...args: Parameters<T>) {
     const later = () => {
       timeout = null;
       func(...args);
     };
-    
+
     if (timeout !== null) {
       clearTimeout(timeout);
     }
@@ -26,42 +26,46 @@ export function debounce<T extends (...args: any[]) => any>(
  * @param {string} message - Message to display
  * @param {number} duration - Duration to show notification (ms), default 3000ms
  */
-export function showNotification(type: 'success' | 'error' | 'warning' | 'info', message: string, duration: number = 3000): void {
-  const notification = document.createElement('div');
-  notification.className = 'cincout-notification';
-  
+export function showNotification(
+  type: "success" | "error" | "warning" | "info",
+  message: string,
+  duration: number = 3000
+): void {
+  const notification = document.createElement("div");
+  notification.className = "cincout-notification";
+
   // Set different styles and icons based on type
-  let icon = '';
-  let bgColor = '';
-  
-  switch(type) {
-    case 'success':
-      icon = 'fa-check-circle';
-      bgColor = 'rgba(40,167,69,0.9)';
+  let icon = "";
+  let bgColor = "";
+
+  switch (type) {
+    case "success":
+      icon = "fa-check-circle";
+      bgColor = "rgba(40,167,69,0.9)";
       break;
-    case 'error':
-      icon = 'fa-exclamation-circle';
-      bgColor = 'rgba(220,53,69,0.9)';
+    case "error":
+      icon = "fa-exclamation-circle";
+      bgColor = "rgba(220,53,69,0.9)";
       break;
-    case 'warning':
-      icon = 'fa-exclamation-triangle';
-      bgColor = 'rgba(255,193,7,0.9)';
+    case "warning":
+      icon = "fa-exclamation-triangle";
+      bgColor = "rgba(255,193,7,0.9)";
       break;
-    case 'info':
+    case "info":
     default:
-      icon = 'fa-info-circle';
-      bgColor = 'rgba(23,162,184,0.9)';
+      icon = "fa-info-circle";
+      bgColor = "rgba(23,162,184,0.9)";
       break;
   }
-  
+
   notification.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
   notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: ${bgColor}; color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;`;
-  
+
   document.body.appendChild(notification);
-  
+
   // Notification disappears after a set time
   setTimeout(() => {
-    notification.style.opacity = '0';
+    notification.style.opacity = "0";
     setTimeout(() => {
       if (notification.parentNode) {
         document.body.removeChild(notification);
@@ -75,78 +79,106 @@ export function showNotification(type: 'success' | 'error' | 'warning' | 'info',
  * @returns {Promise<void>}
  */
 export async function takeCodeSnap(): Promise<void> {
-  
   // Get the CodeMirror editor element
-  const editorElement = document.querySelector('.CodeMirror');
-  
+  const editorElement = document.querySelector(".CodeMirror");
+
   if (!editorElement) {
-    showNotification('error', 'CodeMirror editor element not found');
+    showNotification("error", "CodeMirror editor element not found");
     return;
   }
-  
+
   try {
     // Show loading indicator
-    const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = 'codesnap-loading';
-    loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...';
-    loadingIndicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
+    const loadingIndicator = document.createElement("div");
+    loadingIndicator.className = "codesnap-loading";
+    loadingIndicator.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...';
+    loadingIndicator.style.cssText =
+      "position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;";
     document.body.appendChild(loadingIndicator);
-    
+
     // Get the CodeMirror instance
     const cm = (editorElement as any).CodeMirror;
     if (!cm) {
-      throw new Error('CodeMirror instance not found');
+      throw new Error("CodeMirror instance not found");
     }
-    
+
     // Get code content and language
     const fullContent = cm.getValue();
-    const lang = (document.getElementById('language') as HTMLSelectElement)?.value || 'code';
+    const lang =
+      (document.getElementById("language") as HTMLSelectElement)?.value ||
+      "code";
 
     // Create filename with timestamp
     const timestamp = (() => {
       const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} at ${String(now.getHours()).padStart(2, '0')}.${String(now.getMinutes()).padStart(2, '0')}.${String(now.getSeconds()).padStart(2, '0')}`
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${String(now.getDate()).padStart(2, "0")} at ${String(
+        now.getHours()
+      ).padStart(2, "0")}.${String(now.getMinutes()).padStart(2, "0")}.${String(
+        now.getSeconds()
+      ).padStart(2, "0")}`;
     })();
     const filename = `${lang}-${timestamp}.png`;
-    
+
     // Get current theme directly from theme selector
-    const currentTheme = (document.getElementById('theme-select') as HTMLSelectElement)?.value || 'default';
-    
+    const currentTheme =
+      (document.getElementById("theme-select") as HTMLSelectElement)?.value ||
+      "default";
+
     // Calculate width based on longest line
-    const lines = fullContent.split('\n');
-    const longestLine = lines.reduce((longest: string, line: string) => line.length > longest.length ? line : longest, '');
-    
+    const lines = fullContent.split("\n");
+    const longestLine = lines.reduce(
+      (longest: string, line: string) =>
+        line.length > longest.length ? line : longest,
+      ""
+    );
+
     // Measure line width
-    const measureEl = document.createElement('div');
-    measureEl.style.cssText = 'position: absolute; left: -9999px; visibility: hidden; white-space: pre;';
-    measureEl.style.fontFamily = window.getComputedStyle(editorElement).fontFamily;
+    const measureEl = document.createElement("div");
+    measureEl.style.cssText =
+      "position: absolute; left: -9999px; visibility: hidden; white-space: pre;";
+    measureEl.style.fontFamily =
+      window.getComputedStyle(editorElement).fontFamily;
     measureEl.style.fontSize = window.getComputedStyle(editorElement).fontSize;
     measureEl.textContent = longestLine;
     document.body.appendChild(measureEl);
     const longestLineWidth = measureEl.clientWidth;
     document.body.removeChild(measureEl);
-    
+
     // Calculate total width including line numbers
-    const lineNumbersWidth = editorElement.querySelector('.CodeMirror-linenumbers')?.clientWidth || 0;
+    const lineNumbersWidth =
+      editorElement.querySelector(".CodeMirror-linenumbers")?.clientWidth || 0;
     const totalWidth = longestLineWidth + lineNumbersWidth + 40;
-    
+
     // Create temporary container for new editor
-    const tempContainer = document.createElement('div');
+    const tempContainer = document.createElement("div");
     tempContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; opacity: 1; width: ${totalWidth}px;`;
     document.body.appendChild(tempContainer);
-    
+
     // Get original editor styling
     const computedStyle = window.getComputedStyle(editorElement);
     const editorStyles = {
-      fontFamily: computedStyle.getPropertyValue('font-family'),
-      fontSize: computedStyle.getPropertyValue('font-size'),
-      lineHeight: computedStyle.getPropertyValue('line-height')
+      fontFamily: computedStyle.getPropertyValue("font-family"),
+      fontSize: computedStyle.getPropertyValue("font-size"),
+      lineHeight: computedStyle.getPropertyValue("line-height"),
     };
-    
+
     // Copy editor options that matter for rendering
     const currentOptions = {};
-    const relevantOptions = ['mode', 'lineWrapping', 'lineNumbers', 'foldGutter', 'theme', 'indentUnit', 'indentWithTabs', 'smartIndent'];
-    
+    const relevantOptions = [
+      "mode",
+      "lineWrapping",
+      "lineNumbers",
+      "foldGutter",
+      "theme",
+      "indentUnit",
+      "indentWithTabs",
+      "smartIndent",
+    ];
+
     for (const option of relevantOptions) {
       try {
         const value = cm.getOption(option);
@@ -157,55 +189,63 @@ export async function takeCodeSnap(): Promise<void> {
         console.warn(`Couldn't get option ${option}:`, e);
       }
     }
-    
+
     // Create new CodeMirror instance for snapshot
     const newCm = (window as any).CodeMirror(tempContainer, {
       ...currentOptions,
       value: fullContent,
       readOnly: true,
       viewportMargin: Infinity,
-      theme: currentTheme !== 'default' ? currentTheme : 'default'
+      theme: currentTheme !== "default" ? currentTheme : "default",
     });
-    
+
     // Wait for theme CSS to load and apply
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // Style the new editor element
-    const newEditorElement = tempContainer.querySelector('.CodeMirror') as HTMLElement;
+    const newEditorElement = tempContainer.querySelector(
+      ".CodeMirror"
+    ) as HTMLElement;
     if (!newEditorElement) {
-      throw new Error('New editor element not found');
+      throw new Error("New editor element not found");
     }
-    
+
     // Apply necessary styling
     newEditorElement.style.fontFamily = editorStyles.fontFamily;
     newEditorElement.style.fontSize = editorStyles.fontSize;
     newEditorElement.style.lineHeight = editorStyles.lineHeight;
     newEditorElement.style.width = `${totalWidth}px`;
-    
+
     // Make content fully visible without scrolling
-    const scrollElement = newEditorElement.querySelector('.CodeMirror-scroll') as HTMLElement;
+    const scrollElement = newEditorElement.querySelector(
+      ".CodeMirror-scroll"
+    ) as HTMLElement;
     if (scrollElement) {
-      scrollElement.style.height = 'auto';
-      scrollElement.style.maxHeight = 'none';
-      scrollElement.style.overflow = 'visible';
+      scrollElement.style.height = "auto";
+      scrollElement.style.maxHeight = "none";
+      scrollElement.style.overflow = "visible";
       scrollElement.style.width = `${totalWidth}px`;
     }
-    
-    const sizerElement = newEditorElement.querySelector('.CodeMirror-sizer') as HTMLElement;
+
+    const sizerElement = newEditorElement.querySelector(
+      ".CodeMirror-sizer"
+    ) as HTMLElement;
     if (sizerElement) {
-      sizerElement.style.marginBottom = '0';
+      sizerElement.style.marginBottom = "0";
       sizerElement.style.minWidth = `${totalWidth - lineNumbersWidth}px`;
     }
-    
-    const codeArea = newEditorElement.querySelector('.CodeMirror-lines') as HTMLElement;
+
+    const codeArea = newEditorElement.querySelector(
+      ".CodeMirror-lines"
+    ) as HTMLElement;
     if (codeArea) {
       codeArea.style.width = `${totalWidth - lineNumbersWidth}px`;
     }
-    
+
     // Force refresh and wait for it to complete
     newCm.refresh();
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
     // Take screenshot
     const canvas = await window.html2canvas(newEditorElement, {
       backgroundColor: null,
@@ -215,43 +255,44 @@ export async function takeCodeSnap(): Promise<void> {
       allowTaint: true,
       height: newEditorElement.scrollHeight,
       width: totalWidth,
-      windowHeight: newEditorElement.scrollHeight + 100
+      windowHeight: newEditorElement.scrollHeight + 100,
     });
-    
+
     // Convert to blob and download
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/png")
+    );
     if (!blob) {
-      throw new Error('Failed to create blob from canvas');
+      throw new Error("Failed to create blob from canvas");
     }
-    
+
     // Download the image
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
+
     // Clean up
     document.body.removeChild(tempContainer);
     document.body.removeChild(loadingIndicator);
-    
+
     // Show success notification using the updated function
-    showNotification('success', 'Code snapshot saved!');
-    
+    showNotification("success", "Code snapshot saved!");
   } catch (error) {
-    console.error('CodeSnap error:', error);
-    
+    console.error("CodeSnap error:", error);
+
     // Make sure loading indicator is removed in case of error
-    const existingIndicator = document.querySelector('.codesnap-loading');
+    const existingIndicator = document.querySelector(".codesnap-loading");
     if (existingIndicator && existingIndicator.parentNode) {
       existingIndicator.parentNode.removeChild(existingIndicator);
     }
-    
+
     // Show error notification using the updated function
-    showNotification('error', 'Failed to create code snapshot');
+    showNotification("error", "Failed to create code snapshot");
   }
 }
 
@@ -261,7 +302,7 @@ export async function takeCodeSnap(): Promise<void> {
  */
 export function detectOS(): string {
   const userAgent = window.navigator.userAgent;
-  return /Mac/.test(userAgent) ? 'MacOS' : 'Other';
+  return /Mac/.test(userAgent) ? "MacOS" : "Other";
 }
 
 /**
@@ -279,10 +320,13 @@ export function triggerButton(id: string): void {
 export function saveCodeToFile(): void {
   const editor = (window as any).editor;
   const code = editor.getValue();
-  const fileType = (document.getElementById('language') as HTMLSelectElement).value === 'cpp' ? 'cpp' : 'c';
-  const blob = new Blob([code], {type: 'text/plain'});
-  const downloadLink = document.createElement('a');
-  
+  const fileType =
+    (document.getElementById("language") as HTMLSelectElement).value === "cpp"
+      ? "cpp"
+      : "c";
+  const blob = new Blob([code], { type: "text/plain" });
+  const downloadLink = document.createElement("a");
+
   downloadLink.href = URL.createObjectURL(blob);
   downloadLink.download = `code.${fileType}`;
   downloadLink.click();
@@ -292,23 +336,23 @@ export function saveCodeToFile(): void {
  * Opens code from a file
  */
 export function openCodeFromFile(): void {
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.c,.cpp';
-  
-  fileInput.onchange = function(this: HTMLInputElement) {
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".c,.cpp";
+
+  fileInput.onchange = function (this: HTMLInputElement) {
     const selectedFile = this.files?.[0];
     if (!selectedFile) return;
-    
+
     const reader = new FileReader();
-    reader.onload = function() {
+    reader.onload = function () {
       if ((window as any).editor) {
         (window as any).editor.setValue(reader.result as string);
       }
     };
     reader.readAsText(selectedFile);
   };
-  
+
   fileInput.click();
 }
 
@@ -328,27 +372,27 @@ export function toggleCodeFolding(): void {
  */
 export function normalizeKeyCombo(event: KeyboardEvent): string {
   const key = event.key.toLowerCase();
-  
+
   // Handle special keys
-  if (key === 'enter') return 'Enter';
-  if (key === 'escape') return 'Escape';
-  
+  if (key === "enter") return "Enter";
+  if (key === "escape") return "Escape";
+
   // Build key combination prefix
-  let prefix = '';
-  if (event.ctrlKey) prefix += 'ctrl+';
-  if (event.altKey) prefix += 'alt+';
-  if (event.metaKey) prefix += 'meta+';
-  if (event.shiftKey) prefix += 'shift+';
-  
+  let prefix = "";
+  if (event.ctrlKey) prefix += "ctrl+";
+  if (event.altKey) prefix += "alt+";
+  if (event.metaKey) prefix += "meta+";
+  if (event.shiftKey) prefix += "shift+";
+
   // Handle letter and number keys
   if (prefix) {
     // Use lowercase for letter keys
     if (key.length === 1) return prefix + key;
-    
+
     // Single number keys
     if (/^[0-9]$/.test(key)) return prefix + key;
   }
-  
+
   // For keys without modifiers, return as is
   return event.key;
 }

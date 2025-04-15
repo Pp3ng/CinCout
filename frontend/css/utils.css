@@ -11,27 +11,27 @@
 }
 
 .loading:after {
-  content: '...';
+  content: "...";
   animation: dots 1.5s steps(5, end) infinite;
 }
 
 @keyframes dots {
   0%,
   20% {
-    content: '.';
+    content: ".";
   }
 
   40% {
-    content: '..';
+    content: "..";
   }
 
   60% {
-    content: '...';
+    content: "...";
   }
 
   80%,
   100% {
-    content: '';
+    content: "";
   }
 }
 
@@ -62,7 +62,6 @@
   border-left: 3px solid #ff5555;
 }
 
-
 .style-check-output {
   background-color: var(--bg-secondary);
   border-left: 3px solid var(--accent);
@@ -77,7 +76,7 @@
 .column-number {
   color: #8be9fd;
   font-weight: bold;
-} 
+}
 
 /* Highlighting for specific types of messages */
 .error-highlight {

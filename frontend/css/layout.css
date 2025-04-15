@@ -20,7 +20,7 @@
 }
 
 h1 {
-  font-family: 'Fira Code',monospace;
+  font-family: "Fira Code", monospace;
   background: linear-gradient(45deg, var(--accent), var(--accent-hover));
   background-size: 200% 200%;
   -webkit-background-clip: text;
@@ -37,9 +37,15 @@ h1 {
 }
 
 @keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .github-icon {
@@ -124,4 +130,4 @@ h1 {
   margin: 0;
   line-height: 29px;
   height: 29px;
-} 
+}

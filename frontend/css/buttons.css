@@ -16,7 +16,7 @@
 button {
   background: linear-gradient(45deg, var(--accent), var(--accent-hover));
   color: var(--text-primary);
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   border: none;
   padding: 5.4px 10.8px;
   border-radius: var(--radius-sm);
@@ -116,7 +116,7 @@ button.loading {
 }
 
 button.loading::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 16px;
   height: 16px;
@@ -176,7 +176,7 @@ button:disabled {
   right: 0;
   bottom: 0;
   background-color: var(--bg-primary);
-  transition: .3s;
+  transition: 0.3s;
   border-radius: var(--radius-lg);
   border: 2px solid var(--border);
 }
@@ -189,7 +189,7 @@ button:disabled {
   left: 3.6px;
   bottom: 1.8px;
   background-color: var(--text-primary);
-  transition: .3s;
+  transition: 0.3s;
   border-radius: 50%;
 }
 
@@ -268,13 +268,18 @@ input:checked + .slider:before {
 /* Replace the bouncing animation with a smoother rotation transition */
 .dropdown:hover .fa-chevron-down {
   transform: rotate(180deg); /* Just rotate without extreme upward movement */
-  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy easing */
+  transition-timing-function: cubic-bezier(
+    0.34,
+    1.56,
+    0.64,
+    1
+  ); /* Bouncy easing */
 }
 
 /* Improved dropdown content display */
 .dropdown-content {
   display: none;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   position: absolute;
   background-color: var(--bg-secondary);
   min-width: 220px;
@@ -293,7 +298,7 @@ input:checked + .slider:before {
 
 /* Add padding area to make hovering easier */
 .dropdown-content::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -20px; /* Creates invisible padding above dropdown */
   left: 0;
@@ -311,7 +316,7 @@ input:checked + .slider:before {
 
 /* Add a hover bridge between button and dropdown content */
 .dropdown::after {
-  content: '';
+  content: "";
   position: absolute;
   display: none;
   height: 20px; /* Height of the bridge */
@@ -374,6 +379,12 @@ input:checked + .slider:before {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

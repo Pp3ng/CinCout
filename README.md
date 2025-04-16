@@ -1,13 +1,13 @@
 # CinCout
 
-<div align="center">
 This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using TypeScript/Node.js for the backend and HTML/CSS/TypeScript for the frontend. It provides a user-friendly interface with rich features.
 
+<div align="center">
 <img src="frontend/assets/cincout.png" alt="logo" width="400" />
 
 [![wakatime](https://wakatime.com/badge/user/018b0b2d-ab3f-4d4d-941c-c52b8275e363/project/8f5d92a6-21a5-4e54-9636-bc466e78d86f.svg)](https://wakatime.com/badge/user/018b0b2d-ab3f-4d4d-941c-c52b8275e363/project/8f5d92a6-21a5-4e54-9636-bc466e78d86f)
 
----
+</div>
 
 # Screenshots 📷
 
@@ -25,8 +25,6 @@ This is the architecture diagram of the project.Following frontend and backend i
 ![architecture](README/Architecture.png)
 
 ---
-
-</div>
 
 # Features ✨
 

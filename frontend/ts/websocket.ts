@@ -1,205 +1,154 @@
-// WebSocket handling module
-const CinCoutSocket = (function () {
-  // Private variables
-  let socket: WebSocket | null = null;
-  let sessionId: string | null = null;
-  let messageHandler: ((event: MessageEvent) => void) | null = null;
-  let isProcessRunning: boolean = false; // Track if a process is currently running
-  let compilationState: "idle" | "compiling" | "running" = "idle"; // More granular state tracking
+// WebSocket communication module
+let socket: WebSocket | null = null;
+let sessionId: string | null = null;
+let messageHandler: ((event: MessageEvent) => void) | null = null;
+let compilationState: string = "idle"; // idle, compiling, or running
+let isProcessRunning: boolean = false;
 
-  /**
-   * Initialize WebSocket connection
-   * @returns {Promise<WebSocket>} Promise that resolves with WebSocket
-   */
-  function initWebSocket(): Promise<WebSocket> {
-    return new Promise((resolve, reject) => {
-      // Ensure no existing connection
-      if (socket) {
-        try {
-          socket.onclose = null;
-          socket.close();
-          socket = null;
-        } catch (e) {
-          console.error("Error closing existing WebSocket:", e);
-        }
-      }
+export const resetState = () => {
+  socket = null;
+  sessionId = null;
+  compilationState = "idle";
+  isProcessRunning = false;
+};
 
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = window.location.host;
+export const CinCoutSocket = {
+  init(handler: (event: MessageEvent) => void) {
+    messageHandler = handler;
+  },
 
-      try {
-        socket = new WebSocket(`${protocol}//${host}`);
-
-        socket.onopen = () => {
-          resolve(socket);
-        };
-
-        socket.onmessage = (event: MessageEvent) => {
-          if (messageHandler) {
-            messageHandler(event);
-          }
-        };
-
-        socket.onclose = (event: CloseEvent) => {
-          console.log("WebSocket connection closed", event.code, event.reason);
-          socket = null;
-          sessionId = null;
-          resetState();
-        };
-
-        socket.onerror = (error: Event) => {
-          console.error("WebSocket error:", error);
-          reject(error);
-        };
-      } catch (error) {
-        console.error("Error creating WebSocket:", error);
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * Connect to the WebSocket server
-   * @returns {Promise<void>} Promise that resolves when connection is ready
-   */
-  function connect(): Promise<void> {
-    return initWebSocket()
-      .then(() => {
-        return Promise.resolve();
-      })
-      .catch((error) => {
-        return Promise.reject(error);
-      });
-  }
-
-  /**
-   * Send data through WebSocket
-   * @param {any} data - Data to send
-   * @returns {Promise<void>} Resolves when data is sent
-   */
-  function sendData(data: any): Promise<void> {
+  async sendData(data: any): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!socket || socket.readyState !== WebSocket.OPEN) {
         reject(new Error("WebSocket is not connected"));
         return;
       }
 
-      // Add session ID to all messages
-      if (sessionId) {
-        data.sessionId = sessionId;
-      }
-
-      // Add timestamp
-      data.timestamp = Date.now();
-
-      // Track compilation state
-      if (data.type === "compile") {
-        isProcessRunning = true;
-        compilationState = "compiling";
-      }
-
-      // Send data
       try {
         socket.send(JSON.stringify(data));
         resolve();
-      } catch (error) {
-        reject(error);
+      } catch (e) {
+        console.error("Error sending data:", e);
+        reject(e);
       }
     });
-  }
+  },
 
-  /**
-   * Close the WebSocket connection
-   */
-  function disconnect(): void {
+  isConnected(): boolean {
+    return socket !== null && socket.readyState === WebSocket.OPEN;
+  },
+
+  getSessionId(): string | null {
+    return sessionId;
+  },
+
+  setSessionId(id: string): void {
+    sessionId = id;
+  },
+
+  async connect(): Promise<void> {
+    if (this.isConnected()) {
+      return;
+    }
+
+    await initWebSocket();
+    isProcessRunning = true;
+  },
+
+  disconnect(): void {
+    isProcessRunning = false;
+    compilationState = "idle";
+
     if (socket) {
-      // Send cleanup message
-      if (socket.readyState === WebSocket.OPEN && sessionId) {
-        try {
-          socket.send(
-            JSON.stringify({
-              type: "cleanup",
-              sessionId: sessionId,
-              timestamp: Date.now(),
-            })
-          );
-        } catch (e) {
-          console.error("Error sending cleanup message:", e);
-        }
-      }
-
-      // Close the connection
       try {
         socket.onclose = null;
         socket.close();
+        socket = null;
+        sessionId = null;
       } catch (e) {
         console.error("Error closing WebSocket:", e);
       }
-
-      socket = null;
-      sessionId = null;
-      resetState();
     }
-  }
+  },
 
-  /**
-   * Reset all state variables
-   */
-  function resetState(): void {
-    isProcessRunning = false;
-    compilationState = "idle";
-  }
+  setProcessRunning(running: boolean): void {
+    isProcessRunning = running;
+  },
 
-  /**
-   * Update process state based on incoming messages
-   * @param {string} messageType - Message type from WebSocket
-   */
-  function updateStateFromMessage(messageType: string): void {
-    switch (messageType) {
+  isProcessRunning(): boolean {
+    return isProcessRunning;
+  },
+
+  updateStateFromMessage(type: string): void {
+    switch (type) {
       case "compiling":
-        isProcessRunning = true;
         compilationState = "compiling";
-        break;
-
-      case "compile-success":
         isProcessRunning = true;
-        compilationState = "running";
         break;
-
+      case "compile-success":
+        compilationState = "running";
+        isProcessRunning = true;
+        break;
       case "compile-error":
       case "exit":
-        resetState();
+        compilationState = "idle";
+        isProcessRunning = false;
         break;
     }
-  }
+  },
 
-  // Public API
-  return {
-    init: function (msgHandler: (event: MessageEvent) => void): void {
-      messageHandler = msgHandler;
-    },
-    connect: connect,
-    disconnect: disconnect,
-    sendData: sendData,
-    getSessionId: function (): string | null {
-      return sessionId;
-    },
-    setSessionId: function (id: string): void {
-      sessionId = id;
-    },
-    isConnected: function (): boolean {
-      return !!(socket && socket.readyState === WebSocket.OPEN);
-    },
-    isProcessRunning: function (): boolean {
-      return isProcessRunning;
-    },
-    getCompilationState: function (): "idle" | "compiling" | "running" {
-      return compilationState;
-    },
-    updateStateFromMessage: updateStateFromMessage,
-    resetState: resetState,
-  };
-})();
+  getCompilationState(): string {
+    return compilationState;
+  },
+};
 
-// Export to make it available as a global variable
+// Attach to window for global access
 (window as any).CinCoutSocket = CinCoutSocket;
+(window as any).resetCompilationState = resetState;
+
+function initWebSocket(): Promise<WebSocket> {
+  return new Promise((resolve, reject) => {
+    // Ensure no existing connection
+    if (socket) {
+      try {
+        socket.onclose = null;
+        socket.close();
+        socket = null;
+      } catch (e) {
+        console.error("Error closing existing WebSocket:", e);
+      }
+    }
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+
+    try {
+      socket = new WebSocket(`${protocol}//${host}`);
+
+      socket.onopen = () => {
+        resolve(socket as WebSocket);
+      };
+
+      socket.onmessage = (event: MessageEvent) => {
+        if (messageHandler) {
+          messageHandler(event);
+        }
+      };
+
+      socket.onclose = (event: CloseEvent) => {
+        console.log("WebSocket connection closed", event.code, event.reason);
+        socket = null;
+        sessionId = null;
+        resetState();
+      };
+
+      socket.onerror = (error: Event) => {
+        console.error("WebSocket error:", error);
+        reject(error);
+      };
+    } catch (error) {
+      console.error("Error creating WebSocket:", error);
+      reject(error);
+    }
+  });
+}

@@ -8,9 +8,9 @@ import http from "http";
 import { WebSocketServer } from "ws";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
-import helmet from "helmet";
 import fs from "fs";
 import morgan from "morgan";
+import helmet from "helmet";
 
 // Routes & WebSockets
 import {
@@ -26,19 +26,20 @@ const numCPUs = os.cpus().length;
 const port = 9527;
 
 if (cluster.isPrimary) {
+  // Master process
   console.log(`Master ${process.pid} is running`);
   // Fork workers.
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
   cluster.on("exit", (worker, code, signal) => {
+    // resart worker if it dies
     console.warn(`Worker ${worker.process.pid} died, forking a new one`);
     cluster.fork();
   });
 } else {
-  // ====== Original logic below with enhancements ======
+  // Worker processes start here
   const app = express();
-
   // Create logs directory
   const logDir = path.join(__dirname, "../logs");
   if (!fs.existsSync(logDir)) {
@@ -69,51 +70,20 @@ if (cluster.isPrimary) {
   // Console output simplified logs
   app.use(morgan(":method :url :status :response-time ms - :session-source"));
 
-  // Base middleware
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: [
-            "'self'",
-            "'unsafe-inline'",
-            "'unsafe-eval'",
-            "cdnjs.cloudflare.com",
-            "cdn.jsdelivr.net",
-            "html2canvas.hertzen.com",
-          ],
-          styleSrc: [
-            "'self'",
-            "'unsafe-inline'",
-            "cdnjs.cloudflare.com",
-            "cdn.jsdelivr.net",
-            "fonts.googleapis.com",
-          ],
-          imgSrc: [
-            "'self'",
-            "data:",
-            "cdn.jsdelivr.net",
-            "github.com",
-            "githubusercontent.com",
-            "cdn.jsdelivr.net",
-          ],
-          fontSrc: [
-            "'self'",
-            "cdnjs.cloudflare.com",
-            "cdn.jsdelivr.net",
-            "fonts.googleapis.com",
-            "fonts.gstatic.com",
-          ],
-          connectSrc: ["'self'", "ws:", "wss:"],
-        },
-      },
-    })
-  ); // Security headers - Allow CDN resources
   app.use(compression()); // Response compression
   app.use(cors());
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
+
+  app.use(
+    helmet({
+      // Disable content security policy (i don't know why it doesn't allow loading my own scripts)
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
 
   // Global rate limiting
   const apiLimiter = rateLimit({
@@ -133,7 +103,7 @@ if (cluster.isPrimary) {
 
   // Static files
   app.use(
-    express.static(path.join(__dirname, "../../frontend"), {
+    express.static(path.join(__dirname, "../../frontend/dist"), {
       etag: true, // enable ETag
       lastModified: true, // verify last modified
       maxAge: "1d", // 1 day

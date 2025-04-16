@@ -1,5 +1,5 @@
-// codemirror-setup.ts
-declare const CodeMirror: any;
+// Import CodeMirror correctly - this is a workaround for the type issue
+import CodeMirror from "codemirror";
 
 type EditorInstances = {
   editor: any;
@@ -7,13 +7,16 @@ type EditorInstances = {
 };
 
 const setupEditors = (): EditorInstances => {
-  const codeElement = document.getElementById("code");
+  const codeElement = document.getElementById("code") as HTMLTextAreaElement;
   const asmElement = document.getElementById("assembly");
 
   if (!codeElement || !asmElement) {
     throw new Error("Required DOM elements not found");
   }
 
+  // Get saved theme if any
+  const savedTheme = localStorage.getItem("preferred-theme") || "default";
+  // Use the default export as a function
   const editor = CodeMirror.fromTextArea(codeElement, {
     lineNumbers: true,
     mode: "text/x-c++src",
@@ -32,13 +35,16 @@ const setupEditors = (): EditorInstances => {
     foldOptions: {
       widget: "...",
     },
+    theme: savedTheme !== "default" ? savedTheme : "default",
   });
 
+  // Fix the direct call to CodeMirror
   const assemblyView = CodeMirror(asmElement, {
     lineNumbers: true,
     mode: "gas",
     readOnly: true,
     lineWrapping: true,
+    theme: savedTheme !== "default" ? savedTheme : "default",
   });
 
   assemblyView.setSize(null, "100%");
@@ -72,7 +78,21 @@ const setupFontZoomHandler = (editor: any, assemblyView: any) => {
   );
 };
 
-(() => {
+// Make CodeMirror available globally for other modules that still use window.CodeMirror
+(window as any).CodeMirror = CodeMirror;
+
+// Function to force refresh editors - useful for fixing theme issues
+const forceRefreshEditors = () => {
+  if ((window as any).editor) {
+    (window as any).editor.refresh();
+  }
+  if ((window as any).assemblyView) {
+    (window as any).assemblyView.refresh();
+  }
+};
+
+// Initialize editors
+const initEditors = () => {
   try {
     const { editor, assemblyView } = setupEditors();
 
@@ -84,4 +104,12 @@ const setupFontZoomHandler = (editor: any, assemblyView: any) => {
   } catch (e) {
     console.error("Editor setup failed:", e);
   }
-})();
+};
+
+// Add global refresh method
+(window as any).refreshEditors = forceRefreshEditors;
+
+// Initialize on DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+  initEditors();
+});

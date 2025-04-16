@@ -1,4 +1,5 @@
 // Utility functions
+import html2canvas from "html2canvas";
 
 // Debounce function to prevent rapid clicks
 export function debounce<T extends (...args: any[]) => any>(
@@ -247,7 +248,7 @@ export async function takeCodeSnap(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     // Take screenshot
-    const canvas = await window.html2canvas(newEditorElement, {
+    const canvas = await html2canvas(newEditorElement, {
       backgroundColor: null,
       scale: 2,
       logging: false,

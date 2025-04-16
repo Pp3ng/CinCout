@@ -2,9 +2,19 @@
   "name": "webcpp-frontend",
   "scripts": {
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.4.0",
+    "codemirror": "^5.65.2",
+    "html2canvas": "^1.4.1",
+    "xterm": "^4.18.0",
+    "xterm-addon-fit": "^0.5.0"
   },
   "devDependencies": {
+    "@types/codemirror": "^5.60.8",
+    "typescript": "^5.0.4",
     "vite": "^4.5.12"
   }
 }

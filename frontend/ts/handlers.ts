@@ -1,5 +1,6 @@
 // Import utility functions
 import { debounce, takeCodeSnap } from "./utils";
+import { terminalManager } from "./terminal";
 
 // Define WebSocket-related interfaces
 interface CinCoutSocket {
@@ -41,16 +42,13 @@ declare global {
     updateTemplates: () => Promise<void>;
     setTemplate: () => Promise<void>;
     html2canvas: any;
+    getTerminalTheme: () => any;
     resetCompilationState: () => void;
   }
 }
 
 // Module pattern for better organization
 const CinCoutUI = (function () {
-  // Private variables
-  let terminal: any;
-  window.fitAddon = null; // Make fitAddon global for layout.js
-
   // DOM element cache for performance
   const domElements: DomElements = {
     template: document.getElementById("template"),
@@ -117,14 +115,7 @@ const CinCoutUI = (function () {
 
       case "compile-success":
         // Clear any previous terminal instance to prevent double execution
-        if (terminal) {
-          try {
-            terminal.dispose();
-          } catch (e) {
-            console.error("Error disposing terminal:", e);
-          }
-          terminal = null;
-        }
+        terminalManager.dispose();
 
         // Make sure the output panel is visible
         if (domElements.outputPanel) {
@@ -133,8 +124,15 @@ const CinCoutUI = (function () {
         document.querySelector(".editor-panel")?.classList.add("with-output");
         domElements.outputTab?.click();
 
+        // Initialize the terminal manager with current DOM elements
+        terminalManager.setDomElements({
+          output: domElements.output,
+          outputPanel: domElements.outputPanel,
+          outputTab: domElements.outputTab,
+        });
+
         // Create terminal interface
-        setupTerminal();
+        terminalManager.setupTerminal();
 
         // Refresh editor after layout change
         if ((window as any).editor) {
@@ -143,9 +141,7 @@ const CinCoutUI = (function () {
         break;
 
       case "output":
-        if (terminal) {
-          terminal.write(data.output);
-        }
+        terminalManager.write(data.output);
         break;
 
       case "error":
@@ -153,17 +149,11 @@ const CinCoutUI = (function () {
           "Received error from server:",
           data.output || data.message
         );
-        if (terminal) {
-          terminal.write(`\x1b[31m${data.output || data.message}\x1b[0m`);
-        }
+        terminalManager.writeError(data.output || data.message);
         break;
 
       case "exit":
-        if (terminal) {
-          terminal.write(
-            `\r\n\x1b[90m[Program exited with code: ${data.code}]\x1b[0m\r\n`
-          );
-        }
+        terminalManager.writeExitMessage(data.code);
 
         // Disconnect WebSocket immediately when program exits
         (window as any).CinCoutSocket.disconnect();
@@ -172,145 +162,6 @@ const CinCoutUI = (function () {
       default:
         console.log(`Unknown message type: ${data.type}`);
     }
-  }
-
-  /**
-   * Set up terminal interface
-   */
-  function setupTerminal(): void {
-    // Clear previous content
-    if (domElements.output) {
-      domElements.output.innerHTML =
-        '<div id="terminal-container" class="terminal-container"></div>';
-    }
-
-    // Make sure to get the correct theme first
-    const currentTheme = (window as any).getTerminalTheme
-      ? (window as any).getTerminalTheme()
-      : {};
-
-    // Create terminal instance
-    terminal = new (window as any).Terminal({
-      cursorBlink: true,
-      fontSize: 14,
-      fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-      theme: currentTheme,
-      allowTransparency: true,
-      rendererType: "dom",
-      convertEol: true, // Ensure line ending conversion
-      // Add custom key handling to prevent terminal from capturing Escape key
-      customKeyEventHandler: (event: KeyboardEvent) => {
-        // Pass through all non-Escape key events to terminal
-        if (event.key !== "Escape") {
-          return true;
-        }
-
-        // Don't let terminal handle Escape key
-        // Our global document listener will handle it
-        if (event.type === "keydown" && event.key === "Escape") {
-          return false;
-        }
-
-        return true;
-      },
-    });
-
-    // Create fit addon to make terminal adapt to container size
-    (window as any).fitAddon = new (window as any).FitAddon.FitAddon();
-    terminal.loadAddon((window as any).fitAddon);
-
-    // Open terminal in container and resize
-    const terminalContainer = document.getElementById("terminal-container");
-    if (!terminalContainer) {
-      console.error("Terminal container not found");
-      return;
-    }
-
-    terminal.open(terminalContainer);
-
-    // Ensure theme is applied and resize
-    setTimeout(() => {
-      if ((window as any).fitAddon) {
-        try {
-          (window as any).fitAddon.fit();
-          // Send the adjusted size to the server
-          if (
-            (window as any).CinCoutSocket.isConnected() &&
-            (window as any).CinCoutSocket.getCompilationState() === "running"
-          ) {
-            (window as any).CinCoutSocket.sendData({
-              type: "resize",
-              cols: terminal.cols,
-              rows: terminal.rows,
-            });
-          }
-        } catch (e) {
-          console.error("Error fitting terminal:", e);
-        }
-      }
-
-      // Force terminal redraw to apply new theme
-      try {
-        terminal.refresh(0, terminal.rows - 1);
-      } catch (e) {
-        console.error("Error refreshing terminal:", e);
-      }
-    }, 50);
-
-    // Handle terminal input
-    setupTerminalInput();
-
-    // Focus terminal
-    setTimeout(() => terminal.focus(), 100);
-
-    // Listen for window resize events
-    window.addEventListener("resize", () => {
-      if ((window as any).fitAddon) {
-        try {
-          (window as any).fitAddon.fit();
-        } catch (e) {
-          console.error("Error fitting terminal on resize:", e);
-        }
-      }
-    });
-
-    // After terminal is opened, send size information to the server
-    terminal.onResize(({ cols, rows }: { cols: number; rows: number }) => {
-      if (
-        (window as any).CinCoutSocket.isConnected() &&
-        (window as any).CinCoutSocket.getCompilationState() === "running"
-      ) {
-        (window as any).CinCoutSocket.sendData({
-          type: "resize",
-          cols: cols,
-          rows: rows,
-        });
-      }
-    });
-  }
-
-  /**
-   * Set up terminal input handling
-   */
-  function setupTerminalInput(): void {
-    // Simplified terminal input handling, letting backend handle echo
-    terminal.onData((data: string) => {
-      if (
-        !(window as any).CinCoutSocket.getCompilationState() === "running" ||
-        !(window as any).CinCoutSocket.isConnected()
-      ) {
-        console.log(
-          "Not sending terminal input: program not running or socket closed"
-        );
-        return;
-      }
-
-      // Send all input characters to the server for PTY to handle
-      (window as any).CinCoutSocket.sendData({
-        type: "input",
-        input: data,
-      });
-    });
   }
 
   /**
@@ -693,12 +544,7 @@ const CinCoutUI = (function () {
         "change",
         function (this: HTMLSelectElement) {
           const theme = this.value;
-          if ((window as any).editor) {
-            (window as any).editor.setOption("theme", theme);
-          }
-          if (window.assemblyView) {
-            window.assemblyView.setOption("theme", theme);
-          }
+          (window as any).applyTheme(theme);
         }
       );
     }

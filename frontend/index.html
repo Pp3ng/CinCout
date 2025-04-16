@@ -1,177 +1,178 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>CinCout</title>
     <!-- Google Fonts -->
     <link
-            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&display=swap"
-            rel="stylesheet">
-    <!-- CodeMirror and Xterm CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.18.0/css/xterm.css">
-    
-    <!-- Bundled styles -->
-    <link rel="stylesheet" href="dist/css/app.css">
-    <link rel="icon" type="image/png"
-        href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bash/bash-original.svg">
-          
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./assets/cincout.png" />
+
     <!-- Devicons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.14.0/devicon.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.14.0/devicon.min.css"
+    />
+  </head>
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-</head>
-
-<body>
-<div class="container">
-    <div class="header">
+  <body>
+    <div class="container">
+      <div class="header">
         <div>
-            <h1>
-                <i class="devicon-c-plain"></i> <i class="devicon-cplusplus-plain"></i> CinCout
-            </h1>
-            <div class="dropdown" id="learn-dropdown">
-                <button id="learn-cpp-btn" class="header-btn dropdown-btn">
-                    <i class="fas fa-book"></i> Learn C/C++ <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="dropdown-content" id="learn-dropdown-content">
-                    <a href="https://www.gnu.org/software/gnu-c-manual/gnu-c-manual.html" target="_blank">
-                        <i class="fas fa-file-alt resource-icon"></i> GNU C Manual
-                    </a>
-                    <a href="https://github.com/Pp3ng/My-bookshelf/raw/main/The%20C++%20Programming%20Language-4th.pdf" target="_blank">
-                        <i class="fas fa-book-open resource-icon"></i> The C++ Programming Language
-                    </a>
-                    <a href="https://en.cppreference.com/w/" target="_blank">
-                        <i class="fas fa-code resource-icon"></i> Cpp Reference
-                    </a>
-                    <a href="https://hackingcpp.com/" target="_blank">
-                        <i class="fas fa-laptop-code resource-icon"></i> Hacking Cpp
-                    </a>
-                </div>
+          <h1>
+            <i class="devicon-c-plain"></i>
+            <i class="devicon-cplusplus-plain"></i> CinCout
+          </h1>
+          <div class="dropdown" id="learn-dropdown">
+            <button id="learn-cpp-btn" class="header-btn dropdown-btn">
+              <i class="fas fa-book"></i> Learn C/C++
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-content" id="learn-dropdown-content">
+              <a
+                href="https://www.gnu.org/software/gnu-c-manual/gnu-c-manual.html"
+                target="_blank"
+              >
+                <i class="fas fa-file-alt resource-icon"></i> GNU C Manual
+              </a>
+              <a
+                href="https://github.com/Pp3ng/My-bookshelf/raw/main/The%20C++%20Programming%20Language-4th.pdf"
+                target="_blank"
+              >
+                <i class="fas fa-book-open resource-icon"></i> The C++
+                Programming Language
+              </a>
+              <a href="https://en.cppreference.com/w/" target="_blank">
+                <i class="fas fa-code resource-icon"></i> Cpp Reference
+              </a>
+              <a href="https://hackingcpp.com/" target="_blank">
+                <i class="fas fa-laptop-code resource-icon"></i> Hacking Cpp
+              </a>
             </div>
-            <div id="shortcuts-panel" class="shortcuts-panel dropdown">
-                <button id="toggle-shortcuts" class="header-btn dropdown-btn">
-                    <i class="fas fa-keyboard"></i> Keyboard Shortcuts <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="shortcuts-content dropdown-content" id="shortcuts-content">
-                    <!-- Shortcuts will be dynamically generated by JavaScript -->
-                </div>
+          </div>
+          <div id="shortcuts-panel" class="shortcuts-panel dropdown">
+            <button id="toggle-shortcuts" class="header-btn dropdown-btn">
+              <i class="fas fa-keyboard"></i> Keyboard Shortcuts
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="shortcuts-content dropdown-content"
+              id="shortcuts-content"
+            >
+              <!-- Shortcuts will be dynamically generated by JavaScript -->
             </div>
+          </div>
         </div>
         <div class="controls">
-                <select id="language">
-                    <option value="c">C</option>
-                    <option value="cpp">C++</option>
-                </select>
-                <select id="compiler">
-                    <option value="gcc">GCC</option>
-                    <option value="clang">Clang</option>
-                </select>
+          <select id="language">
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+          </select>
+          <select id="compiler">
+            <option value="gcc">GCC</option>
+            <option value="clang">Clang</option>
+          </select>
 
-            <select id = "optimization">
-                <option value ="-O0">-O0 (No optimization)</option>
-                <option value ="-O1">-O1 (Basic optimization)</option>
-                <option value ="-O2">-O2 (Moderate optimization)</option>
-                <option value ="-O3">-O3 (Maximum optimization)</option>
-                <option value ="-Os">-Os (Size optimization)</option>
-                </select>
+          <select id="optimization">
+            <option value="-O0">-O0 (No optimization)</option>
+            <option value="-O1">-O1 (Basic optimization)</option>
+            <option value="-O2">-O2 (Moderate optimization)</option>
+            <option value="-O3">-O3 (Maximum optimization)</option>
+            <option value="-Os">-Os (Size optimization)</option>
+          </select>
 
-                <select id="template"></select>
-                <select id="theme-select">
-                    <!-- Theme options will be dynamically generated by script -->
-                </select>
-            <div class="toggle-container">
-                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vim/vim-original.svg" alt="Vim" title="Vim Mode" width="20" height="20" style="margin-right: 4px;" />
-                <label class="toggle-switch">
-                    <input type="checkbox" id="vimMode">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <a href="https://github.com/Pp3ng/CinCout" target="_blank">
-                <img src="https://github.com/fluidicon.png" alt="GitHub" class="github-icon">
-            </a>
+          <select id="template"></select>
+          <select id="theme-select">
+            <!-- Theme options will be dynamically generated by script -->
+          </select>
+          <div class="toggle-container">
+            <img
+              src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vim/vim-original.svg"
+              alt="Vim"
+              title="Vim Mode"
+              width="20"
+              height="20"
+              style="margin-right: 4px"
+            />
+            <label class="toggle-switch">
+              <input type="checkbox" id="vimMode" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <a href="https://github.com/Pp3ng/CinCout" target="_blank">
+            <img
+              src="https://github.com/fluidicon.png"
+              alt="GitHub"
+              class="github-icon"
+            />
+          </a>
         </div>
-    </div>
-    
-    <!-- New layout: start with full-screen editor -->
-    <div class="main-container">
+      </div>
+
+      <!-- New layout: start with full-screen editor -->
+      <div class="main-container">
         <!-- Editor panel (full-screen initially) -->
         <div class="panel editor-panel">
-            <div class="panel-header">
-                <div class="button-container">
-                    <button id="styleCheck" class="action-btn">
-                        <i class="fas fa-check"></i> Style Check
-                    </button>
-                    <button id="format" class="action-btn">
-                        <i class="fas fa-align-left"></i> Format
-                    </button>
-                    <button id="compile" class="action-btn">
-                        <i class="fas fa-play"></i> Compile & Run
-                    </button>
-                    <button id="viewAssembly" class="action-btn">
-                        <i class="fas fa-cogs"></i> View Assembly
-                    </button>
-                    <button id="memcheck" class="action-btn">
-                        <i class="fas fa-memory"></i> Memory Check
-                    </button>
-                </div>
-                <div class="button-container right-aligned">
-                    <button id="codeSnap" class="action-btn">
-                        <i class="fas fa-camera"></i> Code Snap
-                    </button>
-                </div>
+          <div class="panel-header">
+            <div class="button-container">
+              <button id="styleCheck" class="action-btn">
+                <i class="fas fa-check"></i> Style Check
+              </button>
+              <button id="format" class="action-btn">
+                <i class="fas fa-align-left"></i> Format
+              </button>
+              <button id="compile" class="action-btn">
+                <i class="fas fa-play"></i> Compile & Run
+              </button>
+              <button id="viewAssembly" class="action-btn">
+                <i class="fas fa-cogs"></i> View Assembly
+              </button>
+              <button id="memcheck" class="action-btn">
+                <i class="fas fa-memory"></i> Memory Check
+              </button>
             </div>
-            <textarea id="code"></textarea>
+            <div class="button-container right-aligned">
+              <button id="codeSnap" class="action-btn">
+                <i class="fas fa-camera"></i> Code Snap
+              </button>
+            </div>
+          </div>
+          <textarea id="code"></textarea>
         </div>
-        
+
         <!-- Output panel (hidden initially) -->
-        <div class="panel output-panel" id="outputPanel" style="display: none;">
-            <div class="panel-header">
-                <div class="button-container">
-                    <button id="outputTab" class="tab-btn active">
-                        <i class="fas fa-terminal"></i> Output
-                    </button>
-                    <button id="assemblyTab" class="tab-btn">
-                        <i class="fas fa-cogs"></i> Assembly
-                    </button>
-                </div>
-                <div class="button-container">
-                    <button id="clear" class="action-btn">
-                        <i class="fas fa-trash-alt"></i> Clear
-                    </button>
-                    <button id="closeOutput" class="action-btn">
-                        <i class="fas fa-times"></i> Close
-                    </button>
-                </div>
+        <div class="panel output-panel" id="outputPanel" style="display: none">
+          <div class="panel-header">
+            <div class="button-container">
+              <button id="outputTab" class="tab-btn active">
+                <i class="fas fa-terminal"></i> Output
+              </button>
+              <button id="assemblyTab" class="tab-btn">
+                <i class="fas fa-cogs"></i> Assembly
+              </button>
             </div>
-            <div id="output" style="display: block;">// Program output will appear here</div>
-            <div id="assembly" style="display: none;"></div>
+            <div class="button-container">
+              <button id="clear" class="action-btn">
+                <i class="fas fa-trash-alt"></i> Clear
+              </button>
+              <button id="closeOutput" class="action-btn">
+                <i class="fas fa-times"></i> Close
+              </button>
+            </div>
+          </div>
+          <div id="output" style="display: block">
+            // Program output will appear here
+          </div>
+          <div id="assembly" style="display: none"></div>
         </div>
+      </div>
     </div>
-</div>
 
-<!-- Load core libraries from CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/gas/gas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/keymap/vim.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/comment-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xterm@4.18.0/lib/xterm.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.5.0/lib/xterm-addon-fit.min.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-
-<!-- Bundled application JS -->
-<script src="dist/js/app.js"></script>
-
-</body>
-
+    <!-- Main JS entry point - Vite will bundle all dependencies -->
+    <script type="module" src="./ts/index.ts"></script>
+  </body>
 </html>

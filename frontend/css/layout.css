@@ -21,8 +21,14 @@
 
 h1 {
   font-family: "Fira Code", monospace;
-  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
-  background-size: 200% 200%;
+  background: linear-gradient(
+    45deg,
+    var(--accent),
+    var(--accent-hover),
+    var(--accent),
+    var(--accent-hover)
+  );
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -30,21 +36,31 @@ h1 {
   margin: 0;
   letter-spacing: 0.4px;
   text-shadow: 0 1px 5px rgba(var(--accent-rgb), 0.2);
-  animation: gradient-shift 15s ease-in-out infinite;
+  animation: gradient-shift 8s ease-in-out infinite;
   white-space: nowrap;
   line-height: 1;
   display: flex;
+  position: relative;
 }
 
 @keyframes gradient-shift {
   0% {
     background-position: 0% 50%;
+    text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.2);
+  }
+  25% {
+    text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
   }
   50% {
     background-position: 100% 50%;
+    text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.3);
+  }
+  75% {
+    text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
   }
   100% {
     background-position: 0% 50%;
+    text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.2);
   }
 }
 

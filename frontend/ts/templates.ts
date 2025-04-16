@@ -3,17 +3,25 @@ type TemplateContent = string;
 type TemplatesByName = Record<string, TemplateContent>;
 type TemplatesByLanguage = Record<string, TemplatesByName>;
 
-// Initialize templates cache and tracking
-(window as any).templates = {} as TemplatesByLanguage;
-(window as any).templateLists = {} as Record<string, string[]>; // Store template names by language
-(window as any).loadedTemplates = new Set<string>(); // Track which templates are loaded by "language:name"
+// Templates cache and tracking
+const templates: TemplatesByLanguage = {};
+const templateLists: Record<string, string[]> = {}; // Store template names by language
+const loadedTemplates = new Set<string>(); // Track which templates are loaded by "language:name"
+
+// Add initialization flag to prevent duplicate initialization
+let isInitialized = false;
+
+// Make these available globally for backwards compatibility
+(window as any).templates = templates;
+(window as any).templateLists = templateLists;
+(window as any).loadedTemplates = loadedTemplates;
 
 // Load template list for a specific language
 async function loadTemplateList(language: string): Promise<string[]> {
   try {
     // Use cached list if available
-    if ((window as any).templateLists[language]) {
-      return (window as any).templateLists[language];
+    if (templateLists[language]) {
+      return templateLists[language];
     }
 
     const response = await fetch(`/api/templates/${language}/list`);
@@ -27,7 +35,7 @@ async function loadTemplateList(language: string): Promise<string[]> {
     const templateNames = (await response.json()) as string[];
 
     // Store in our cache
-    (window as any).templateLists[language] = templateNames;
+    templateLists[language] = templateNames;
 
     return templateNames;
   } catch (error) {
@@ -46,11 +54,11 @@ async function loadSingleTemplate(
   try {
     // Use cached template if available
     if (
-      (window as any).loadedTemplates.has(templateKey) &&
-      (window as any).templates[language] &&
-      (window as any).templates[language][templateName]
+      loadedTemplates.has(templateKey) &&
+      templates[language] &&
+      templates[language][templateName]
     ) {
-      return (window as any).templates[language][templateName];
+      return templates[language][templateName];
     }
 
     const response = await fetch(
@@ -67,13 +75,13 @@ async function loadSingleTemplate(
     const templateContent = result.content;
 
     // Initialize language section if needed
-    if (!(window as any).templates[language]) {
-      (window as any).templates[language] = {};
+    if (!templates[language]) {
+      templates[language] = {};
     }
 
     // Store template in cache
-    (window as any).templates[language][templateName] = templateContent;
-    (window as any).loadedTemplates.add(templateKey);
+    templates[language][templateName] = templateContent;
+    loadedTemplates.add(templateKey);
 
     return templateContent;
   } catch (error) {
@@ -86,11 +94,15 @@ async function loadSingleTemplate(
 }
 
 // Update the template list when the language changes
-(window as any).updateTemplates = async function (): Promise<void> {
-  const lang = (document.getElementById("language") as HTMLSelectElement).value;
+async function updateTemplates(): Promise<void> {
+  const lang =
+    (document.getElementById("language") as HTMLSelectElement)?.value || "c";
   const templateSelect = document.getElementById(
     "template"
   ) as HTMLSelectElement;
+
+  if (!templateSelect) return;
+
   templateSelect.innerHTML = ""; // Clear existing options
 
   // Load template list for this language
@@ -122,17 +134,21 @@ async function loadSingleTemplate(
     }
 
     // Load and set the template
-    await (window as any).setTemplate();
+    await setTemplate();
   }
-};
+}
 
 // Set editor content based on selected template
-(window as any).setTemplate = async function (): Promise<void> {
-  const lang = (document.getElementById("language") as HTMLSelectElement).value;
-  const templateName = (
-    document.getElementById("template") as HTMLSelectElement
-  ).value;
+async function setTemplate(): Promise<void> {
+  const lang =
+    (document.getElementById("language") as HTMLSelectElement)?.value || "c";
+  const templateSelect = document.getElementById(
+    "template"
+  ) as HTMLSelectElement;
 
+  if (!templateSelect) return;
+
+  const templateName = templateSelect.value;
   if (!templateName) return;
 
   // Load the template content
@@ -142,34 +158,32 @@ async function loadSingleTemplate(
   if (templateContent && (window as any).editor) {
     (window as any).editor.setValue(templateContent);
   }
+}
+
+// Initialize editor with default template
+const initTemplates = () => {
+  if (isInitialized) return;
+
+  const init = async () => {
+    const lang =
+      (document.getElementById("language") as HTMLSelectElement)?.value || "c";
+    await updateTemplates();
+    isInitialized = true;
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => init());
+  } else {
+    init();
+  }
 };
 
-// Initialize editor with default template when the document is loaded
-document.addEventListener("DOMContentLoaded", async function () {
-  // Load template list for current language
-  const lang = (document.getElementById("language") as HTMLSelectElement).value;
-  await (window as any).updateTemplates();
+// Expose functions globally for backward compatibility
+(window as any).updateTemplates = updateTemplates;
+(window as any).setTemplate = setTemplate;
 
-  // Set default template if available
-  const templateSelect = document.getElementById(
-    "template"
-  ) as HTMLSelectElement;
-  if (templateSelect.options.length > 0) {
-    // Try to select Hello World template if it exists
-    const helloWorldOption = Array.from(templateSelect.options).find(
-      (option) => option.value === "Hello World"
-    );
+// Export functions for module system
+export { updateTemplates, setTemplate, initTemplates };
 
-    if (helloWorldOption) {
-      templateSelect.value = "Hello World";
-      // Manually trigger the change event to update the custom selector UI
-      templateSelect.dispatchEvent(new Event("change", { bubbles: true }));
-    } else {
-      // Select first available template
-      templateSelect.selectedIndex = 0;
-    }
-
-    // Load and set the template
-    await (window as any).setTemplate();
-  }
-});
+// Self-initializing module
+document.addEventListener("DOMContentLoaded", () => initTemplates());

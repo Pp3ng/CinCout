@@ -2,31 +2,38 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 
 export default defineConfig({
-  // Base public path when served
+  // Base public path
   base: "./",
 
   // Build options
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    // Output single file
+    chunkSizeWarningLimit: 800, // Increase chunk size warning limit
+    // Output files
     rollupOptions: {
-      input: resolve(__dirname, "ts/index.ts"),
+      input: resolve(__dirname, "index.html"),
       output: {
-        // Output files
-        entryFileNames: "js/app.js",
-        assetFileNames: (assetInfo) => {
-          const name = assetInfo.name || "";
-          if (name.endsWith(".css")) {
-            return "css/app.css";
-          }
-          return "assets/[name].[ext]";
+        // chunk files
+        manualChunks: {
+          vendor: [
+            "codemirror",
+            "xterm",
+            "xterm-addon-fit",
+            "html2canvas",
+            "@fortawesome/fontawesome-free",
+          ],
+          editor: ["./ts/editor.ts", "./ts/themes.ts"],
+          handlers: ["./ts/handlers.ts", "./ts/websocket.ts"],
+          ui: ["./ts/layout.ts", "./ts/selector.ts", "./ts/shortcuts.ts"],
         },
-        // Force all code into one file
-        manualChunks: () => "app",
       },
     },
-    // Disable source maps for production
-    sourcemap: false,
+  },
+  // Resolve assets from node_modules
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "./"),
+    },
   },
 });

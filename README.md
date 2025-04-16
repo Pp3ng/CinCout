@@ -1,6 +1,13 @@
 # CinCout
 
-This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using TypeScript/Node.js for the backend and HTML/CSS/JavaScript for the frontend.
+<div align="center">
+This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using TypeScript/Node.js for the backend and HTML/CSS/TypeScript for the frontend. It provides a user-friendly interface with rich features.
+
+<img src="frontend/assets/cincout.png" alt="logo" width="400" />
+
+[![wakatime](https://wakatime.com/badge/user/018b0b2d-ab3f-4d4d-941c-c52b8275e363/project/8f5d92a6-21a5-4e54-9636-bc466e78d86f.svg)](https://wakatime.com/badge/user/018b0b2d-ab3f-4d4d-941c-c52b8275e363/project/8f5d92a6-21a5-4e54-9636-bc466e78d86f)
+
+---
 
 # Screenshots 📷
 
@@ -18,6 +25,8 @@ This is the architecture diagram of the project.Following frontend and backend i
 ![architecture](README/Architecture.png)
 
 ---
+
+</div>
 
 # Features ✨
 
@@ -116,71 +125,16 @@ docker-compose up --build -d
 
 ```
 
+#### or
+
+pull the pre-built image from Docker Hub:
+
+```bash
+docker pull pp3ng/cincout:latest
+docker run -d -p 9527:9527 pp3ng/cincout:latest
+```
+
 Then you can access the application at http://localhost:9527
-
-### Using Nginx as a Reverse Proxy (Optional)
-
-1. Install Nginx:
-
-```bash
-sudo apt update
-sudo apt install nginx
-```
-
-2. Create an Nginx configuration file:
-
-```bash
-sudo vi /etc/nginx/sites-available/CinCout
-```
-
-3. Add the following configuration:
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;  # Replace with your domain or server IP
-
-    location / {
-        proxy_pass http://localhost:9527;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-4. Enable the site and restart Nginx:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/CinCout /etc/nginx/sites-enabled/
-sudo nginx -t  # Test if the configuration is valid
-sudo systemctl restart nginx
-```
-
-5. Configure firewall to only allow Nginx and block direct access to port 9527:
-
-```bash
-sudo ufw allow 'Nginx Full'  # Allow HTTP and HTTPS through Nginx
-sudo ufw deny 9527           # Block direct access to the application port
-```
-
-6. Optional: Configure the application to only listen on localhost (127.0.0.1)
-
-For added security, you can modify the server.ts file to only listen on localhost instead of all interfaces:
-
-```typescript
-// Find the server.listen line in backend/src/server.ts
-// Change from:
-// server.listen(port, () => { ... });
-// To:
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
-```
-
-This ensures application is only accessible through Nginx and not directly via port 9527 from the internet, adding an extra layer of security to deployment.
 
 ---
 

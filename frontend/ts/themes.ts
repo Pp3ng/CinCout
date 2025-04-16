@@ -1,3 +1,13 @@
+// Import CodeMirror themes from npm packages
+import "codemirror/theme/nord.css";
+import "codemirror/theme/dracula.css";
+import "codemirror/theme/monokai.css";
+import "codemirror/theme/material.css";
+import "codemirror/theme/ayu-dark.css";
+import "codemirror/theme/gruvbox-dark.css";
+import "codemirror/theme/seti.css";
+import "codemirror/theme/the-matrix.css";
+
 // Define theme interfaces
 interface TerminalColors {
   red: string;
@@ -17,7 +27,6 @@ interface Theme {
   accent: string;
   accentHover: string;
   border: string;
-  cdnUrl?: string;
   terminal: TerminalColors;
 }
 
@@ -60,19 +69,19 @@ const themes: ThemeMap = {
   default: {
     name: "Default",
     bg: "#ffffff",
-    bgSecondary: "#f7f7f7",
-    text: "#000000",
-    textSecondary: "#999999",
-    accent: "#0066cc",
-    accentHover: "#0052a3",
-    border: "#d1d1d1",
+    bgSecondary: "#f5f7fa",
+    text: "#1a2233",
+    textSecondary: "#6e7a8a",
+    accent: "#1e88e5",
+    accentHover: "#1565c0",
+    border: "#e0e4e8",
     terminal: {
-      red: "#e01b1b",
-      green: "#18a018",
-      yellow: "#c7c329",
-      blue: "#0066cc",
-      magenta: "#cc00cc",
-      cyan: "#00aaaa",
+      red: "#e53935",
+      green: "#43a047",
+      yellow: "#ffb300",
+      blue: "#1e88e5",
+      magenta: "#d81b60",
+      cyan: "#00acc1",
     },
   },
   nord: {
@@ -80,19 +89,17 @@ const themes: ThemeMap = {
     bg: "#2e3440",
     bgSecondary: "#3b4252",
     text: "#eceff4",
-    textSecondary: "#d8dee9",
-    accent: "#5e81ac",
+    textSecondary: "#8fbcbb",
+    accent: "#88c0d0",
     accentHover: "#81a1c1",
     border: "#4c566a",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/nord.min.css",
     terminal: {
       red: "#bf616a",
       green: "#a3be8c",
       yellow: "#ebcb8b",
       blue: "#81a1c1",
       magenta: "#b48ead",
-      cyan: "#88c0d0",
+      cyan: "#8fbcbb",
     },
   },
   dracula: {
@@ -104,8 +111,6 @@ const themes: ThemeMap = {
     accent: "#bd93f9",
     accentHover: "#ff79c6",
     border: "#6272a4",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css",
     terminal: {
       red: "#ff5555",
       green: "#50fa7b",
@@ -122,10 +127,8 @@ const themes: ThemeMap = {
     text: "#f8f8f2",
     textSecondary: "#75715e",
     accent: "#a6e22e",
-    accentHover: "#f92672",
+    accentHover: "#fd971f",
     border: "#49483e",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css",
     terminal: {
       red: "#f92672",
       green: "#a6e22e",
@@ -144,8 +147,6 @@ const themes: ThemeMap = {
     accent: "#89ddff",
     accentHover: "#80cbc4",
     border: "#546e7a",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css",
     terminal: {
       red: "#f07178",
       green: "#c3e88d",
@@ -159,15 +160,13 @@ const themes: ThemeMap = {
     name: "Ayu Dark",
     bg: "#0a0e14",
     bgSecondary: "#1f2430",
-    text: "#e6e1cf",
-    textSecondary: "#b3b1ad",
+    text: "#f8f8f2",
+    textSecondary: "#7a88a3",
     accent: "#ffb454",
     accentHover: "#ff8f40",
     border: "#11151c",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/ayu-dark.min.css",
     terminal: {
-      red: "#f07178",
+      red: "#ff3333",
       green: "#c2d94c",
       yellow: "#ffb454",
       blue: "#59c2ff",
@@ -179,13 +178,11 @@ const themes: ThemeMap = {
     name: "Gruvbox Dark",
     bg: "#282828",
     bgSecondary: "#3c3836",
-    text: "#ebdbb2",
+    text: "#fbf1c7",
     textSecondary: "#a89984",
     accent: "#b8bb26",
     accentHover: "#98971a",
     border: "#504945",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/gruvbox-dark.min.css",
     terminal: {
       red: "#fb4934",
       green: "#b8bb26",
@@ -195,44 +192,40 @@ const themes: ThemeMap = {
       cyan: "#8ec07c",
     },
   },
+  "the-matrix": {
+    name: "The Matrix",
+    bg: "#060606",
+    bgSecondary: "#141414",
+    text: "#00FF9C",
+    textSecondary: "#257245",
+    accent: "#00BB41",
+    accentHover: "#39AA14",
+    border: "#004000",
+    terminal: {
+      red: "#FF0000",
+      green: "#00BB41",
+      yellow: "#FFDD00",
+      blue: "#00AAFF",
+      magenta: "#FF00FF",
+      cyan: "#00FFFF",
+    },
+  },
   seti: {
     name: "Seti",
     bg: "#151718",
     bgSecondary: "#1d1f20",
-    text: "#cfd2d1",
+    text: "#ffffff",
     textSecondary: "#6d8086",
     accent: "#55b5db",
     accentHover: "#55dbbe",
     border: "#0e1112",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/seti.min.css",
     terminal: {
-      red: "#cd3f45",
+      red: "#e15a60",
       green: "#9fca56",
       yellow: "#e6cd69",
       blue: "#55b5db",
       magenta: "#a074c4",
       cyan: "#55dbbe",
-    },
-  },
-  "panda-syntax": {
-    name: "Panda Syntax",
-    bg: "#292a2b",
-    bgSecondary: "#31353a",
-    text: "#e6e6e6",
-    textSecondary: "#9595a2",
-    accent: "#19f9d8",
-    accentHover: "#ffb86c",
-    border: "#42424c",
-    cdnUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/panda-syntax.min.css",
-    terminal: {
-      red: "#ff4b82",
-      green: "#19f9d8",
-      yellow: "#ffb86c",
-      blue: "#45a9f9",
-      magenta: "#ff75b5",
-      cyan: "#6fc1ff",
     },
   },
 };
@@ -241,7 +234,6 @@ const themes: ThemeMap = {
 class ThemeManager {
   private themeSelect: HTMLSelectElement | null = null;
   private currentTheme: string = "default";
-  private editorInstances: EditorInstance[] = []; // Track editor instances for theme updates
   private cssVarMap: { [key: string]: string } = {
     bg: "--bg-primary",
     bgSecondary: "--bg-secondary",
@@ -251,26 +243,6 @@ class ThemeManager {
     accentHover: "--accent-hover",
     border: "--border",
   };
-
-  // Register an editor instance for theme updates
-  public registerEditor(editorInstance: any, type: string = "code"): void {
-    if (editorInstance) {
-      this.editorInstances.push({ instance: editorInstance, type });
-    }
-  }
-
-  // Load theme CSS from CDN
-  private loadThemeCSS(theme: Theme): void {
-    if (!theme.cdnUrl) return;
-
-    const existingLink = document.querySelector(`link[href="${theme.cdnUrl}"]`);
-    if (!existingLink) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = theme.cdnUrl;
-      document.head.appendChild(link);
-    }
-  }
 
   // Get computed CSS variable value
   private getCssVar(varName: string, fallback: string = ""): string {
@@ -364,76 +336,29 @@ class ThemeManager {
     // Set CSS variables using the mapping
     Object.entries(this.cssVarMap).forEach(([themeKey, cssVar]) => {
       if (theme[themeKey as keyof Theme]) {
-        root.style.setProperty(cssVar, theme[themeKey as keyof Theme]);
+        root.style.setProperty(
+          cssVar,
+          theme[themeKey as keyof Theme] as string
+        );
       }
     });
-  }
 
-  // Update all editor instances with the theme
-  private updateEditors(themeName: string): void {
-    const isDefault = themeName === "default";
-
-    // Update registered editor instances
-    this.editorInstances.forEach(({ instance, type }) => {
-      instance.setOption("theme", isDefault ? "default" : themeName);
-    });
-
-    // Maintain backwards compatibility
-    if (
-      typeof (window as any).editor !== "undefined" &&
-      (window as any).editor
-    ) {
-      (window as any).editor.setOption(
-        "theme",
-        isDefault ? "default" : themeName
+    // Add RGB versions of colors for transparency effects
+    const hexToRgb = (hex: string): string => {
+      const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
+        theme.accent
       );
-    }
+      if (rgb) {
+        return `${parseInt(rgb[1], 16)}, ${parseInt(rgb[2], 16)}, ${parseInt(
+          rgb[3],
+          16
+        )}`;
+      }
+      return "30, 136, 229"; // Default blue fallback
+    };
 
-    if (
-      typeof (window as any).assemblyView !== "undefined" &&
-      (window as any).assemblyView
-    ) {
-      (window as any).assemblyView.setOption(
-        "theme",
-        isDefault ? "default" : themeName
-      );
-    }
-  }
-
-  // Apply theme to the application
-  public applyTheme(themeName: string): void {
-    const theme = themes[themeName];
-    if (!theme) return;
-
-    this.currentTheme = themeName;
-
-    // Add transition class for smooth theme changes
-    document.body.classList.add("theme-transitioning");
-
-    // Load theme CSS if available
-    if (theme.cdnUrl) {
-      this.loadThemeCSS(theme);
-    }
-
-    // Apply theme in next animation frame for performance
-    requestAnimationFrame(() => {
-      // Set CSS variables
-      this.setCssVariables(theme);
-
-      // Update editor themes
-      this.updateEditors(themeName);
-
-      // Update terminal theme with a slight delay to ensure CSS variables are updated
-      this.updateTerminal();
-
-      // Save preference to local storage
-      localStorage.setItem("preferred-theme", themeName);
-
-      // Remove transition class after animation
-      setTimeout(() => {
-        document.body.classList.remove("theme-transitioning");
-      }, 300);
-    });
+    root.style.setProperty("--accent-rgb", hexToRgb(theme.accent));
+    root.style.setProperty("--error-rgb", "255, 85, 85"); // Default error color
   }
 
   // Update terminal with current theme
@@ -445,11 +370,59 @@ class ThemeManager {
       setTimeout(() => {
         const terminalTheme = this.getTerminalTheme();
         (window as any).terminal.setOption("theme", terminalTheme);
-
-        // Force terminal to redraw
         (window as any).terminal.refresh(0, (window as any).terminal.rows - 1);
       }, 50);
     }
+  }
+
+  // Apply theme to the application
+  public applyTheme(themeName: string): void {
+    const theme = themes[themeName];
+    if (!theme) {
+      console.warn(`Theme ${themeName} not found`);
+      return;
+    }
+
+    this.currentTheme = themeName;
+
+    // Add transition class for smooth theme changes
+    document.body.classList.add("theme-transitioning");
+
+    // Apply theme in next animation frame for performance
+    requestAnimationFrame(() => {
+      // Set CSS variables
+      this.setCssVariables(theme);
+
+      // Update CodeMirror editor theme
+      if ((window as any).editor) {
+        (window as any).editor.setOption(
+          "theme",
+          themeName === "default" ? "default" : themeName
+        );
+      }
+      if ((window as any).assemblyView) {
+        (window as any).assemblyView.setOption(
+          "theme",
+          themeName === "default" ? "default" : themeName
+        );
+      }
+
+      // Update theme selector dropdown
+      if (this.themeSelect) {
+        this.themeSelect.value = themeName;
+      }
+
+      // Update terminal theme
+      this.updateTerminal();
+
+      // Save preference to local storage
+      localStorage.setItem("preferred-theme", themeName);
+
+      // Remove transition class after animation completes
+      setTimeout(() => {
+        document.body.classList.remove("theme-transitioning");
+      }, 300);
+    });
   }
 
   // initialize theme selector dropdown
@@ -473,28 +446,10 @@ class ThemeManager {
     // Set selected theme from storage or default
     const savedTheme = localStorage.getItem("preferred-theme") || "default";
     this.themeSelect.value = savedTheme;
-
-    // Apply the saved theme
-    this.applyTheme(savedTheme);
-
-    // Add change event listener
-    this.themeSelect.addEventListener("change", (e) => {
-      this.applyTheme((e.target as HTMLSelectElement).value);
-    });
-  }
-
-  // Preload all theme CSS files
-  private preloadThemeCSS(): void {
-    Object.values(themes).forEach((theme) => {
-      if (theme.cdnUrl) {
-        this.loadThemeCSS(theme);
-      }
-    });
   }
 
   // Initialize the theme manager
   public initialize(): void {
-    this.preloadThemeCSS();
     this.initializeThemeSelector();
 
     // Apply initial theme from storage or default
@@ -516,3 +471,6 @@ const themeManager = new ThemeManager();
 document.addEventListener("DOMContentLoaded", () => {
   themeManager.initialize();
 });
+
+// Export the themeManager for other modules
+export { themeManager, ThemeManager };

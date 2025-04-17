@@ -31,7 +31,7 @@ button {
   position: relative;
   overflow: hidden;
   min-width: 0;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-accent-sm);
 }
 
 /* Button variants */
@@ -58,13 +58,13 @@ button {
 /* Hover effects */
 button:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-accent-md);
   filter: brightness(1.1);
 }
 
 button:active {
   transform: translateY(1px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-accent-sm);
   filter: brightness(0.95);
 }
 
@@ -195,12 +195,12 @@ button:disabled {
 
 input:checked + .slider {
   background-color: var(--accent);
-  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
+  box-shadow: var(--shadow-accent-sm);
 }
 
 input:checked + .slider:before {
   transform: translateX(18px);
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 #toggle-shortcuts,
@@ -219,7 +219,7 @@ input:checked + .slider:before {
   gap: 8px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
@@ -227,11 +227,10 @@ input:checked + .slider:before {
 #learn-btn:hover,
 .dropdown-btn:hover {
   border-color: var(--accent);
-  background-color: rgba(14, 99, 156, 0.1);
+  background-color: rgba(var(--accent-rgb), 0.1);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-accent-md);
 }
-
 #toggle-shortcuts::before,
 #learn-btn::before,
 .dropdown-btn::before {
@@ -251,7 +250,6 @@ input:checked + .slider:before {
   pointer-events: none;
   border-radius: inherit;
 }
-
 /* Dropdown styles */
 .dropdown {
   position: relative;
@@ -283,7 +281,7 @@ input:checked + .slider:before {
   position: absolute;
   background-color: var(--bg-secondary);
   min-width: 220px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   border-radius: var(--radius-md);
   z-index: 101;
   margin-top: 5px;
@@ -354,7 +352,7 @@ input:checked + .slider:before {
 .dropdown-content a:hover {
   background-color: var(--bg-hover);
   transform: translateY(-3px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-accent-sm);
 }
 
 .dropdown-content a:active {

@@ -8,7 +8,7 @@
   background: var(--bg-secondary);
   padding: 13.5px 18px;
   border-radius: 7px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   gap: 13.5px;
 }
 
@@ -35,7 +35,7 @@ h1 {
   font-size: 1.6em;
   margin: 0;
   letter-spacing: 0.4px;
-  text-shadow: 0 1px 5px rgba(var(--accent-rgb), 0.2);
+  text-shadow: var(--shadow-accent-sm);
   animation: gradient-shift 8s ease-in-out infinite;
   white-space: nowrap;
   line-height: 1;
@@ -101,7 +101,7 @@ h1 {
   padding: 13.5px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   height: 100%;
   max-height: calc(100vh - 126px);
   overflow: hidden;

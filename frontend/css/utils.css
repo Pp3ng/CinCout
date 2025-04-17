@@ -60,36 +60,57 @@
 .error-output {
   background-color: rgba(255, 85, 85, 0.1);
   border-left: 3px solid #ff5555;
+  box-shadow: var(--shadow-error-sm);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.error-output:hover {
+  box-shadow: var(--shadow-error-md);
+  background-color: rgba(255, 85, 85, 0.15);
 }
 
 .style-check-output {
   background-color: var(--bg-secondary);
   border-left: 3px solid var(--accent);
+  box-shadow: var(--shadow-accent-sm);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.style-check-output:hover {
+  box-shadow: var(--shadow-accent-md);
+  background-color: rgba(var(--accent-rgb), 0.05);
 }
 
 /* Line and column number highlighting */
 .line-number {
   color: #bd93f9;
   font-weight: bold;
+  text-shadow: 0 0 2px rgba(189, 147, 249, 0.3);
 }
 
 .column-number {
   color: #8be9fd;
   font-weight: bold;
+  text-shadow: 0 0 2px rgba(139, 233, 253, 0.3);
 }
 
 /* Highlighting for specific types of messages */
 .error-highlight {
   color: #ff5555;
   font-weight: bold;
+  text-shadow: 0 0 3px rgba(255, 85, 85, 0.3);
 }
 
 .warning-highlight {
   color: #f1fa8c;
   font-weight: bold;
+  text-shadow: 0 0 3px rgba(241, 250, 140, 0.3);
 }
 
 .note-highlight {
   color: #8be9fd;
   font-style: italic;
+  text-shadow: 0 0 2px rgba(139, 233, 253, 0.25);
 }

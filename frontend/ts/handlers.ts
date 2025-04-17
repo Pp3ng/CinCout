@@ -1,5 +1,5 @@
 // Import utility functions
-import { debounce, takeCodeSnap } from "./utils";
+import { debounce, takeCodeSnap, showNotification } from "./utils";
 import { terminalManager } from "./terminal";
 
 // Define WebSocket-related interfaces
@@ -466,9 +466,26 @@ const CinCoutUI = (function () {
               (window as any).editor.setCursor(cursor);
               (window as any).editor.scrollTo(scrollInfo.left, scrollInfo.top);
               (window as any).editor.refresh();
+
+              // Get the editor panel dimensions for centered notification
+              const editorPanel = document.querySelector(".editor-panel");
+              let position = { top: "50%", left: "50%" };
+
+              // Show success notification in the center of the editor panel
+              showNotification(
+                "success",
+                "Code formatted successfully",
+                2000,
+                position
+              );
             })
             .catch((error) => {
               console.error("Format error:", error);
+              // Show error notification in the center of the editor panel
+              showNotification("error", "Failed to format code", 3000, {
+                top: "50%",
+                left: "50%",
+              });
             });
         }, 300)
       ); // 300ms debounce

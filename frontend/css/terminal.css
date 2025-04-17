@@ -45,25 +45,31 @@
   color: var(--bg-primary) !important;
   animation: cursor-blink 1s step-end infinite !important;
   opacity: 1;
+  box-shadow: var(--shadow-accent-md) !important;
 }
 
 .xterm-cursor-outline {
   border-color: var(--accent) !important;
+  box-shadow: var(--shadow-accent-sm) !important;
 }
 
 /* Terminal text selection color */
 .xterm-selection {
   background-color: var(--accent) !important;
   opacity: 0.3;
+  box-shadow: var(--shadow-accent-sm) !important;
 }
 
 @keyframes cursor-blink {
   0%,
   100% {
     opacity: 1;
+    box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5),
+      0 0 2px rgba(var(--accent-rgb), 0.8) !important;
   }
   50% {
     opacity: 0;
+    box-shadow: none !important;
   }
 }
 

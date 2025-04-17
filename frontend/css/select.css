@@ -17,6 +17,8 @@ select {
   white-space: nowrap;
   overflow: hidden;
   position: relative;
+  font-family: system-ui, -apple-system, sans-serif;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
 /* Add arrow element for animation - updated to match buttons */
@@ -32,6 +34,7 @@ select {
   transform: translateY(-70%) rotate(45deg);
   pointer-events: none;
   transition: all var(--transition-normal);
+  box-shadow: 0px 0px 1px rgba(var(--accent-rgb), 0.3);
 }
 
 /* Add arrow rotation and bounce animation on hover - match buttons style */
@@ -43,6 +46,9 @@ select {
     0.64,
     1
   ); /* Bouncy easing */
+  border-right: 1.5px solid var(--accent);
+  border-bottom: 1.5px solid var(--accent);
+  box-shadow: 0px 0px 2px rgba(var(--accent-rgb), 0.5);
 }
 
 /* Custom dropdown that appears on hover */
@@ -58,7 +64,7 @@ select {
   border: 2px solid var(--accent);
   border-radius: var(--radius-sm);
   z-index: 1000;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-accent-md);
   display: none;
   animation: fadeIn var(--transition-normal);
 }
@@ -79,17 +85,26 @@ select {
 .custom-option {
   padding: 8px 12px;
   cursor: pointer;
-  transition: background 0.2s;
+  border-left: 0px solid var(--accent);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
 .custom-option:hover {
   background: var(--accent);
   color: white;
+  border-left: 3px solid var(--accent);
+  padding-left: 9px;
+  text-shadow: 0 1px 1px rgba(var(--accent-rgb), 0.1);
+  box-shadow: inset 0 0 5px rgba(var(--accent-rgb), 0.05);
 }
 
 .custom-option.selected {
-  background-color: rgba(var(--accent-rgb, 14, 99, 156), 0.1);
+  background-color: rgba(var(--accent-rgb), 0.1);
   font-weight: bold;
+  border-left: 3px solid var(--accent);
+  padding-left: 9px;
+  color: var(--accent);
+  text-shadow: 0 1px 1px rgba(var(--accent-rgb), 0.1);
 }
 
 /* Container for hover behavior */
@@ -110,24 +125,33 @@ select {
 }
 
 /* Specific widths for different select types */
+
+select#language {
+  width: 76px;
+}
+
+select#compiler {
+  width: 99px;
+}
+
 select#template {
-  width: 162px;
+  width: 155px;
 }
 
 select#optimization {
-  width: 144px;
+  width: 120px;
 }
 
 select:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-hover);
+  box-shadow: var(--shadow-accent-sm);
   animation: selectHover var(--transition-normal);
 }
 
 select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-accent-sm);
 }
 
 select option {

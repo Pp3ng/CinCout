@@ -22,15 +22,20 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 /**
- * Display a notification message with various types
+ * Display a notification message with various types and customizable position
  * @param {string} type - Notification type: 'success', 'error', 'warning', 'info'
  * @param {string} message - Message to display
  * @param {number} duration - Duration to show notification (ms), default 3000ms
+ * @param {object} position - Position of notification, default {top: '20px', right: '20px'}
  */
 export function showNotification(
   type: "success" | "error" | "warning" | "info",
   message: string,
-  duration: number = 3000
+  duration: number = 3000,
+  position: { top?: string; right?: string; bottom?: string; left?: string } = {
+    top: "20px",
+    right: "20px",
+  }
 ): void {
   const notification = document.createElement("div");
   notification.className = "cincout-notification";
@@ -60,16 +65,46 @@ export function showNotification(
   }
 
   notification.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-  notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: ${bgColor}; color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;`;
 
-  document.body.appendChild(notification);
+  // Check if we're centering in the editor panel
+  const isCentered = position.top === "50%" && position.left === "50%";
+
+  // Build position CSS string
+  let positionCSS = "position: fixed; ";
+  if (position.top) positionCSS += `top: ${position.top}; `;
+  if (position.right) positionCSS += `right: ${position.right}; `;
+  if (position.bottom) positionCSS += `bottom: ${position.bottom}; `;
+  if (position.left) positionCSS += `left: ${position.left}; `;
+
+  // Add transform for centered positioning if needed
+  if (isCentered) {
+    positionCSS += "transform: translate(-50%, -50%); ";
+  }
+
+  notification.style.cssText = `${positionCSS} background: ${bgColor}; color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;`;
+
+  // For centered notifications, try to append to editor panel first
+  if (isCentered) {
+    const editorPanel = document.querySelector(".editor-panel");
+    if (editorPanel) {
+      // For editor panel centering, make the position relative to the editor panel
+      notification.style.position = "absolute";
+      editorPanel.appendChild(notification);
+    } else {
+      // Fallback to body if editor panel not found
+      document.body.appendChild(notification);
+    }
+  } else {
+    // Normal fixed positioning relative to viewport
+    document.body.appendChild(notification);
+  }
 
   // Notification disappears after a set time
   setTimeout(() => {
     notification.style.opacity = "0";
     setTimeout(() => {
       if (notification.parentNode) {
-        document.body.removeChild(notification);
+        notification.parentNode.removeChild(notification);
       }
     }, 500);
   }, duration);

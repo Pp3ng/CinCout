@@ -73,7 +73,7 @@ router.post(
       }
 
       if (!hasOutput) {
-        res.send("No issues found.");
+        res.send("<div class='output-block'><span style='color: #50fa7b; font-weight: bold;'><i class='fas fa-check-circle'></i> No issues found. Your code looks good!</span></div>");
       } else {
         // Apply formatting to style check output
         const formattedOutput = formatOutput(output, "style");

@@ -9,7 +9,6 @@
 
 /* Base styles */
 :root {
-  /* Additional design system variables */
   --radius-sm: 6px;
   --radius-md: 9px;
   --radius-lg: 20px;
@@ -17,6 +16,13 @@
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.15);
+
+  --shadow-accent-sm: 0 0 3px rgba(var(--accent-rgb), 0.25),
+    0 1px 2px rgba(var(--accent-rgb), 0.15);
+  --shadow-accent-md: 0 0 8px rgba(var(--accent-rgb), 0.3),
+    0 2px 4px rgba(var(--accent-rgb), 0.2);
+  --shadow-accent-lg: 0 0 15px rgba(var(--accent-rgb), 0.35),
+    0 4px 8px rgba(var(--accent-rgb), 0.25);
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;

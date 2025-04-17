@@ -13,9 +13,7 @@ This project is a web IDE (integrated development environment) for _C/C++_ langu
 
 ![sample](README/sample.png)
 
-# Try it (no guarantee always available due to myself's server)
-
-http://39.105.45.170
+# embark it live at [CinCout](https://cincout.fly.dev/)
 
 ---
 

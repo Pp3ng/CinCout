@@ -52,13 +52,9 @@ rectangle "Backend (Server)" {
     component "PTY Service" as PTYService
   }
   
-  package "Utilities" {
-    component "Helpers" as Utils
-    component "Session Manager" as SessionMgr
-  }
-  
-  component "Templates Repository" as Templates
+  component "Session Manager" as SessionMgr
   component "Temp File Manager" as TempMgr
+  component "WebSocket Handler" as WSHandler
 }
 
 ' Define External Tools layer
@@ -71,14 +67,9 @@ rectangle "External Tools" {
   component "Node-PTY" as NodePTY
 }
 
-' Define Deployment layer
-rectangle "Deployment" {
-  component "Docker" as Docker
-  component "Nginx" as Nginx
-}
-
 database "Temporary Files" as TempFiles
 database "Active Sessions" as Sessions
+database "Code Templates" as Templates
 
 ' Define relationships
 
@@ -93,23 +84,28 @@ User --> FormatAction : Clicks
 User --> StyleCheckAction : Clicks
 User --> AssemblyAction : Clicks
 
-' Frontend actions to API calls
-CompileAction --> WSClient : Triggers
-MemcheckAction --> CompileAPI : HTTP Request
-FormatAction --> FormatAPI : HTTP Request
-StyleCheckAction --> StyleAPI : HTTP Request
-AssemblyAction --> CompileAPI : HTTP Request
+' Frontend actions to backend communication - CORRECTED
+CompileAction --> WSClient : Sends code via WebSocket
+AssemblyAction --> WSClient : Sends code via WebSocket
+MemcheckAction --> Express : HTTP Request
+FormatAction --> Express : HTTP Request
+StyleCheckAction --> Express : HTTP Request
 
 ' Frontend to Backend communication
-WSClient <--> WSServer : WebSocket connection
-Browser <--> Express : HTTP/RESTful API
+WSClient <--> WSServer : WebSocket connection for compilation & execution
+Browser <--> Express : HTTP/RESTful API for other operations
+Browser --> TemplatesAPI : Requests templates
 
-' API routes to Services calls
-CompileAPI --> CompileService : Invokes
+' WebSocket handler to compilation service
+WSServer --> WSHandler : Routes messages
+WSHandler --> CompileService : Invokes for compilation
+WSHandler --> PTYService : For interactive execution
+
+' Express API routes to Services calls
 MemcheckAPI --> MemcheckService : Invokes
 FormatAPI --> FormatService : Invokes
 StyleAPI --> StyleService : Invokes
-CompileAPI --> PTYService : For interactive execution
+TemplatesAPI --> Templates : Retrieves
 
 ' Services to External Tools calls
 CompileService --> GCC : Executes
@@ -128,25 +124,21 @@ TempMgr --> TempFiles : Manages
 SessionMgr --> Sessions : Tracks
 PTYService --> SessionMgr : Uses
 
-' Results return to frontend
-CompileService --> CompileAPI : Returns results
-MemcheckService --> MemcheckAPI : Returns results
-FormatService --> FormatAPI : Returns results
-StyleService --> StyleAPI : Returns results
+' Results return to frontend - CORRECTED
+WSHandler --> WSServer : Sends compilation results
+WSServer --> WSClient : Streams compilation results
+WSClient --> Display : Updates UI for compilation
+WSClient --> Terminal : Streams program output
 
-CompileAPI --> Display : Updates UI
-MemcheckAPI --> Display : Updates UI
-FormatAPI --> Editor : Updates code
-StyleAPI --> Display : Updates UI
+MemcheckAPI --> Display : Returns HTTP response with results
+FormatAPI --> Editor : Returns HTTP response with formatted code
+StyleAPI --> Display : Returns HTTP response with style check results
 
 ' Interactive terminal
-WSServer --> Terminal : Streams output
-Terminal --> WSServer : Sends input
-Browser <--> Terminal : Interactive I/O
-
-' Deployment related
-Nginx --> Express : Reverse proxy
-Docker --> Express : Contains
-Docker --> WSServer : Contains
+Terminal --> WSClient : Sends input
+WSClient --> WSServer : Transmits input
+WSServer --> WSHandler : Routes input
+WSHandler --> PTYService : Processes input
+PTYService --> NodePTY : Sends to process
 
 @enduml

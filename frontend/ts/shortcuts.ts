@@ -45,7 +45,6 @@ import {
   // Define DOM element ID constants for easier reference
   const DOM_IDS = {
     COMPILE: "compile",
-    CLEAR: "clear",
     CLOSE_OUTPUT: "closeOutput",
     VIEW_ASSEMBLY: "viewAssembly",
     FORMAT: "format",
@@ -72,11 +71,6 @@ import {
         action: () => triggerButton(DOM_IDS.COMPILE),
         description: "Compile and run",
         displayKeys: IS_MAC ? ["⌘", "return"] : ["Ctrl", "Enter"],
-      },
-      [`${CMD_KEY}+l`]: {
-        action: () => triggerButton(DOM_IDS.CLEAR),
-        description: "Clear output",
-        displayKeys: IS_MAC ? ["⌘", "L"] : ["Ctrl", "L"],
       },
       [`${CMD_KEY}+s`]: {
         action: saveCodeToFile,

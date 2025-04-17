@@ -3,9 +3,9 @@
 This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using TypeScript/Node.js for the backend and HTML/CSS/TypeScript for the frontend. It provides a user-friendly interface with rich features.
 
 <div align="center">
-<img src="frontend/assets/cincout.png" alt="logo" width="400" />
+<img src="frontend/assets/cincout.png" alt="logo" width="200" />
 
-[![wakatime](https://wakatime.com/badge/user/018b0b2d-ab3f-4d4d-941c-c52b8275e363/project/8f5d92a6-21a5-4e54-9636-bc466e78d86f.svg)](https://wakatime.com/badge/user/018b0b2d-ab3f-4d4d-941c-c52b8275e363/project/8f5d92a6-21a5-4e54-9636-bc466e78d86f)
+[![wakatime](https://wakatime.com/badge/github/Pp3ng/CinCout.svg)](https://wakatime.com/badge/github/Pp3ng/CinCout)
 
 </div>
 
@@ -26,26 +26,23 @@ This is the architecture diagram of the project.Following frontend and backend i
 
 # Features ✨
 
-| Category          | Feature                 | Description                                  | Implementation                        |
-| ----------------- | ----------------------- | -------------------------------------------- | ------------------------------------- |
-| **Code Editor**   | Syntax Highlighting     | Language-specific highlighting for C/C++     | `frontend/ts/editor.ts`               |
-|                   | Code Folding            | Collapsible code blocks and sections         | `frontend/ts/editor.ts`               |
-|                   | Vim Mode                | Optional Vim keybindings for editor          | `frontend/ts/editor.ts`               |
-|                   | Code Snapshot           | Save code as image with syntax highlighting  | `frontend/ts/handlers.ts`             |
-| **Compilation**   | Multiple Compilers      | Support for GCC and Clang                    | `backend/src/routes/compile.ts`       |
-|                   | Optimization Levels     | Various optimization flags (-O0 to -O3, -Os) | `backend/src/routes/compile.ts`       |
-|                   | Assembly Generation     | View generated assembly code                 | `backend/src/routes/compile.ts`       |
-| **Execution**     | Real-time Output        | Live program output via terminal             | `frontend/ts/handlers.ts`             |
-|                   | Interactive Terminal    | PTY-based terminal for interactive programs  | `backend/src/utils/sessionManager.ts` |
-|                   | WebSocket Communication | Bidirectional real-time communication        | `frontend/ts/websocket.ts`            |
-|                   | Session Management      | Isolated execution environments per session  | `backend/src/utils/sessionManager.ts` |
-| **Code Analysis** | Style Checking          | Static code analysis with cppcheck           | `backend/src/routes/styleCheck.ts`    |
-|                   | Memory Analysis         | Memory leak detection with Valgrind          | `backend/src/routes/memcheck.ts`      |
-|                   | Code Formatting         | Automatic code formatting with clang-format  | `backend/src/routes/format.ts`        |
-| **UI/UX**         | Multiple Themes         | Various editor and terminal color schemes    | `frontend/ts/themes.ts`               |
-|                   | Responsive Design       | Mobile-friendly interface and layout         | `frontend/css/responsive.css`         |
-|                   | Tab System              | Tabbed interface for outputs and assembly    | `frontend/css/layout.css`             |
-|                   | Keyboard Shortcuts      | Customized shortcuts for common actions      | `frontend/ts/shortcuts.ts`            |
+| Category          | Feature                 | Description                                  |
+| ----------------- | ----------------------- | -------------------------------------------- |
+| **Code Editor**   | Syntax Highlighting     | Language-specific highlighting for C/C++     |
+|                   | Code Folding            | Collapsible code blocks and sections         |
+|                   | Vim Mode                | Optional Vim keybindings for editor          |
+|                   | Code Snapshot           | Save code as image with syntax highlighting  |
+| **Compilation**   | Multiple Compilers      | Support for GCC and Clang                    |
+|                   | Optimization Levels     | Various optimization flags (-O0 to -O3, -Os) |
+|                   | Assembly Generation     | View generated assembly code                 |
+| **Execution**     | Real-time program       | PTY-based terminal for interactive programs  |
+|                   | WebSocket Communication | Bidirectional real-time communication        |
+| **Code Analysis** | Style Checking          | Static code analysis with cppcheck           |
+|                   | Memory Analysis         | Memory leak detection with Valgrind          |
+|                   | Code Formatting         | Automatic code formatting with clang-format  |
+| **UI/UX**         | Multiple Themes         | Various editor and terminal color schemes    |
+|                   | Responsive Design       | Mobile-friendly interface and layout         |
+|                   | Keyboard Shortcuts      | Customized shortcuts for common actions      |
 
 ---
 
@@ -54,16 +51,15 @@ This is the architecture diagram of the project.Following frontend and backend i
 | Action           | Windows/Linux | macOS      |
 | ---------------- | ------------- | ---------- |
 | Compile and Run  | Ctrl + Enter  | ⌘ + Return |
-| Clear Output     | Ctrl + L      | ⌘ + L      |
 | Save Code        | Ctrl + S      | ⌘ + S      |
 | Code Snapshot    | Ctrl + P      | ⌘ + P      |
 | Open Code File   | Ctrl + O      | ⌘ + O      |
 | Toggle Code Fold | Ctrl + K      | ⌘ + K      |
-| Close Output     | ESC           | ESC        |
 | View Assembly    | Alt + 1       | ^ + 1      |
 | Format Code      | Alt + 2       | ^ + 2      |
 | Style Check      | Alt + 3       | ^ + 3      |
 | Memory Check     | Alt + 4       | ^ + 4      |
+| Close Output     | ESC           | ESC        |
 
 ---
 
@@ -83,12 +79,10 @@ sudo apt install nodejs npm gcc g++ clang clang-format valgrind cppcheck
 
 1. Clone the repository and install dependencies:
 
-```bash
+````bash
 # Clone the repository
 git clone https://github.com/Pp3ng/CinCout.git
-```
-
-2. Build and start the application:
+``` 2. Build and start the application:
 
 ```bash
 # Install dependencies and build both frontend and backend
@@ -97,7 +91,7 @@ npm run build
 
 # Start the server
 npm start
-```
+````
 
 3. Access the application at http://localhost:9527
 

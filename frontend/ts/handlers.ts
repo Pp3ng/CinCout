@@ -63,7 +63,6 @@ const CinCoutUI = (function () {
     format: document.getElementById("format"),
     viewAssembly: document.getElementById("viewAssembly"),
     styleCheck: document.getElementById("styleCheck"),
-    clear: document.getElementById("clear"),
     themeSelect: document.getElementById("theme-select"),
     outputPanel: document.getElementById("outputPanel"),
     closeOutput: document.getElementById("closeOutput"),
@@ -541,18 +540,6 @@ const CinCoutUI = (function () {
             });
         }, 300)
       ); // 300ms debounce
-    }
-
-    // Clear button click handler
-    if (domElements.clear) {
-      domElements.clear.addEventListener("click", function () {
-        if (domElements.output) {
-          domElements.output.innerHTML = `<pre class="default-output">// Program output will appear here</pre>`;
-        }
-        if (window.assemblyView) {
-          window.assemblyView.setValue("");
-        }
-      });
     }
 
     // Initialize theme selection

@@ -164,6 +164,9 @@
       if (panelState.activeTab === "output") {
         elements.outputTab.classList.add("active");
         elements.assemblyTab.classList.remove("active");
+        if (elements.outputContent) {
+          elements.outputContent.innerHTML = "";
+        }
       } else {
         elements.assemblyTab.classList.add("active");
         elements.outputTab.classList.remove("active");

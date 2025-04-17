@@ -94,19 +94,23 @@ button[title] {
 
 /* Special button styles */
 button#compile {
-  background: linear-gradient(45deg, #006633, #00b359);
+  background: linear-gradient(45deg, #4caf50, #66bb6a);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.5);
 }
 
 button#compile:hover {
-  background: linear-gradient(45deg, #007a3d, #00cc66);
+  background: linear-gradient(45deg, #66bb6a, #81c784);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.7);
 }
 
-button#clear {
+button#closeOutput {
   background: linear-gradient(45deg, #993333, #cc4d4d);
+  box-shadow: 0 2px 8px rgba(153, 51, 51, 0.5);
 }
 
-button#clear:hover {
+button#closeOutput:hover {
   background: linear-gradient(45deg, #b33c3c, #e65c5c);
+  box-shadow: 0 4px 12px rgba(153, 51, 51, 0.7);
 }
 
 /* Loading animation for buttons */

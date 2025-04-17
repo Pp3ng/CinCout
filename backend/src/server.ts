@@ -8,7 +8,6 @@ import http from "http";
 import { WebSocketServer } from "ws";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
-import fs from "fs";
 import morgan from "morgan";
 import helmet from "helmet";
 
@@ -40,35 +39,14 @@ if (cluster.isPrimary) {
 } else {
   // Worker processes start here
   const app = express();
-  // Create logs directory
-  const logDir = path.join(__dirname, "../logs");
-  if (!fs.existsSync(logDir)) {
-    fs.mkdirSync(logDir, { recursive: true });
-  }
 
-  // API request logging middleware
-  const accessLogStream = fs.createWriteStream(
-    path.join(logDir, "access.log"),
-    { flags: "a" }
-  );
-
-  // Custom log format including session source
-  morgan.token("session-source", (req: Request) => {
-    return req.headers["referer"] || req.headers["origin"] || "direct";
-  });
-
-  // Apply logging middleware - removed request-body from logging
+  // Custom log format
   app.use(
     morgan(
-      ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :session-source {}',
-      {
-        stream: accessLogStream,
-      }
+      ':remote-addr - [:date[clf]] ":method :url HTTP/:http-version" ' +
+        ':status :res[content-length] ":referrer" ":user-agent"'
     )
   );
-
-  // Console output simplified logs
-  app.use(morgan(":method :url :status :response-time ms - :session-source"));
 
   app.use(compression()); // Response compression
   app.use(cors());
@@ -93,9 +71,7 @@ if (cluster.isPrimary) {
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     message: "Too many requests, please try again later.",
     handler: (req: Request, res: Response) => {
-      morgan(`Rate limit exceeded for IP: ${req.ip}`, {
-        stream: accessLogStream,
-      })(req, res, () => {});
+      morgan(`Rate limit exceeded for IP: ${req.ip}`)(req, res, () => {});
       res.status(429).json({ error: "Rate limit exceeded" });
     },
   });

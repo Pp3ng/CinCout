@@ -63,6 +63,15 @@ This is the architecture diagram of the project.Following frontend and backend i
 
 ---
 
+# Future improvements 🚀
+
+- [x] Lerverage `node-pty` and `xterm.js` for terminal emulation
+- [ ] Use `React` for the frontend instead of `Vanilla TypeScript`
+- [ ] Implement `clang-tidy` for code analysis
+- [ ] Add more themes and customization options
+- [ ] Integrate `gdb` `lldb` for debugging
+- [ ] More modern `UI/UX` design
+
 # Setup Guide
 
 ## Prerequisites

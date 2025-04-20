@@ -51,10 +51,10 @@ export interface ValidationResult {
  * @param {boolean} useErrorField - Use 'error' property instead of 'message' in result
  * @returns {ValidationResult} Validation result
  */
-export function validateCode(
+export const validateCode = (
   code: string,
   useErrorField: boolean = false
-): ValidationResult {
+): ValidationResult => {
   if (!code || code.trim() === "") {
     return useErrorField
       ? { valid: false, error: "Error: No code provided" }
@@ -78,7 +78,7 @@ export function validateCode(
   }
 
   return { valid: true };
-}
+};
 
 /**
  * Environment for code compilation
@@ -95,9 +95,9 @@ export interface CompilationEnvironment {
  * @param {string} prefix - Prefix for temp directory name
  * @returns {DirResult} Temporary directory object
  */
-export function createTempDirectory(prefix: string = "CinCout-"): DirResult {
+export const createTempDirectory = (prefix: string = "CinCout-"): DirResult => {
   return tmp.dirSync({ prefix, unsafeCleanup: true });
-}
+};
 
 /**
  * Writes code to a file in the specified directory
@@ -106,24 +106,24 @@ export function createTempDirectory(prefix: string = "CinCout-"): DirResult {
  * @param {string} code - Code content
  * @returns {string} Full path to created file
  */
-export function writeCodeToFile(
+export const writeCodeToFile = (
   dirPath: string,
   filename: string,
   code: string
-): string {
+): string => {
   const filePath = path.join(dirPath, filename);
   fs.writeFileSync(filePath, code);
   return filePath;
-}
+};
 
 /**
  * Creates a standard compilation environment with necessary files
  * @param {string} lang - Programming language (cpp or c)
  * @returns {CompilationEnvironment} Object with file paths
  */
-export function createCompilationEnvironment(
+export const createCompilationEnvironment = (
   lang: string
-): CompilationEnvironment {
+): CompilationEnvironment => {
   const tmpDir = createTempDirectory();
   const sourceExtension = lang === "cpp" ? "cpp" : "c";
   const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
@@ -131,7 +131,7 @@ export function createCompilationEnvironment(
   const asmFile = path.join(tmpDir.name, "program.s");
 
   return { tmpDir, sourceFile, outputFile, asmFile };
-}
+};
 
 /**
  * Executes a command and returns a promise
@@ -139,13 +139,13 @@ export function createCompilationEnvironment(
  * @param {object} options - Execution options
  * @returns {Promise<ExecResult>} Promise resolving with stdout or rejecting with error
  */
-export function executeCommand(
+export const executeCommand = (
   command: string,
   options: ExecOptions & {
     shell?: boolean | string;
     failOnError?: boolean;
   } = {}
-): Promise<ExecResult> {
+): Promise<ExecResult> => {
   return new Promise((resolve, reject) => {
     exec(command, options, (error, stdout, stderr) => {
       if (error && options.failOnError !== false) {
@@ -155,19 +155,19 @@ export function executeCommand(
       resolve({ stdout, stderr });
     });
   });
-}
+};
 
 /**
  * Clean file paths from output
  * @param {string} output - Raw output to sanitize
  * @returns {string} Sanitized output
  */
-export function sanitizeOutput(output: string): string {
+export const sanitizeOutput = (output: string): string => {
   if (!output) {
     return "";
   }
   return output.replace(/[^:\s]+\.(cpp|c|h|hpp):/g, "");
-}
+};
 
 /**
  * Determines compiler command based on language and compiler selection
@@ -175,7 +175,7 @@ export function sanitizeOutput(output: string): string {
  * @param {string} compiler - Compiler selection
  * @returns {string} Compiler command
  */
-export function getCompilerCommand(lang: string, compiler?: string): string {
+export const getCompilerCommand = (lang: string, compiler?: string): string => {
   return lang === "cpp"
     ? compiler === "clang"
       ? "clang++"
@@ -183,25 +183,25 @@ export function getCompilerCommand(lang: string, compiler?: string): string {
     : compiler === "clang"
     ? "clang"
     : "gcc";
-}
+};
 
 /**
  * Gets standard option based on language
  * @param {string} lang - Programming language (cpp or c)
  * @returns {string} Standard option
  */
-export function getStandardOption(lang: string): string {
+export const getStandardOption = (lang: string): string => {
   return lang === "cpp" ? "-std=c++20" : "-std=c11";
-}
+};
 
 /**
  * Generic async route handler to reduce boilerplate and standardize error handling
  * @param fn - The route handler function to wrap
  * @returns A middleware function that handles errors
  */
-export function asyncRouteHandler(
+export const asyncRouteHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) {
+) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       await fn(req, res, next);
@@ -214,7 +214,7 @@ export function asyncRouteHandler(
       });
     }
   };
-}
+};
 
 /**
  * Format output for display in frontend with HTML markup
@@ -222,10 +222,10 @@ export function asyncRouteHandler(
  * @param {string} outputType - Type of output (default, memcheck, style, etc.)
  * @returns {string} Formatted HTML output
  */
-export function formatOutput(
+export const formatOutput = (
   text: string,
   outputType: string = "default"
-): string {
+): string => {
   if (!text) return "";
 
   // Only apply HTML sanitization and formatting for output types that need it
@@ -315,4 +315,4 @@ export function formatOutput(
   }
 
   return text;
-}
+};

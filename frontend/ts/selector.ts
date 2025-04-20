@@ -1,5 +1,5 @@
 // Use Immediately Invoked Function Expression (IIFE) to create closure and avoid global namespace pollution
-(function () {
+(() => {
   // Define interfaces and types
   interface SelectOptions {
     container: HTMLElement;
@@ -20,22 +20,21 @@
     }
 
     // Initialize all selectors and set up listeners
-    private initialize(): void {
+    private initialize = (): void => {
       this.initializeSelectDropdowns();
       this.setupOptionChangeObservers();
-    }
+    };
 
     // Initialize all select elements
-    private initializeSelectDropdowns(): void {
+    private initializeSelectDropdowns = (): void => {
       const selects = document.querySelectorAll("select");
       selects.forEach((select) => {
         this.enhanceSelect(select as HTMLSelectElement);
       });
-    }
+    };
 
     // Enhance a single select element
-
-    private enhanceSelect(select: HTMLSelectElement): void {
+    private enhanceSelect = (select: HTMLSelectElement): void => {
       // Skip if already enhanced
       if (select.parentNode?.classList.contains("custom-select-container")) {
         return;
@@ -71,10 +70,10 @@
       setTimeout(() => {
         this.updateSelectedOption(select);
       }, 0);
-    }
+    };
 
     // Set up event listeners for select element
-    private setupEventListeners(select: HTMLSelectElement): void {
+    private setupEventListeners = (select: HTMLSelectElement): void => {
       const options = this.selectMap.get(select);
       if (!options) return;
 
@@ -98,10 +97,10 @@
       container.addEventListener("mouseenter", () => {
         optionsContainer.style.display = "block";
       });
-    }
+    };
 
     // Update the selected option
-    private updateSelectedOption(select: HTMLSelectElement): void {
+    private updateSelectedOption = (select: HTMLSelectElement): void => {
       const options = this.selectMap.get(select);
       if (!options) return;
 
@@ -117,10 +116,10 @@
             opt.classList.remove("selected");
           }
         });
-    }
+    };
 
     // Rebuild custom option list
-    private rebuildCustomOptions(select: HTMLSelectElement): void {
+    private rebuildCustomOptions = (select: HTMLSelectElement): void => {
       const options = this.selectMap.get(select);
       if (!options) return;
 
@@ -134,14 +133,14 @@
         const customOption = this.createCustomOption(select, option, index);
         optionsContainer.appendChild(customOption);
       });
-    }
+    };
 
     // Create a single custom option
-    private createCustomOption(
+    private createCustomOption = (
       select: HTMLSelectElement,
       option: HTMLOptionElement,
       index: number
-    ): HTMLElement {
+    ): HTMLElement => {
       const customOption = document.createElement("div");
       customOption.className = "custom-option";
       if (option.selected) {
@@ -158,14 +157,14 @@
       });
 
       return customOption;
-    }
+    };
 
     // Handle option click event
-    private handleOptionClick(
+    private handleOptionClick = (
       select: HTMLSelectElement,
       customOption: HTMLElement,
       index: number
-    ): void {
+    ): void => {
       const options = this.selectMap.get(select);
       if (!options) return;
 
@@ -188,10 +187,10 @@
       setTimeout(() => {
         optionsContainer.style.display = "none";
       }, 100);
-    }
+    };
 
     // Setup option change listeners
-    private setupOptionChangeObservers(): void {
+    private setupOptionChangeObservers = (): void => {
       const templateSelect = document.getElementById(
         "template"
       ) as HTMLSelectElement;
@@ -210,7 +209,7 @@
 
       // Save observer reference for possible future cleanup
       this.observers.set(templateSelect.id, observer);
-    }
+    };
   }
 
   // Create singleton instance

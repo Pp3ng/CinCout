@@ -273,19 +273,14 @@ class ThemeManager {
       ...(themeData.terminal || {}),
     };
 
-    // Get color values from CSS variables
-    const cssVars: { [key: string]: string } = {
+    // Build complete terminal theme
+    const theme: TerminalTheme = {
+      // CSS variable colors
       background: this.getCssVar("--bg-primary"),
       foreground: this.getCssVar("--text-primary"),
       cursor: this.getCssVar("--accent"),
       cursorAccent: this.getCssVar("--bg-primary"),
       selection: this.getCssVar("--accent") + "40", // Add transparency
-    };
-
-    // Build complete terminal theme
-    const theme: TerminalTheme = {
-      // CSS variable colors
-      ...cssVars,
 
       // Base colors
       black: "#000000",
@@ -361,12 +356,25 @@ class ThemeManager {
     root.style.setProperty("--error-rgb", "255, 85, 85"); // Default error color
   }
 
-  // Update terminal with current theme
-  private updateTerminal(): void {
-    if (
-      typeof (window as any).terminal !== "undefined" &&
-      (window as any).terminal
-    ) {
+  // Update terminal and editor themes
+  private updateEditorAndTerminal(themeName: string): void {
+    // Update CodeMirror editor theme
+    if ((window as any).editor) {
+      (window as any).editor.setOption(
+        "theme",
+        themeName === "default" ? "default" : themeName
+      );
+    }
+    
+    if ((window as any).assemblyView) {
+      (window as any).assemblyView.setOption(
+        "theme",
+        themeName === "default" ? "default" : themeName
+      );
+    }
+
+    // Update terminal theme
+    if ((window as any).terminal) {
       setTimeout(() => {
         const terminalTheme = this.getTerminalTheme();
         (window as any).terminal.setOption("theme", terminalTheme);
@@ -393,27 +401,13 @@ class ThemeManager {
       // Set CSS variables
       this.setCssVariables(theme);
 
-      // Update CodeMirror editor theme
-      if ((window as any).editor) {
-        (window as any).editor.setOption(
-          "theme",
-          themeName === "default" ? "default" : themeName
-        );
-      }
-      if ((window as any).assemblyView) {
-        (window as any).assemblyView.setOption(
-          "theme",
-          themeName === "default" ? "default" : themeName
-        );
-      }
+      // Update editor and terminal
+      this.updateEditorAndTerminal(themeName);
 
       // Update theme selector dropdown
       if (this.themeSelect) {
         this.themeSelect.value = themeName;
       }
-
-      // Update terminal theme
-      this.updateTerminal();
 
       // Save preference to local storage
       localStorage.setItem("preferred-theme", themeName);
@@ -452,7 +446,7 @@ class ThemeManager {
   public initialize(): void {
     this.initializeThemeSelector();
 
-    // Apply initial theme from storage or default
+    // Apply initial theme from storage
     const savedTheme = localStorage.getItem("preferred-theme") || "default";
     this.applyTheme(savedTheme);
   }

@@ -1,5 +1,5 @@
 // Use Immediately Invoked Function Expression (IIFE) to create closure and avoid global namespace pollution
-(function () {
+(() => {
   // Component state interface
   interface PanelState {
     isOutputVisible: boolean;
@@ -24,8 +24,23 @@
     actionButtons: (HTMLElement | null)[];
   }
 
+  // Declare global window properties
+  declare global {
+    interface Window {
+      editor: any;
+      assemblyView: any;
+      fitAddon: any;
+      terminal: any;
+      CinCoutSocket: {
+        isProcessRunning: () => boolean;
+        isConnected: () => boolean;
+        disconnect: () => void;
+      };
+    }
+  }
+
   // Initialize on DOM ready - equivalent to React's useEffect with empty dependency array
-  document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", () => {
     const elements = getElements();
 
     // Initialize UI based on state - React's initial render
@@ -36,7 +51,7 @@
   });
 
   // Get all DOM elements - similar to React's ref pattern
-  function getElements(): UIElements {
+  const getElements = (): UIElements => {
     return {
       outputPanel: document.getElementById("outputPanel"),
       editorPanel: document.querySelector(".editor-panel"),
@@ -52,20 +67,20 @@
         document.getElementById("memcheck"),
       ],
     };
-  }
+  };
 
   // Setup all event handlers - similar to React's useEffect hooks
-  function setupEventHandlers(elements: UIElements): void {
+  const setupEventHandlers = (elements: UIElements): void => {
     setupCloseButton(elements);
     setupActionButtons(elements);
     setupTabSwitching(elements);
     setupResizeHandler();
-  }
+  };
 
   // Setup close button handler
-  function setupCloseButton(elements: UIElements): void {
+  const setupCloseButton = (elements: UIElements): void => {
     if (elements.closeOutputBtn) {
-      elements.closeOutputBtn.addEventListener("click", function () {
+      elements.closeOutputBtn.addEventListener("click", () => {
         // Update state - like React's setState
         panelState.isOutputVisible = false;
 
@@ -73,15 +88,15 @@
         renderUI(elements);
       });
     }
-  }
+  };
 
   // Setup action buttons
-  function setupActionButtons(elements: UIElements): void {
+  const setupActionButtons = (elements: UIElements): void => {
     elements.actionButtons.forEach((button) => {
       if (button) {
         button.addEventListener(
           "click",
-          function (e) {
+          (e) => {
             // Check if there's a running process
             handleRunningProcess();
 
@@ -102,12 +117,12 @@
         ); // capture phase
       }
     });
-  }
+  };
 
   // Setup tab switching
-  function setupTabSwitching(elements: UIElements): void {
+  const setupTabSwitching = (elements: UIElements): void => {
     if (elements.outputTab) {
-      elements.outputTab.addEventListener("click", function () {
+      elements.outputTab.addEventListener("click", () => {
         // Check if there's a running process when switching from assembly
         if (panelState.activeTab === "assembly") {
           handleRunningProcess();
@@ -122,7 +137,7 @@
     }
 
     if (elements.assemblyTab) {
-      elements.assemblyTab.addEventListener("click", function () {
+      elements.assemblyTab.addEventListener("click", () => {
         // Check if there's a running process when switching from output
         if (panelState.activeTab === "output") {
           handleRunningProcess();
@@ -135,17 +150,17 @@
         renderUI(elements);
       });
     }
-  }
+  };
 
   // Setup window resize handler
-  function setupResizeHandler(): void {
-    window.addEventListener("resize", function () {
+  const setupResizeHandler = (): void => {
+    window.addEventListener("resize", () => {
       refreshEditors();
     });
-  }
+  };
 
   // Render UI based on state - similar to React's render method
-  function renderUI(elements: UIElements): void {
+  const renderUI = (elements: UIElements): void => {
     // Update visibility based on state
     if (elements.outputPanel && elements.editorPanel) {
       elements.outputPanel.style.display = panelState.isOutputVisible
@@ -183,30 +198,30 @@
 
     // Refresh editors after UI changes
     refreshEditors();
-  }
+  };
 
   // Helper to refresh editors - would be useEffect in React
-  function refreshEditors(): void {
+  const refreshEditors = (): void => {
     // Use setTimeout to ensure rendering is complete
     setTimeout(() => {
       // Refresh CodeMirror editor if it exists
-      if ((window as any).editor) {
-        (window as any).editor.refresh();
+      if (window.editor) {
+        window.editor.refresh();
       }
 
       // Refresh assembly view if it exists and is visible
-      if (panelState.activeTab === "assembly" && (window as any).assemblyView) {
-        (window as any).assemblyView.refresh();
+      if (panelState.activeTab === "assembly" && window.assemblyView) {
+        window.assemblyView.refresh();
       }
 
       // Handle terminal resize if it exists
-      if ((window as any).fitAddon && (window as any).terminal) {
+      if (window.fitAddon && window.terminal) {
         try {
           // Try to fit the terminal
-          (window as any).fitAddon.fit();
+          window.fitAddon.fit();
         } catch (error) {
           // If fit fails, manually resize with integer dimensions
-          const terminal = (window as any).terminal;
+          const terminal = window.terminal;
           const containerElement = terminal.element.parentElement;
 
           if (containerElement) {
@@ -230,16 +245,17 @@
         }
       }
     }, 10);
-  }
+  };
 
   // Helper to handle running process - would be a custom hook in React
-  function handleRunningProcess(): void {
+  const handleRunningProcess = (): void => {
     if (
-      (window as any).CinCoutSocket &&
-      (window as any).CinCoutSocket.isProcessRunning &&
-      (window as any).CinCoutSocket.isConnected()
+      window.CinCoutSocket &&
+      typeof window.CinCoutSocket.isProcessRunning === "function" &&
+      typeof window.CinCoutSocket.isConnected === "function" &&
+      window.CinCoutSocket.isConnected()
     ) {
-      (window as any).CinCoutSocket.disconnect();
+      window.CinCoutSocket.disconnect();
     }
-  }
+  };
 })();

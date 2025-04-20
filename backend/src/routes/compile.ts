@@ -30,14 +30,14 @@ import {
 const router = express.Router();
 
 // Compile and run code with PTY for true terminal experience
-function compileAndRunWithPTY(
+const compileAndRunWithPTY = (
   ws: ExtendedWebSocket,
   sessionId: string,
   code: string,
   lang: string,
   compiler?: string,
   optimization?: string
-): void {
+): void => {
   // Security checks - Use validateCode and pass true to enable error field
   const validation = validateCode(code, true);
   if (!validation.valid) {
@@ -116,10 +116,10 @@ function compileAndRunWithPTY(
     // Clean up temporary directory
     tmpDir.removeCallback();
   }
-}
+};
 
 // Message handler for WebSocket connections
-function handleWebSocketMessage(ws: ExtendedWebSocket, data: any): void {
+const handleWebSocketMessage = (ws: ExtendedWebSocket, data: any): void => {
   const sessionId = ws.sessionId;
 
   if (!sessionId) {
@@ -186,12 +186,12 @@ function handleWebSocketMessage(ws: ExtendedWebSocket, data: any): void {
       message: "Error processing request: " + (error as Error).message,
     });
   }
-}
+};
 
 // Setup WebSocket handlers using the new utility
-function setupCompileWebSocketHandlers(wss: WebSocketServer): void {
+const setupCompileWebSocketHandlers = (wss: WebSocketServer): void => {
   setupWebSocketServer(wss, handleWebSocketMessage);
-}
+};
 
 // Regular HTTP endpoint for compilation (assembly, etc.)
 router.post(

@@ -21,10 +21,10 @@ export const webSocketEvents = new EventEmitter();
  * @param {WebSocketServer} wss - WebSocket server instance
  * @param {Function} messageHandler - Function to handle incoming messages
  */
-export function setupWebSocketServer(
+export const setupWebSocketServer = (
   wss: WebSocketServer,
   messageHandler: (ws: ExtendedWebSocket, data: any) => void
-): void {
+): void => {
   // Setup heartbeat interval checker
   const interval = setInterval(() => {
     wss.clients.forEach((ws: WebSocket) => {
@@ -114,7 +114,7 @@ export function setupWebSocketServer(
       })
     );
   });
-}
+};
 
 /**
  * Send a JSON message through WebSocket
@@ -122,10 +122,10 @@ export function setupWebSocketServer(
  * @param {any} data - Data to send (will be JSON stringified)
  * @returns {boolean} Whether message was sent successfully
  */
-export function sendWebSocketMessage(
+export const sendWebSocketMessage = (
   ws: ExtendedWebSocket,
   data: any
-): boolean {
+): boolean => {
   try {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(
@@ -141,4 +141,4 @@ export function sendWebSocketMessage(
     console.error("Error sending WebSocket message:", error);
     return false;
   }
-}
+};

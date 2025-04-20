@@ -30,7 +30,7 @@ webSocketEvents.on("websocket-close", ({ sessionId }) => {
  * Terminate a specific session
  * @param {string} sessionId - ID of the session to terminate
  */
-function terminateSession(sessionId: string): void {
+const terminateSession = (sessionId: string): void => {
   const session = activeSessions.get(sessionId);
   if (session) {
     try {
@@ -60,13 +60,13 @@ function terminateSession(sessionId: string): void {
       cleanupSession(sessionId);
     }
   }
-}
+};
 
 /**
  * Clean up session resources
  * @param {string} sessionId - ID of the session to clean up
  */
-function cleanupSession(sessionId: string): void {
+const cleanupSession = (sessionId: string): void => {
   const session = activeSessions.get(sessionId);
   if (session) {
     if (session.tmpDir) {
@@ -98,7 +98,7 @@ function cleanupSession(sessionId: string): void {
     // Always remove the session from active sessions map
     activeSessions.delete(sessionId);
   }
-}
+};
 
 /**
  * Create a PTY instance
@@ -106,10 +106,10 @@ function cleanupSession(sessionId: string): void {
  * @param {pty.IPtyForkOptions} options - PTY options
  * @returns {pty.IPty} PTY process
  */
-function createPtyProcess(
+const createPtyProcess = (
   command: string,
   options: pty.IPtyForkOptions = {}
-): pty.IPty {
+): pty.IPty => {
   const defaultOptions: pty.IPtyForkOptions = {
     name: "xterm-color",
     cols: 80,
@@ -121,7 +121,7 @@ function createPtyProcess(
   const ptyOptions = { ...defaultOptions, ...options };
 
   return pty.spawn("bash", ["-c", command], ptyOptions);
-}
+};
 
 /**
  * Start a compilation session
@@ -130,12 +130,12 @@ function createPtyProcess(
  * @param {DirResult} tmpDir - Temporary directory
  * @param {string} outputFile - Path to compiled executable
  */
-function startCompilationSession(
+const startCompilationSession = (
   ws: WebSocket,
   sessionId: string,
   tmpDir: DirResult,
   outputFile: string
-): boolean {
+): boolean => {
   try {
     // Set standard terminal size: 80 columns, 24 rows
     const cols = 80;
@@ -219,7 +219,7 @@ function startCompilationSession(
 
     return false;
   }
-}
+};
 
 /**
  * Send input to a running session
@@ -228,11 +228,11 @@ function startCompilationSession(
  * @param {WebSocket} ws - WebSocket connection
  * @returns {boolean} Whether the input was sent successfully
  */
-function sendInputToSession(
+const sendInputToSession = (
   sessionId: string,
   input: string,
   ws: WebSocket
-): boolean {
+): boolean => {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     // In PTY, input is automatically echoed by the program (if using standard IO)
@@ -244,7 +244,7 @@ function sendInputToSession(
     return true;
   }
   return false;
-}
+};
 
 interface CompilationEnvironment {
   tmpDir: DirResult;
@@ -258,7 +258,7 @@ interface CompilationEnvironment {
  * @param {string} lang - Programming language (c/cpp)
  * @returns {CompilationEnvironment} Object containing directory and file paths
  */
-function createCompilationEnvironment(lang: string): CompilationEnvironment {
+const createCompilationEnvironment = (lang: string): CompilationEnvironment => {
   const tmpDir = tmp.dirSync({ prefix: "CinCout-", unsafeCleanup: true });
   const sourceExtension = lang === "cpp" ? "cpp" : "c";
   const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
@@ -271,7 +271,7 @@ function createCompilationEnvironment(lang: string): CompilationEnvironment {
     outputFile,
     asmFile,
   };
-}
+};
 
 /**
  * Resize terminal dimensions
@@ -280,11 +280,11 @@ function createCompilationEnvironment(lang: string): CompilationEnvironment {
  * @param {number} rows - Number of rows
  * @returns {boolean} Whether resize was successful
  */
-function resizeTerminal(
+const resizeTerminal = (
   sessionId: string,
   cols: number,
   rows: number
-): boolean {
+): boolean => {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     try {
@@ -297,7 +297,7 @@ function resizeTerminal(
     }
   }
   return false;
-}
+};
 
 export {
   activeSessions,
@@ -308,6 +308,7 @@ export {
   sendInputToSession,
   createCompilationEnvironment,
   resizeTerminal,
-  Session,
-  CompilationEnvironment,
 };
+
+// Export types using 'export type' syntax as required by isolatedModules
+export type { Session, CompilationEnvironment };

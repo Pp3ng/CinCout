@@ -27,14 +27,14 @@ class TerminalManager {
    * Set DOM elements
    * @param elements - DOM elements to set
    */
-  setDomElements(elements: DomElements): void {
+  setDomElements = (elements: DomElements): void => {
     this.domElements = { ...this.domElements, ...elements };
-  }
+  };
 
   /**
    * Create and set up the terminal
    */
-  setupTerminal(): Terminal {
+  setupTerminal = (): Terminal => {
     // Clear previous content
     if (this.domElements.output) {
       this.domElements.output.innerHTML =
@@ -131,31 +131,31 @@ class TerminalManager {
     // After terminal is opened, send size information to the server
     this.terminal.onResize(({ cols, rows }: { cols: number; rows: number }) => {
       if (
-        (window as any).CinCoutSocket.isConnected() &&
-        (window as any).CinCoutSocket.getCompilationState() === "running"
+        window.CinCoutSocket.isConnected() &&
+        window.CinCoutSocket.getCompilationState() === "running"
       ) {
-        (window as any).CinCoutSocket.sendData({
+        window.CinCoutSocket.sendData({
           type: "resize",
-          cols: cols,
-          rows: rows,
+          cols,
+          rows,
         });
       }
     });
 
     return this.terminal;
-  }
+  };
 
   /**
    * Set up terminal input handling
    */
-  private setupTerminalInput(): void {
+  private setupTerminalInput = (): void => {
     if (!this.terminal) return;
 
     // Simplified terminal input handling
     this.terminal.onData((data: string) => {
       if (
-        !(window as any).CinCoutSocket.getCompilationState() === "running" ||
-        !(window as any).CinCoutSocket.isConnected()
+        !window.CinCoutSocket.getCompilationState() === "running" ||
+        !window.CinCoutSocket.isConnected()
       ) {
         console.log(
           "Not sending terminal input: program not running or socket closed"
@@ -164,27 +164,27 @@ class TerminalManager {
       }
 
       // Send all input characters to the server for PTY to handle
-      (window as any).CinCoutSocket.sendData({
+      window.CinCoutSocket.sendData({
         type: "input",
         input: data,
       });
     });
-  }
+  };
 
   /**
    * Handle terminal resize events
    */
-  handleTerminalResize(): void {
+  handleTerminalResize = (): void => {
     if (this.fitAddon) {
       try {
         this.fitAddon.fit();
         // Send the adjusted size to the server
         if (
           this.terminal &&
-          (window as any).CinCoutSocket.isConnected() &&
-          (window as any).CinCoutSocket.getCompilationState() === "running"
+          window.CinCoutSocket.isConnected() &&
+          window.CinCoutSocket.getCompilationState() === "running"
         ) {
-          (window as any).CinCoutSocket.sendData({
+          window.CinCoutSocket.sendData({
             type: "resize",
             cols: this.terminal.cols,
             rows: this.terminal.rows,
@@ -218,44 +218,44 @@ class TerminalManager {
         }
       }
     }
-  }
+  };
 
   /**
    * Write data to the terminal
    * @param data - The data to write to the terminal
    */
-  write(data: string): void {
+  write = (data: string): void => {
     if (this.terminal) {
       this.terminal.write(data);
     }
-  }
+  };
 
   /**
    * Write error message to the terminal in red
    * @param message - Error message to write
    */
-  writeError(message: string): void {
+  writeError = (message: string): void => {
     if (this.terminal) {
       this.terminal.write(`\x1b[31m${message}\x1b[0m`);
     }
-  }
+  };
 
   /**
    * Write exit message to the terminal
    * @param code - Exit code
    */
-  writeExitMessage(code: number): void {
+  writeExitMessage = (code: number): void => {
     if (this.terminal) {
       this.terminal.write(
         `\r\n\x1b[90m[Program exited with code: ${code}]\x1b[0m\r\n`
       );
     }
-  }
+  };
 
   /**
    * Clean up the terminal
    */
-  dispose(): void {
+  dispose = (): void => {
     if (this.terminal) {
       try {
         this.terminal.dispose();
@@ -267,14 +267,14 @@ class TerminalManager {
         console.error("Error disposing terminal:", e);
       }
     }
-  }
+  };
 
   /**
    * Get the terminal instance
    */
-  getTerminal(): Terminal | null {
+  getTerminal = (): Terminal | null => {
     return this.terminal;
-  }
+  };
 }
 
 // Create and export the terminal manager instance

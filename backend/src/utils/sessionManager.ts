@@ -4,9 +4,11 @@
 import * as pty from "node-pty";
 import * as path from "path";
 import * as tmp from "tmp";
+import * as fs from "fs-extra";
 import { DirResult } from "tmp";
 import { WebSocket } from "ws";
 import { webSocketEvents } from "./webSocketHandler";
+import { formatOutput } from "./routeHandler";
 
 // Define session interface
 interface Session {
@@ -14,6 +16,8 @@ interface Session {
   tmpDir: DirResult;
   lastActivity: number;
   dimensions: { cols: number; rows: number };
+  isMemcheck?: boolean;
+  valgrindLogPath?: string;
 }
 
 // Store active terminal sessions
@@ -124,6 +128,63 @@ const createPtyProcess = (
 };
 
 /**
+ * Process valgrind output log and send report to client
+ * @param {WebSocket} ws - WebSocket connection
+ * @param {string} logPath - Path to valgrind log file
+ */
+const processValgrindLog = async (
+  ws: WebSocket,
+  logPath: string
+): Promise<void> => {
+  try {
+    // Read Valgrind log
+    const valgrindOutput = await fs.readFile(logPath, "utf8");
+
+    // Extract important information - match exactly with old memcheck.ts implementation
+    let report = "";
+    const lines = valgrindOutput.split("\n");
+    let startReading = false;
+
+    for (const line of lines) {
+      if (line.includes("HEAP SUMMARY:")) {
+        startReading = true;
+      }
+
+      if (
+        startReading &&
+        line.trim() !== "" &&
+        !line.includes("For lists of")
+      ) {
+        report += line + "\n";
+      }
+    }
+
+    // Format and prepare the result with the unified formatter
+    const formattedReport = formatOutput(report, "memcheck");
+
+    // Send the report to client
+    ws.send(
+      JSON.stringify({
+        type: "memcheck-report",
+        output: formattedReport,
+        timestamp: Date.now(),
+      })
+    );
+  } catch (error) {
+    console.error("Error processing valgrind log:", error);
+    ws.send(
+      JSON.stringify({
+        type: "error",
+        output: `Error processing memory check results: ${
+          (error as Error).message
+        }`,
+        timestamp: Date.now(),
+      })
+    );
+  }
+};
+
+/**
  * Start a compilation session
  * @param {WebSocket} ws - WebSocket connection
  * @param {string} sessionId - Session ID
@@ -187,22 +248,38 @@ const startCompilationSession = (
     // Handle PTY exit
     ptyProcess.onExit(({ exitCode }) => {
       try {
+        // Get session before cleanup
+        const session = activeSessions.get(sessionId);
+        const isMemcheck = session?.isMemcheck || false;
+
+        // Send exit notification with isMemcheck flag
         ws.send(
           JSON.stringify({
             type: "exit",
             code: exitCode,
+            isMemcheck: isMemcheck,
             timestamp: Date.now(),
           })
         );
+
+        // Process valgrind log if it exists
+        if (session && session.isMemcheck && session.valgrindLogPath) {
+          // Wait just a brief moment to ensure the valgrind log is fully written
+          setTimeout(() => {
+            processValgrindLog(ws, session.valgrindLogPath!);
+            // Clean up after processing the log
+            cleanupSession(sessionId);
+          }, 500); // Reduced from 3000ms to 500ms (half a second)
+        } else {
+          // No valgrind log to process, just clean up
+          cleanupSession(sessionId);
+        }
       } catch (e) {
         console.error(
-          `Error sending exit message for session ${sessionId}:`,
+          `Error processing memcheck exit for session ${sessionId}:`,
           e
         );
-      }
-
-      // Clean up resources immediately after program exit
-      if (activeSessions.has(sessionId)) {
+        // Always clean up
         cleanupSession(sessionId);
       }
     });
@@ -222,6 +299,142 @@ const startCompilationSession = (
 };
 
 /**
+ * Start a memory checking session with valgrind
+ * @param {WebSocket} ws - WebSocket connection
+ * @param {string} sessionId - Session ID
+ * @param {DirResult} tmpDir - Temporary directory
+ * @param {string} outputFile - Path to compiled executable
+ */
+const startMemcheckSession = (
+  ws: WebSocket,
+  sessionId: string,
+  tmpDir: DirResult,
+  outputFile: string
+): boolean => {
+  try {
+    // Set standard terminal size: 80 columns, 24 rows
+    const cols = 80;
+    const rows = 24;
+
+    // Create valgrind log file path
+    const valgrindLogPath = path.join(tmpDir.name, "valgrind.log");
+
+    // Create valgrind command
+    const valgrindCmd = `valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file="${valgrindLogPath}" "${outputFile}"`;
+
+    // Create PTY process
+    const ptyProcess = createPtyProcess(valgrindCmd, {
+      name: "xterm-256color",
+      cols: cols,
+      rows: rows,
+      cwd: tmpDir.name,
+      env: {
+        ...(process.env as { [key: string]: string }),
+        TERM: "xterm-256color",
+      },
+    });
+
+    // Store PTY process and temporary directory with memcheck flag
+    activeSessions.set(sessionId, {
+      pty: ptyProcess,
+      tmpDir: tmpDir,
+      lastActivity: Date.now(),
+      dimensions: { cols, rows },
+      isMemcheck: true,
+      valgrindLogPath: valgrindLogPath,
+    });
+
+    // Inform the client that we're starting memory check
+    ws.send(
+      JSON.stringify({
+        type: "memcheck-start",
+        message: "Starting memory check with valgrind...",
+        timestamp: Date.now(),
+      })
+    );
+
+    // Handle PTY output
+    ptyProcess.onData((data: string) => {
+      try {
+        // Update last activity timestamp
+        const session = activeSessions.get(sessionId);
+        if (session) {
+          session.lastActivity = Date.now();
+        }
+
+        // Send output to client
+        ws.send(
+          JSON.stringify({
+            type: "output",
+            output: data,
+            timestamp: Date.now(),
+          })
+        );
+      } catch (e) {
+        console.error(
+          `Error sending output for memcheck session ${sessionId}:`,
+          e
+        );
+      }
+    });
+
+    // Handle PTY exit
+    ptyProcess.onExit(({ exitCode }) => {
+      try {
+        // Get session before cleanup
+        const session = activeSessions.get(sessionId);
+        const isMemcheck = session?.isMemcheck || false;
+
+        // Send exit notification with isMemcheck flag
+        ws.send(
+          JSON.stringify({
+            type: "exit",
+            code: exitCode,
+            isMemcheck: isMemcheck,
+            timestamp: Date.now(),
+          })
+        );
+
+        // Process valgrind log if it exists
+        if (session && session.isMemcheck && session.valgrindLogPath) {
+          // Wait just a brief moment to ensure the valgrind log is fully written
+          setTimeout(() => {
+            processValgrindLog(ws, session.valgrindLogPath!);
+            // Clean up after processing the log
+            cleanupSession(sessionId);
+          }, 500); // Reduced from 3000ms to 500ms (half a second)
+        } else {
+          // No valgrind log to process, just clean up
+          cleanupSession(sessionId);
+        }
+      } catch (e) {
+        console.error(
+          `Error processing memcheck exit for session ${sessionId}:`,
+          e
+        );
+        // Always clean up
+        cleanupSession(sessionId);
+      }
+    });
+
+    return true;
+  } catch (ptyError) {
+    console.error(
+      `Error creating PTY for memcheck session ${sessionId}:`,
+      ptyError
+    );
+    ws.send(
+      JSON.stringify({
+        type: "error",
+        output: `Error executing memory check: ${(ptyError as Error).message}`,
+      })
+    );
+
+    return false;
+  }
+};
+
+/**
  * Send input to a running session
  * @param {string} sessionId - Session ID
  * @param {string} input - Input to send to the process
@@ -231,14 +444,10 @@ const startCompilationSession = (
 const sendInputToSession = (
   sessionId: string,
   input: string,
-  ws: WebSocket
 ): boolean => {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
-    // In PTY, input is automatically echoed by the program (if using standard IO)
-    // So we don't need to handle echo separately, just send the input
     session.pty.write(input);
-
     // Update last activity time
     session.lastActivity = Date.now();
     return true;
@@ -305,6 +514,7 @@ export {
   cleanupSession,
   createPtyProcess,
   startCompilationSession,
+  startMemcheckSession,
   sendInputToSession,
   createCompilationEnvironment,
   resizeTerminal,

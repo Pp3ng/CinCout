@@ -18,6 +18,7 @@ import {
 import {
   activeSessions,
   startCompilationSession,
+  startMemcheckSession,
   sendInputToSession,
   resizeTerminal,
 } from "../utils/sessionManager";
@@ -118,6 +119,87 @@ const compileAndRunWithPTY = (
   }
 };
 
+// Compile and run code with memcheck using PTY
+const compileAndRunWithMemcheck = (
+  ws: ExtendedWebSocket,
+  sessionId: string,
+  code: string,
+  lang: string,
+  compiler?: string,
+  optimization?: string
+): void => {
+  // Security checks - Use validateCode and pass true to enable error field
+  const validation = validateCode(code, true);
+  if (!validation.valid) {
+    sendWebSocketMessage(ws, {
+      type: "compile-error",
+      output: validation.error,
+    });
+    return;
+  }
+
+  // Create compilation environment
+  const { tmpDir, sourceFile, outputFile } = createCompilationEnvironment(lang);
+
+  try {
+    // Write code to temporary file
+    fs.writeFileSync(sourceFile, code);
+
+    // Notify client that compilation has started
+    sendWebSocketMessage(ws, { type: "compiling" });
+
+    // Determine compiler options
+    const compilerCmd = getCompilerCommand(lang, compiler);
+    const standardOption = getStandardOption(lang);
+    const optimizationOption = optimization || "-O0";
+
+    // Compile command with debug information (-g flag)
+    const compileCmd = `${compilerCmd} -g ${standardOption} ${optimizationOption} "${sourceFile}" -o "${outputFile}"`;
+
+    // Execute compilation
+    executeCommand(compileCmd)
+      .then(() => {
+        // Compilation successful, notify client
+        sendWebSocketMessage(ws, { type: "compile-success" });
+
+        // Start memcheck session with PTY
+        const success = startMemcheckSession(ws, sessionId, tmpDir, outputFile);
+
+        if (!success) {
+          // Clean up on PTY creation error
+          tmpDir.removeCallback();
+        }
+      })
+      .catch((error) => {
+        // Compilation error
+        console.error(`Compilation error for memcheck ${sessionId}:`, error);
+        const sanitizedError = sanitizeOutput(error as string) || error;
+        // Apply formatting for compiler errors
+        const formattedError = formatOutput(
+          sanitizedError.toString(),
+          "default"
+        );
+
+        sendWebSocketMessage(ws, {
+          type: "compile-error",
+          output: formattedError,
+        });
+
+        // Clean up temporary directory
+        tmpDir.removeCallback();
+      });
+  } catch (error) {
+    console.error(`Error setting up memcheck for session ${sessionId}:`, error);
+    sendWebSocketMessage(ws, {
+      type: "error",
+      message: "Error setting up memcheck: " + (error as Error).message,
+    });
+
+    // Clean up temporary directory
+    tmpDir.removeCallback();
+  }
+};
+
 // Message handler for WebSocket connections
 const handleWebSocketMessage = (ws: ExtendedWebSocket, data: any): void => {
   const sessionId = ws.sessionId;
@@ -144,9 +226,21 @@ const handleWebSocketMessage = (ws: ExtendedWebSocket, data: any): void => {
         );
         break;
 
+      case "memcheck":
+        // Compile and run code with valgrind memcheck
+        compileAndRunWithMemcheck(
+          ws,
+          sessionId,
+          data.code,
+          data.lang,
+          data.compiler,
+          data.optimization
+        );
+        break;
+
       case "input":
         // Send user input to the program
-        if (!sendInputToSession(sessionId, data.input, ws)) {
+        if (!sendInputToSession(sessionId, data.input)) {
           sendWebSocketMessage(ws, {
             type: "error",
             message: "No active session to receive input",

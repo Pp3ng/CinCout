@@ -219,9 +219,35 @@ export class WebSocketManager {
         terminalManager.writeError(data.output || data.message);
         break;
 
+      case "memcheck-report":
+        // Display memcheck report using the old approach - direct insertion into output
+        if (data.output && document.getElementById("output")) {
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data.output}</div>`;
+
+          // After receiving the memcheck report, disconnect the WebSocket
+          setTimeout(() => {
+            this.socket.disconnect();
+          }, 100);
+        }
+        break;
+
       case "exit":
+        // First display the exit message
         terminalManager.writeExitMessage(data.code);
-        this.socket.disconnect();
+
+        // If we're running a memcheck session, immediately show the "waiting for report" message
+        if (data.isMemcheck === true) {
+          const output = document.getElementById("output");
+          if (output) {
+            output.innerHTML = `<div class="loading">Processing memory check results...</div>`;
+          }
+          // Don't disconnect - wait for the memcheck-report message
+        } else {
+          // Regular run - disconnect immediately
+          this.socket.disconnect();
+        }
         break;
 
       default:
@@ -263,9 +289,14 @@ export class WebSocketManager {
 // Component-like module for code actions
 export class CodeActions {
   private appState: AppState;
+  private webSocketManager: WebSocketManager | null = null;
 
   constructor(appState: AppState) {
     this.appState = appState;
+  }
+
+  setWebSocketManager(manager: WebSocketManager): void {
+    this.webSocketManager = manager;
   }
 
   async viewAssembly(options: CompileOptions): Promise<void> {
@@ -334,38 +365,28 @@ export class CodeActions {
   }
 
   async runMemCheck(options: CompileOptions): Promise<void> {
-    const outputTab = document.getElementById("outputTab");
-    if (outputTab) {
-      outputTab.click();
-      this.appState.setState({ activeTab: "output" });
-    }
+    // Use WebSocket for interactive memcheck if available
+    if (this.webSocketManager) {
+      try {
+        const outputTab = document.getElementById("outputTab");
+        if (outputTab) {
+          outputTab.click();
+          this.appState.setState({ activeTab: "output" });
+        }
+        await (window as any).CinCoutSocket.connect();
 
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = "<div class='loading'>Running memory check...</div>";
-    }
-
-    try {
-      const response = await fetch("/api/memcheck", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        // Send the memcheck request through WebSocket
+        await (window as any).CinCoutSocket.sendData({
+          type: "memcheck",
           code: options.code,
           lang: options.lang,
           compiler: options.compiler,
           optimization: options.optimization,
-        }),
-      });
+        });
 
-      const data = await response.text();
-      if (output) {
-        output.innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`;
-      }
-    } catch (error) {
-      if (output) {
-        output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+        return;
+      } catch (error) {
+        console.error("WebSocket memcheck failed:", error);
       }
     }
   }
@@ -498,6 +519,7 @@ export class CinCoutApp {
       this.appState
     );
     this.codeActions = new CodeActions(this.appState);
+    this.codeActions.setWebSocketManager(this.webSocketManager);
     this.editorSettings = new EditorSettings(this.appState);
 
     // Event handlers will be attached in init()

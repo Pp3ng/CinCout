@@ -11,11 +11,15 @@ const TEMPLATES_DIR = path.join(__dirname, "../../templates");
 // Improved type definitions using Record
 type TemplateContent = string;
 type TemplatesByName = Record<string, TemplateContent>;
-type TemplateCollection = Record<string, TemplatesByName>;
 
-// Cache for templates to avoid frequent disk reads
-let templatesCache: TemplateCollection | null = null;
-let lastCacheTime = 0;
+// Cache for templates with language-specific timestamps
+interface CacheEntry {
+  data: TemplatesByName;
+  timestamp: number;
+}
+const templatesCache: Record<string, CacheEntry> = {};
+const templateListCache: Record<string, { list: string[]; timestamp: number }> =
+  {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
 /**
@@ -59,9 +63,28 @@ async function validateLanguage(
  */
 async function getTemplateList(language: string): Promise<string[]> {
   try {
+    // Check cache first
+    const now = Date.now();
+    if (
+      templateListCache[language] &&
+      now - templateListCache[language].timestamp < CACHE_TTL
+    ) {
+      return templateListCache[language].list;
+    }
+
     const langPath = path.join(TEMPLATES_DIR, language);
     const templateFiles = await fs.readdir(langPath);
-    return templateFiles.map((file) => path.basename(file, path.extname(file)));
+    const templateNames = templateFiles.map((file) =>
+      path.basename(file, path.extname(file))
+    );
+
+    // Update cache
+    templateListCache[language] = {
+      list: templateNames,
+      timestamp: now,
+    };
+
+    return templateNames;
   } catch (error) {
     console.error(`Error getting template list for ${language}:`, error);
     return [];
@@ -79,14 +102,15 @@ async function loadSingleTemplate(
   templateName: string
 ): Promise<string | null> {
   try {
+    const now = Date.now();
+
     // Check if template exists in cache
     if (
-      templatesCache &&
-      Date.now() - lastCacheTime < CACHE_TTL &&
       templatesCache[language] &&
-      templatesCache[language][templateName]
+      now - templatesCache[language].timestamp < CACHE_TTL &&
+      templatesCache[language].data[templateName]
     ) {
-      return templatesCache[language][templateName];
+      return templatesCache[language].data[templateName];
     }
 
     // Find template file with any extension
@@ -106,14 +130,16 @@ async function loadSingleTemplate(
     const content = await fs.readFile(filePath, "utf8");
 
     // Update cache
-    if (!templatesCache) {
-      templatesCache = {};
-    }
     if (!templatesCache[language]) {
-      templatesCache[language] = {};
+      templatesCache[language] = {
+        data: {},
+        timestamp: now,
+      };
     }
-    templatesCache[language][templateName] = content;
-    lastCacheTime = Date.now();
+
+    templatesCache[language].data[templateName] = content;
+    // Refresh timestamp when adding new content
+    templatesCache[language].timestamp = now;
 
     return content;
   } catch (error) {

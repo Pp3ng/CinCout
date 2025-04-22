@@ -16,13 +16,29 @@ import {
   router as compileRouter,
   setupCompileWebSocketHandlers,
 } from "./routes/compile";
-import memcheckRouter from "./routes/memcheck";
 import formatRouter from "./routes/format";
 import styleCheckRouter from "./routes/styleCheck";
 import templatesRouter from "./routes/templates";
 
 const numCPUs = os.cpus().length;
 const port = 9527;
+
+// WebSocket compression options
+const wsOptions = {
+  perMessageDeflate: {
+    zlibDeflateOptions: {
+      level: 6, // Compression level (1-9, 6 is default)
+      memLevel: 8, // Memory allocation for compression (1-9, 8 is default)
+      chunkSize: 1024 * 64, // Processing chunk size
+    },
+    serverNoContextTakeover: true, // Disable context takeover on server
+    clientNoContextTakeover: true, // Disable context takeover on client
+    serverMaxWindowBits: 10, // Lower window size for server compression
+    concurrencyLimit: 10, // Limit concurrent compression operations
+    threshold: 1024, // Only compress messages larger than this size
+  },
+  clientTracking: true, // Keep track of connected clients
+};
 
 if (cluster.isPrimary) {
   // Master process
@@ -48,7 +64,25 @@ if (cluster.isPrimary) {
     )
   );
 
-  app.use(compression()); // Response compression
+  app.use(
+    compression({
+      filter: (req, res) => {
+        if (
+          res.getHeader("Content-Length") &&
+          parseInt(res.getHeader("Content-Length") as string) < 1024
+        ) {
+          return false;
+        }
+        return compression.filter(req, res);
+      },
+      brotli: {
+        enabled: true,
+        params: { [require("zlib").constants.BROTLI_PARAM_QUALITY]: 5 },
+      },
+      level: 6,
+    })
+  ); // Response compression
+
   app.use(cors());
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
@@ -104,12 +138,11 @@ if (cluster.isPrimary) {
   server.headersTimeout = 65 * 1000; // Headers timeout
 
   // WebSocket
-  const wss = new WebSocketServer({ server, clientTracking: true });
+  const wss = new WebSocketServer({ server, ...wsOptions });
   setupCompileWebSocketHandlers(wss);
 
   // Mount routes
   app.use("/api/compile", compileRouter);
-  app.use("/api/memcheck", memcheckRouter);
   app.use("/api/format", formatRouter);
   app.use("/api/styleCheck", styleCheckRouter);
   app.use("/api/templates", templatesRouter);

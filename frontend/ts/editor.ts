@@ -1,14 +1,13 @@
-// Import CodeMirror correctly - this is a workaround for the type issue
-import CodeMirror from "codemirror";
+import CodeMirror, { Editor } from "codemirror";
 
 type EditorInstances = {
-  editor: any;
-  assemblyView: any;
+  editor: Editor;
+  assemblyView: Editor;
 };
 
 const setupEditors = (): EditorInstances => {
   const codeElement = document.getElementById("code") as HTMLTextAreaElement;
-  const asmElement = document.getElementById("assembly");
+  const asmElement = document.getElementById("assembly") as HTMLDivElement;
 
   if (!codeElement || !asmElement) {
     throw new Error("Required DOM elements not found");
@@ -38,7 +37,6 @@ const setupEditors = (): EditorInstances => {
     theme: savedTheme !== "default" ? savedTheme : "default",
   });
 
-  // Fix the direct call to CodeMirror
   const assemblyView = CodeMirror(asmElement, {
     lineNumbers: true,
     mode: "gas",
@@ -46,13 +44,12 @@ const setupEditors = (): EditorInstances => {
     lineWrapping: true,
     theme: savedTheme !== "default" ? savedTheme : "default",
   });
-
   assemblyView.setSize(null, "100%");
 
   return { editor, assemblyView };
 };
 
-const setupFontZoomHandler = (editor: any, assemblyView: any) => {
+const setupFontZoomHandler = (editor: Editor, assemblyView: Editor) => {
   let fontSize = 14;
 
   const applyFontSize = () => {
@@ -66,11 +63,10 @@ const setupFontZoomHandler = (editor: any, assemblyView: any) => {
 
   document.addEventListener(
     "wheel",
-    function (e: WheelEvent) {
+    (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        fontSize =
-          e.deltaY < 0 ? Math.min(fontSize + 1, 24) : Math.max(fontSize - 1, 8);
+        fontSize = e.deltaY < 0 ? Math.min(fontSize + 1, 24) : Math.max(fontSize - 1, 8);
         applyFontSize();
       }
     },
@@ -78,10 +74,6 @@ const setupFontZoomHandler = (editor: any, assemblyView: any) => {
   );
 };
 
-// Make CodeMirror available globally for other modules that still use window.CodeMirror
-(window as any).CodeMirror = CodeMirror;
-
-// Function to force refresh editors - useful for fixing theme issues
 const forceRefreshEditors = () => {
   if ((window as any).editor) {
     (window as any).editor.refresh();
@@ -91,8 +83,7 @@ const forceRefreshEditors = () => {
   }
 };
 
-// Initialize editors
-const initEditors = () => {
+const initEditors = (): void => {
   try {
     const { editor, assemblyView } = setupEditors();
 

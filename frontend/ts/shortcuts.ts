@@ -1,235 +1,260 @@
-// Define interfaces for shortcut handling
-interface ShortcutDefinition {
+// Refactored shortcut management system - Prepared for React migration
+
+// Using enum constants for better type safety
+enum DomElementId {
+  COMPILE = "compile",
+  CLOSE_OUTPUT = "closeOutput",
+  VIEW_ASSEMBLY = "viewAssembly",
+  FORMAT = "format",
+  STYLE_CHECK = "styleCheck",
+  MEMORY_CHECK = "memcheck",
+  OUTPUT_PANEL = "outputPanel",
+  LANGUAGE = "language",
+  SHORTCUTS_CONTENT = "shortcuts-content",
+  CODESNAP = "codeSnap",
+}
+
+// Using strict TypeScript types
+export type PlatformType = 'MacOS' | 'Other';
+
+// Using advanced TypeScript types to simplify shortcut definitions
+export interface ShortcutDefinition {
   action: () => void;
   description: string;
   displayKeys: string[];
 }
 
-interface ShortcutMap {
-  [key: string]: ShortcutDefinition;
-}
+// Creating Record type for shortcut mappings
+export type ShortcutMap = Record<string, ShortcutDefinition>;
 
-interface ShortcutCategories {
+// Using discriminated union types to restructure shortcut categories
+export interface ShortcutCategories {
   common: ShortcutMap;
   mac: ShortcutMap;
   other: ShortcutMap;
   special: ShortcutMap;
 }
 
-interface ShortcutState {
-  currentOS: string;
+// Following single responsibility principle, separating state definition
+export interface ShortcutState {
+  currentOS: PlatformType;
   isMac: boolean;
   shortcuts: ShortcutCategories;
-  listeners: Array<() => void>;
 }
 
-interface KeyHandler {
-  (e: KeyboardEvent): boolean;
-}
+// Defining specialized types for event handling
+export type KeyHandler = (e: KeyboardEvent) => boolean;
+export type Listener = () => void;
 
-// DOM element IDs constants for easier reference
-const DOM_IDS = {
-  COMPILE: "compile",
-  CLOSE_OUTPUT: "closeOutput",
-  VIEW_ASSEMBLY: "viewAssembly",
-  FORMAT: "format",
-  STYLE_CHECK: "styleCheck",
-  MEMORY_CHECK: "memcheck",
-  OUTPUT_PANEL: "outputPanel",
-  LANGUAGE: "language",
-  SHORTCUTS_CONTENT: "shortcuts-content",
-  CODESNAP: "codeSnap",
-};
+/**
+ * Pure function toolkit - These will fit well with React's functional programming model
+ */
+export const ShortcutHelpers = {
+  detectOS(): PlatformType {
+    return /Mac/.test(window.navigator.userAgent) ? "MacOS" : "Other";
+  },
 
-// Utility functions - exported for use in other modules
-export const detectOS = (): string => {
-  const userAgent = window.navigator.userAgent;
-  return /Mac/.test(userAgent) ? "MacOS" : "Other";
-};
+  triggerButton(id: DomElementId): void {
+    const element = document.getElementById(id);
+    if (element) element.click();
+  },
 
-export const triggerButton = (id: string): void => {
-  const element = document.getElementById(id);
-  if (element) element.click();
-};
+  saveCodeToFile(): void {
+    const editor = (window as any).editor;
+    if (!editor) return;
+    
+    const code = editor.getValue();
+    const languageElement = document.getElementById(DomElementId.LANGUAGE) as HTMLSelectElement;
+    const fileType = languageElement?.value === "cpp" ? "cpp" : "c";
+    
+    const blob = new Blob([code], { type: "text/plain" });
+    const downloadLink = document.createElement("a");
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = `code.${fileType}`;
+    downloadLink.click();
+    
+    // Clean up URL object to prevent memory leaks
+    URL.revokeObjectURL(downloadLink.href);
+  },
 
-export const saveCodeToFile = (): void => {
-  const editor = (window as any).editor;
-  const code = editor.getValue();
-  const fileType =
-    (document.getElementById("language") as HTMLSelectElement).value === "cpp"
-      ? "cpp"
-      : "c";
-  const blob = new Blob([code], { type: "text/plain" });
-  const downloadLink = document.createElement("a");
+  openCodeFromFile(): void {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".c,.cpp";
 
-  downloadLink.href = URL.createObjectURL(blob);
-  downloadLink.download = `code.${fileType}`;
-  downloadLink.click();
-};
+    fileInput.onchange = function(this: HTMLInputElement) {
+      const selectedFile = this.files?.[0];
+      if (!selectedFile) return;
 
-export const openCodeFromFile = (): void => {
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = ".c,.cpp";
-
-  fileInput.onchange = function (this: HTMLInputElement) {
-    const selectedFile = this.files?.[0];
-    if (!selectedFile) return;
-
-    const reader = new FileReader();
-    reader.onload = function () {
-      if ((window as any).editor) {
-        (window as any).editor.setValue(reader.result as string);
-      }
+      const reader = new FileReader();
+      reader.onload = function() {
+        const editor = (window as any).editor;
+        if (editor && typeof reader.result === 'string') {
+          editor.setValue(reader.result);
+        }
+      };
+      reader.readAsText(selectedFile);
     };
-    reader.readAsText(selectedFile);
-  };
 
-  fileInput.click();
-};
+    fileInput.click();
+  },
 
-export const toggleCodeFolding = (): void => {
-  if ((window as any).editor) {
-    (window as any).editor.foldCode((window as any).editor.getCursor());
+  toggleCodeFolding(): void {
+    const editor = (window as any).editor;
+    if (editor) {
+      editor.foldCode(editor.getCursor());
+    }
+  },
+
+  normalizeKeyCombo(event: KeyboardEvent): string {
+    // Consider keyboard layout compatibility, especially international keyboards
+    const key = event.key.toLowerCase();
+
+    // Standardize special keys
+    if (key === "enter") return "Enter";
+    if (key === "escape") return "Escape";
+
+    // Build key combination prefix
+    const modifiers = [];
+    if (event.ctrlKey) modifiers.push("ctrl");
+    if (event.altKey) modifiers.push("alt");
+    if (event.metaKey) modifiers.push("meta");
+    if (event.shiftKey) modifiers.push("shift");
+    
+    const prefix = modifiers.length > 0 ? modifiers.join("+") + "+" : "";
+
+    // Handle letter and number keys
+    if (prefix && key.length === 1) return prefix + key;
+    if (prefix && /^[0-9]$/.test(key)) return prefix + key;
+
+    // Return unmodified keys as is
+    return event.key;
+  },
+
+  closeOutputPanel(): void {
+    const outputPanel = document.getElementById(DomElementId.OUTPUT_PANEL);
+    if (outputPanel && outputPanel.style.display !== "none") {
+      ShortcutHelpers.triggerButton(DomElementId.CLOSE_OUTPUT);
+      
+      // Using Promise instead of setTimeout for better readability and React migration
+      Promise.resolve().then(() => {
+        const editor = (window as any).editor;
+        if (editor) editor.focus();
+      });
+    }
+  },
+  
+  // Rendering helper function for React
+  createShortcutListItem(shortcut: ShortcutDefinition): string {
+    const keyHtml = shortcut.displayKeys
+      .map(key => `<kbd>${key}</kbd>`)
+      .join(" + ");
+    return `${keyHtml} - ${shortcut.description}`;
   }
-};
-
-export const normalizeKeyCombo = (event: KeyboardEvent): string => {
-  const key = event.key.toLowerCase();
-
-  // Handle special keys
-  if (key === "enter") return "Enter";
-  if (key === "escape") return "Escape";
-
-  // Build key combination prefix
-  let prefix = "";
-  if (event.ctrlKey) prefix += "ctrl+";
-  if (event.altKey) prefix += "alt+";
-  if (event.metaKey) prefix += "meta+";
-  if (event.shiftKey) prefix += "shift+";
-
-  // Handle letter and number keys
-  if (prefix) {
-    // Use lowercase for letter keys
-    if (key.length === 1) return prefix + key;
-
-    // Single number keys
-    if (/^[0-9]$/.test(key)) return prefix + key;
-  }
-
-  // For keys without modifiers, return as is
-  return event.key;
 };
 
 /**
- * ShortcutStore - A React-like state manager for shortcuts
- * Follows patterns similar to Redux/React Context
+ * Redux-inspired redesign of shortcut state management
+ * This pattern will easily integrate with React's useReducer or Redux
  */
-class ShortcutStore {
+export class ShortcutStore {
   private state: ShortcutState;
+  private listeners: Listener[] = [];
 
   constructor() {
-    // Initialize state
-    const currentOS = detectOS();
+    const currentOS = ShortcutHelpers.detectOS();
     const isMac = currentOS === "MacOS";
-    const cmdKey = isMac ? "meta" : "ctrl";
-
-    // Initialize state with shortcut definitions
+    
     this.state = {
       currentOS,
       isMac,
-      listeners: [],
-      shortcuts: this.createShortcutDefinitions(cmdKey, isMac),
+      shortcuts: this.createShortcutDefinitions(isMac ? "meta" : "ctrl", isMac),
     };
   }
 
-  // Create shortcuts configuration
+  // Create shortcut definitions (pure function approach)
   private createShortcutDefinitions(
-    cmdKey: string,
+    cmdKey: string, 
     isMac: boolean
   ): ShortcutCategories {
     return {
-      // Common shortcuts for all platforms
       common: {
         [`${cmdKey}+Enter`]: {
-          action: () => triggerButton(DOM_IDS.COMPILE),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.COMPILE),
           description: "Compile and run",
           displayKeys: isMac ? ["⌘", "return"] : ["Ctrl", "Enter"],
         },
         [`${cmdKey}+s`]: {
-          action: saveCodeToFile,
+          action: ShortcutHelpers.saveCodeToFile,
           description: "Save code to file",
           displayKeys: isMac ? ["⌘", "S"] : ["Ctrl", "S"],
         },
         [`${cmdKey}+o`]: {
-          action: openCodeFromFile,
+          action: ShortcutHelpers.openCodeFromFile,
           description: "Open code from file",
           displayKeys: isMac ? ["⌘", "O"] : ["Ctrl", "O"],
         },
         [`${cmdKey}+k`]: {
-          action: toggleCodeFolding,
+          action: ShortcutHelpers.toggleCodeFolding,
           description: "Toggle code folding",
           displayKeys: isMac ? ["⌘", "K"] : ["Ctrl", "K"],
         },
         [`${cmdKey}+p`]: {
-          action: () => triggerButton(DOM_IDS.CODESNAP),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.CODESNAP),
           description: "Take code snapshot",
           displayKeys: isMac ? ["⌘", "P"] : ["Ctrl", "P"],
         },
       },
-
-      // Mac-specific shortcuts
+      
       mac: {
         "ctrl+1": {
-          action: () => triggerButton(DOM_IDS.VIEW_ASSEMBLY),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.VIEW_ASSEMBLY),
           description: "View assembly code",
           displayKeys: ["^", "1"],
         },
         "ctrl+2": {
-          action: () => triggerButton(DOM_IDS.FORMAT),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.FORMAT),
           description: "Format code",
           displayKeys: ["^", "2"],
         },
         "ctrl+3": {
-          action: () => triggerButton(DOM_IDS.STYLE_CHECK),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.STYLE_CHECK),
           description: "Style check",
           displayKeys: ["^", "3"],
         },
         "ctrl+4": {
-          action: () => triggerButton(DOM_IDS.MEMORY_CHECK),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.MEMORY_CHECK),
           description: "Memory check",
           displayKeys: ["^", "4"],
         },
       },
-
-      // Other platforms (Windows/Linux) shortcuts
+      
       other: {
         "alt+1": {
-          action: () => triggerButton(DOM_IDS.VIEW_ASSEMBLY),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.VIEW_ASSEMBLY),
           description: "View assembly code",
           displayKeys: ["Alt", "1"],
         },
         "alt+2": {
-          action: () => triggerButton(DOM_IDS.FORMAT),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.FORMAT),
           description: "Format code",
           displayKeys: ["Alt", "2"],
         },
         "alt+3": {
-          action: () => triggerButton(DOM_IDS.STYLE_CHECK),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.STYLE_CHECK),
           description: "Style check",
           displayKeys: ["Alt", "3"],
         },
         "alt+4": {
-          action: () => triggerButton(DOM_IDS.MEMORY_CHECK),
+          action: () => ShortcutHelpers.triggerButton(DomElementId.MEMORY_CHECK),
           description: "Memory check",
           displayKeys: ["Alt", "4"],
         },
       },
-
-      // Special keys
+      
       special: {
         Escape: {
-          action: () => this.closeOutputPanel(),
+          action: ShortcutHelpers.closeOutputPanel,
           description: "Close output panel",
           displayKeys: ["Esc"],
         },
@@ -237,73 +262,58 @@ class ShortcutStore {
     };
   }
 
-  // Get current state (immutable)
+  // Get state immutably (similar to Redux)
   getState(): Readonly<ShortcutState> {
-    return { ...this.state };
+    return {...this.state};
   }
 
-  // Subscribe to state changes (like React useEffect)
-  subscribe(listener: () => void): () => void {
-    this.state.listeners.push(listener);
-
-    // Return unsubscribe function (cleanup like in useEffect)
+  // Subscribe to state changes (ready for integration with React useEffect)
+  subscribe(listener: Listener): () => void {
+    this.listeners.push(listener);
     return () => {
-      this.state.listeners = this.state.listeners.filter((l) => l !== listener);
+      this.listeners = this.listeners.filter(l => l !== listener);
     };
   }
 
-  // Update state immutably (like React useState setter)
+  // Update state immutably (similar to React's useState)
   private setState(partialState: Partial<ShortcutState>): void {
-    // Create new state object (immutable update)
     this.state = {
       ...this.state,
       ...partialState,
     };
-
-    // Notify all listeners (like React re-renders)
-    this.state.listeners.forEach((listener) => listener());
-  }
-
-  // Core function to close output panel
-  closeOutputPanel(): void {
-    const outputPanel = document.getElementById(DOM_IDS.OUTPUT_PANEL);
-    if (outputPanel && outputPanel.style.display !== "none") {
-      triggerButton(DOM_IDS.CLOSE_OUTPUT);
-      // Restore editor focus after closing panel
-      setTimeout(() => {
-        if ((window as any).editor) (window as any).editor.focus();
-      }, 10);
-    }
+    
+    // Notify all listeners (similar to React's re-rendering)
+    this.listeners.forEach(listener => listener());
   }
 
   // Get special key handlers
-  getSpecialKeyHandlers(): { [key: string]: KeyHandler } {
+  getSpecialKeyHandlers(): Record<string, KeyHandler> {
     return {
       // Escape key handler (works with terminal focus)
       Escape: (e) => {
-        const outputPanel = document.getElementById(DOM_IDS.OUTPUT_PANEL);
+        const outputPanel = document.getElementById(DomElementId.OUTPUT_PANEL);
         if (outputPanel && outputPanel.style.display !== "none") {
           e.preventDefault();
-          this.closeOutputPanel();
-          return true; // Handled
+          ShortcutHelpers.closeOutputPanel();
+          return true;
         }
-        return false; // Not handled
+        return false;
       },
 
       // Compile shortcut (Ctrl+Enter or Cmd+Enter)
       Enter: (e) => {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
-          triggerButton(DOM_IDS.COMPILE);
-          return true; // Handled
+          ShortcutHelpers.triggerButton(DomElementId.COMPILE);
+          return true;
         }
-        return false; // Not handled
+        return false;
       },
     };
   }
 
-  // Handle keyboard events
-  handleKeyboardEvent(event: KeyboardEvent): void {
+  // Handle keyboard events - will become event handlers for React components
+  handleKeyboardEvent = (event: KeyboardEvent): void => {
     // First check special keys (Enter with modifiers, Escape)
     const specialHandlers = this.getSpecialKeyHandlers();
     const specialHandler = specialHandlers[event.key];
@@ -311,8 +321,8 @@ class ShortcutStore {
       return; // Handled by special handler
     }
 
-    // Normalize the key combination
-    const normalizedKey = normalizeKeyCombo(event);
+    // Normalize key combination
+    const normalizedKey = ShortcutHelpers.normalizeKeyCombo(event);
 
     // Get platform-specific shortcut map
     const platformMap = this.state.isMac
@@ -336,11 +346,9 @@ class ShortcutStore {
     }
   }
 
-  // Generate shortcuts list for UI
+  // Generate shortcuts list UI (will become a React component)
   generateShortcutsList(): void {
-    const shortcutsContainer = document.getElementById(
-      DOM_IDS.SHORTCUTS_CONTENT
-    );
+    const shortcutsContainer = document.getElementById(DomElementId.SHORTCUTS_CONTENT);
     if (!shortcutsContainer) return;
 
     // Clear existing content
@@ -348,14 +356,11 @@ class ShortcutStore {
 
     // Create list
     const ul = document.createElement("ul");
-
+    
     // Add common shortcuts
-    Object.values(this.state.shortcuts.common).forEach((shortcut) => {
+    Object.values(this.state.shortcuts.common).forEach(shortcut => {
       const li = document.createElement("li");
-      const keyHtml = shortcut.displayKeys
-        .map((key) => `<kbd>${key}</kbd>`)
-        .join(" + ");
-      li.innerHTML = `${keyHtml} - ${shortcut.description}`;
+      li.innerHTML = ShortcutHelpers.createShortcutListItem(shortcut);
       ul.appendChild(li);
     });
 
@@ -364,22 +369,16 @@ class ShortcutStore {
       ? this.state.shortcuts.mac
       : this.state.shortcuts.other;
 
-    Object.values(platformShortcuts).forEach((shortcut) => {
+    Object.values(platformShortcuts).forEach(shortcut => {
       const li = document.createElement("li");
-      const keyHtml = shortcut.displayKeys
-        .map((key) => `<kbd>${key}</kbd>`)
-        .join(" + ");
-      li.innerHTML = `${keyHtml} - ${shortcut.description}`;
+      li.innerHTML = ShortcutHelpers.createShortcutListItem(shortcut);
       ul.appendChild(li);
     });
 
     // Add special keys
-    Object.values(this.state.shortcuts.special).forEach((shortcut) => {
+    Object.values(this.state.shortcuts.special).forEach(shortcut => {
       const li = document.createElement("li");
-      const keyHtml = shortcut.displayKeys
-        .map((key) => `<kbd>${key}</kbd>`)
-        .join(" + ");
-      li.innerHTML = `${keyHtml} - ${shortcut.description}`;
+      li.innerHTML = ShortcutHelpers.createShortcutListItem(shortcut);
       ul.appendChild(li);
     });
 
@@ -389,9 +388,7 @@ class ShortcutStore {
   // Initialize shortcuts system
   initialize(): void {
     // Register main shortcut handler (bubbling phase)
-    document.addEventListener("keydown", (event) =>
-      this.handleKeyboardEvent(event)
-    );
+    document.addEventListener("keydown", this.handleKeyboardEvent);
 
     // Register special Escape key handler (capture phase)
     // This ensures Escape works even when terminal has focus
@@ -403,21 +400,40 @@ class ShortcutStore {
           if (handled) return;
         }
       },
-      true
-    ); // true enables capture phase
+      true // true enables capture phase
+    );
 
-    // Generate shortcuts list immediately instead of waiting for another DOMContentLoaded event
+    // Generate shortcuts list immediately
     this.generateShortcutsList();
+  }
+  
+  // Cleanup method - for use with React useEffect's return function
+  cleanup(): void {
+    document.removeEventListener("keydown", this.handleKeyboardEvent);
+    document.removeEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        this.getSpecialKeyHandlers().Escape(event);
+      }
+    }, true);
   }
 }
 
-// Create singleton shortcut store instance (like React Context)
-const shortcutStoreInstance = new ShortcutStore();
+// Create singleton shortcut store instance (similar to React Context)
+export const shortcutStoreInstance = new ShortcutStore();
 
 // Initialize shortcuts system on DOM ready
-document.addEventListener("DOMContentLoaded", () => {
-  shortcutStoreInstance.initialize();
-});
+if (typeof document !== 'undefined') { // SSR compatible
+  document.addEventListener("DOMContentLoaded", () => {
+    shortcutStoreInstance.initialize();
+  });
+}
 
-// Export the shortcut store for other modules
-export { shortcutStoreInstance };
+// React migration prep - Creating hook-style interfaces
+export const useShortcuts = () => {
+  // This will transform into a real custom Hook during React migration
+  return {
+    state: shortcutStoreInstance.getState(),
+    subscribe: shortcutStoreInstance.subscribe.bind(shortcutStoreInstance),
+    handleKeyboardEvent: shortcutStoreInstance.handleKeyboardEvent,
+  };
+};

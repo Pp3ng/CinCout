@@ -3,7 +3,6 @@
  */
 import express, { Request, Response } from "express";
 import {
-  validateCode,
   createTempDirectory,
   writeCodeToFile,
   executeCommand,
@@ -19,13 +18,7 @@ interface StyleCheckRequest extends CodeRequest {}
 router.post(
   "/",
   asyncRouteHandler(async (req: Request, res: Response) => {
-    const { code, lang } = req.body as StyleCheckRequest;
-
-    // Validate code
-    const validation = validateCode(code);
-    if (!validation.valid) {
-      return res.status(400).send(validation.message);
-    }
+    const { code } = req.body as StyleCheckRequest;
 
     // Create temporary directory
     const tmpDir = createTempDirectory();
@@ -73,7 +66,9 @@ router.post(
       }
 
       if (!hasOutput) {
-        res.send("<div class='output-block'><span style='color: #50fa7b; font-weight: bold;'><i class='fas fa-check-circle'></i> No issues found. Your code looks good!</span></div>");
+        res.send(
+          "<div class='output-block'><span style='color: #50fa7b; font-weight: bold;'><i class='fas fa-check-circle'></i> No issues found. Your code looks good!</span></div>"
+        );
       } else {
         // Apply formatting to style check output
         const formattedOutput = formatOutput(output, "style");

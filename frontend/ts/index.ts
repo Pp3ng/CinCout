@@ -2,7 +2,7 @@
 import "codemirror/lib/codemirror.css";
 import "codemirror/addon/hint/show-hint.css";
 import "codemirror/addon/fold/foldgutter.css";
-import "xterm/css/xterm.css";
+import "@xterm/xterm/css/xterm.css";
 
 // 2. Import local CSS
 import "../css/base.css";
@@ -41,6 +41,7 @@ import "./layout"; // Layout management
 import "./selector"; // UI selection handling
 import "./shortcuts"; // Keyboard shortcuts
 import "./websocket"; // WebSocket communication
+import "./compileSocket"; // Compilation WebSocket handling
 import "./terminal"; // Terminal functionality
 import "./handlers"; // Event handlers
 import "./editor"; // Main editor functionality (depends on most other modules)

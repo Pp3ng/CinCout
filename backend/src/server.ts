@@ -12,13 +12,12 @@ import morgan from "morgan";
 import helmet from "helmet";
 
 // Routes & WebSockets
-import {
-  router as compileRouter,
-  setupCompileWebSocketHandlers,
-} from "./routes/compile";
+import { setupCompileWebSocketHandlers } from "./ws/compile";
 import formatRouter from "./routes/format";
 import styleCheckRouter from "./routes/styleCheck";
 import templatesRouter from "./routes/templates";
+import assemblyRouter from "./routes/assembly";
+import memcheckRouter from "./routes/memcheck";
 
 const numCPUs = os.cpus().length;
 const port = 9527;
@@ -142,10 +141,11 @@ if (cluster.isPrimary) {
   setupCompileWebSocketHandlers(wss);
 
   // Mount routes
-  app.use("/api/compile", compileRouter);
   app.use("/api/format", formatRouter);
   app.use("/api/styleCheck", styleCheckRouter);
   app.use("/api/templates", templatesRouter);
+  app.use("/api/assembly", assemblyRouter);
+  app.use("/api/memcheck", memcheckRouter);
 
   // Start server
   server.listen(port, /* backlog */ 1024, () => {

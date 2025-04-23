@@ -217,31 +217,10 @@
       // Handle terminal resize if it exists
       if (window.fitAddon && window.terminal) {
         try {
-          // Try to fit the terminal
+          // Just use the fit addon to resize the terminal
           window.fitAddon.fit();
         } catch (error) {
-          // If fit fails, manually resize with integer dimensions
-          const terminal = window.terminal;
-          const containerElement = terminal.element.parentElement;
-
-          if (containerElement) {
-            // Get container dimensions
-            const containerWidth = containerElement.clientWidth;
-            const containerHeight = containerElement.clientHeight;
-
-            // Calculate dimensions based on character size
-            // Ensure integers by using Math.floor
-            const charWidth =
-              terminal._core._renderService.dimensions.actualCellWidth || 9;
-            const charHeight =
-              terminal._core._renderService.dimensions.actualCellHeight || 17;
-
-            const cols = Math.max(2, Math.floor(containerWidth / charWidth));
-            const rows = Math.max(1, Math.floor(containerHeight / charHeight));
-
-            // Manually resize with integer values
-            terminal.resize(cols, rows);
-          }
+          console.error("Error fitting terminal:", error);
         }
       }
     }, 10);

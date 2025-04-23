@@ -2,6 +2,10 @@
 import { debounce, takeCodeSnap, showNotification } from "./utils";
 import { terminalManager } from "./terminal";
 import { themeStoreInstance } from "./themes";
+import CompileSocketManager, {
+  CompileOptions,
+  CompileStateUpdater,
+} from "./compileSocket";
 
 // Define WebSocket-related interfaces - These would typically be in a types.ts file
 export interface CinCoutSocket {
@@ -18,19 +22,7 @@ export interface CinCoutSocket {
   getCompilationState: () => string;
 }
 
-export interface WebSocketMessage {
-  type: string;
-  [key: string]: any;
-}
-
 // Interfaces for typed state management - React style
-export interface CompileOptions {
-  lang: string;
-  compiler: string;
-  optimization: string;
-  code: string;
-}
-
 export interface UIState {
   isOutputVisible: boolean;
   activeTab: "output" | "assembly";
@@ -84,178 +76,25 @@ export class AppState {
   }
 }
 
-// Component-like modules
-export class WebSocketManager {
-  private socket: CinCoutSocket;
+// UI State adapter for CompileSocketManager
+class CompileStateAdapter implements CompileStateUpdater {
   private appState: AppState;
 
-  constructor(socket: CinCoutSocket, appState: AppState) {
-    this.socket = socket;
+  constructor(appState: AppState) {
     this.appState = appState;
-    this.socket.init(this.handleWebSocketMessage.bind(this));
   }
 
-  // Simulates React useEffect cleanup
-  cleanup(): void {
-    try {
-      const sessionId = this.socket.getSessionId();
-      if (sessionId && this.socket.isConnected()) {
-        console.log(
-          `Sending cleanup request for session ${sessionId} and disconnecting...`
-        );
-        this.socket
-          .sendData({
-            type: "cleanup",
-            sessionId: sessionId,
-          })
-          .catch((e) => console.error("Error sending cleanup message:", e));
-
-        this.socket.disconnect();
-      }
-    } catch (error) {
-      console.error("Failed to handle cleanup:", error);
-    }
-  }
-
-  async compile(options: CompileOptions): Promise<void> {
-    if (this.socket.isProcessRunning()) {
-      console.log("A process is already running, ignoring compile request");
-      return;
-    }
-
-    if (options.code.trim() === "") {
-      this.showOutputMessage(
-        '<div class="error-output">Error: Code cannot be empty</div>'
-      );
-      return;
-    }
-
-    try {
-      this.showOutput();
-      this.showOutputMessage('<div class="loading">Connecting...</div>');
-
-      await this.socket.connect();
-      this.showOutputMessage(
-        '<div class="loading">Sending code for compilation...</div>'
-      );
-
-      await this.socket.sendData({
-        type: "compile",
-        code: options.code,
-        lang: options.lang,
-        compiler: options.compiler,
-        optimization: options.optimization,
-      });
-    } catch (error) {
-      console.error("WebSocket operation failed:", error);
-      this.showOutputMessage(
-        '<div class="error-output">Error: WebSocket connection failed. Please try again.</div>'
-      );
-
-      try {
-        this.socket.disconnect();
-      } catch (e) {
-        console.error("Error disconnecting after failure:", e);
-      }
-    }
-  }
-
-  private handleWebSocketMessage(event: MessageEvent): void {
-    const data = JSON.parse(event.data) as WebSocketMessage;
-    this.socket.updateStateFromMessage(data.type);
-
-    // Update app state based on socket state
+  updateCompilationState(state: string): void {
     this.appState.setState({
-      compilationState: this.socket.getCompilationState() as
-        | "idle"
-        | "compiling"
-        | "running",
-      isProcessRunning: this.socket.isProcessRunning(),
+      compilationState: state as "idle" | "compiling" | "running",
     });
-
-    switch (data.type) {
-      case "connected":
-        this.socket.setSessionId(data.sessionId);
-        break;
-
-      case "compiling":
-        this.showOutput();
-        this.activateOutputTab();
-        this.showOutputMessage('<div class="loading">Compiling</div>');
-        this.refreshEditor();
-        break;
-
-      case "compile-error":
-        this.showOutputMessage(
-          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${data.output}</div>`
-        );
-        this.socket.disconnect();
-        break;
-
-      case "compile-success":
-        terminalManager.dispose();
-        this.showOutput();
-        this.activateOutputTab();
-
-        terminalManager.setDomElements({
-          output: document.getElementById("output"),
-          outputPanel: document.getElementById("outputPanel"),
-          outputTab: document.getElementById("outputTab"),
-        });
-
-        terminalManager.setupTerminal();
-        this.refreshEditor();
-        break;
-
-      case "output":
-        terminalManager.write(data.output);
-        break;
-
-      case "error":
-        console.error(
-          "Received error from server:",
-          data.output || data.message
-        );
-        terminalManager.writeError(data.output || data.message);
-        break;
-
-      case "memcheck-report":
-        // Display memcheck report using the old approach - direct insertion into output
-        if (data.output && document.getElementById("output")) {
-          document.getElementById(
-            "output"
-          ).innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data.output}</div>`;
-
-          // After receiving the memcheck report, disconnect the WebSocket
-          setTimeout(() => {
-            this.socket.disconnect();
-          }, 100);
-        }
-        break;
-
-      case "exit":
-        // First display the exit message
-        terminalManager.writeExitMessage(data.code);
-
-        // If we're running a memcheck session, immediately show the "waiting for report" message
-        if (data.isMemcheck === true) {
-          const output = document.getElementById("output");
-          if (output) {
-            output.innerHTML = `<div class="loading">Processing memory check results...</div>`;
-          }
-          // Don't disconnect - wait for the memcheck-report message
-        } else {
-          // Regular run - disconnect immediately
-          this.socket.disconnect();
-        }
-        break;
-
-      default:
-        console.log(`Unknown message type: ${data.type}`);
-    }
   }
 
-  private showOutput(): void {
+  updateProcessRunning(running: boolean): void {
+    this.appState.setState({ isProcessRunning: running });
+  }
+
+  showOutput(): void {
     const outputPanel = document.getElementById("outputPanel");
     if (outputPanel) {
       outputPanel.style.display = "flex";
@@ -264,7 +103,7 @@ export class WebSocketManager {
     document.querySelector(".editor-panel")?.classList.add("with-output");
   }
 
-  private activateOutputTab(): void {
+  activateOutputTab(): void {
     const outputTab = document.getElementById("outputTab");
     if (outputTab) {
       outputTab.click();
@@ -272,14 +111,7 @@ export class WebSocketManager {
     }
   }
 
-  private showOutputMessage(html: string): void {
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = html;
-    }
-  }
-
-  private refreshEditor(): void {
+  refreshEditor(): void {
     if ((window as any).editor) {
       setTimeout(() => (window as any).editor.refresh(), 10);
     }
@@ -289,14 +121,14 @@ export class WebSocketManager {
 // Component-like module for code actions
 export class CodeActions {
   private appState: AppState;
-  private webSocketManager: WebSocketManager | null = null;
+  private compileSocketManager: CompileSocketManager | null = null;
 
   constructor(appState: AppState) {
     this.appState = appState;
   }
 
-  setWebSocketManager(manager: WebSocketManager): void {
-    this.webSocketManager = manager;
+  setCompileSocketManager(manager: CompileSocketManager): void {
+    this.compileSocketManager = manager;
   }
 
   async viewAssembly(options: CompileOptions): Promise<void> {
@@ -327,7 +159,7 @@ export class CodeActions {
     }
 
     try {
-      const response = await fetch("/api/compile", {
+      const response = await fetch("/api/assembly", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -337,7 +169,6 @@ export class CodeActions {
           lang: options.lang,
           compiler: options.compiler,
           optimization: options.optimization,
-          action: "assembly",
         }),
       });
 
@@ -365,28 +196,40 @@ export class CodeActions {
   }
 
   async runMemCheck(options: CompileOptions): Promise<void> {
-    // Use WebSocket for interactive memcheck if available
-    if (this.webSocketManager) {
-      try {
-        const outputTab = document.getElementById("outputTab");
-        if (outputTab) {
-          outputTab.click();
-          this.appState.setState({ activeTab: "output" });
-        }
-        await (window as any).CinCoutSocket.connect();
+    const outputTab = document.getElementById("outputTab");
+    if (outputTab) {
+      outputTab.click();
+      this.appState.setState({ activeTab: "output" });
+    }
 
-        // Send the memcheck request through WebSocket
-        await (window as any).CinCoutSocket.sendData({
-          type: "memcheck",
+    const output = document.getElementById("output");
+    if (output) {
+      output.innerHTML = "<div class='loading'>Running memory check...</div>";
+    }
+
+    try {
+      const response = await fetch("/api/memcheck", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           code: options.code,
           lang: options.lang,
           compiler: options.compiler,
           optimization: options.optimization,
-        });
+        }),
+      });
 
-        return;
-      } catch (error) {
-        console.error("WebSocket memcheck failed:", error);
+      const data = await response.text();
+
+      if (output) {
+        output.innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`;
+      }
+    } catch (error) {
+      console.error("Memcheck error:", error);
+      if (output) {
+        output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
       }
     }
   }
@@ -505,7 +348,7 @@ export class EditorSettings {
 // Main App Component - pulls everything together
 export class CinCoutApp {
   private appState: AppState;
-  private webSocketManager: WebSocketManager;
+  private compileSocketManager: CompileSocketManager;
   private codeActions: CodeActions;
   private editorSettings: EditorSettings;
 
@@ -513,13 +356,17 @@ export class CinCoutApp {
     // Initialize state
     this.appState = new AppState();
 
+    // Create state adapter for CompileSocketManager
+    const stateAdapter = new CompileStateAdapter(this.appState);
+
     // Initialize components (like React's useXXX hooks)
-    this.webSocketManager = new WebSocketManager(
+    this.compileSocketManager = new CompileSocketManager(
       (window as any).CinCoutSocket,
-      this.appState
+      stateAdapter
     );
+
     this.codeActions = new CodeActions(this.appState);
-    this.codeActions.setWebSocketManager(this.webSocketManager);
+    this.codeActions.setCompileSocketManager(this.compileSocketManager);
     this.editorSettings = new EditorSettings(this.appState);
 
     // Event handlers will be attached in init()
@@ -528,11 +375,7 @@ export class CinCoutApp {
   init(): void {
     document.addEventListener("DOMContentLoaded", () => {
       this.setupEventListeners();
-
-      // Initialize template system (existing functionality)
-      if (typeof window.updateTemplates === "function") {
-        window.updateTemplates();
-      }
+      // No need to initialize templates here, it's handled in templates.ts
     });
   }
 
@@ -557,17 +400,7 @@ export class CinCoutApp {
       codesnap: document.getElementById("codeSnap"),
     };
 
-    // React-like effect for language change
-    if (elements.language) {
-      elements.language.addEventListener("change", async () => {
-        const lang = elements.language.value;
-        if (typeof window.updateTemplates === "function") {
-          await window.updateTemplates();
-        }
-      });
-    }
-
-    // React-like effect for template change
+    // Template change handler
     if (elements.template) {
       elements.template.addEventListener("change", () => {
         if (typeof window.setTemplate === "function") {
@@ -587,7 +420,7 @@ export class CinCoutApp {
         "click",
         debounce(() => {
           const options = this.getCompileOptions();
-          this.webSocketManager.compile(options);
+          this.compileSocketManager.compile(options);
         }, 300)
       );
     }
@@ -595,7 +428,7 @@ export class CinCoutApp {
     // Close output panel
     if (elements.closeOutput) {
       elements.closeOutput.addEventListener("click", () => {
-        this.webSocketManager.cleanup();
+        this.compileSocketManager.cleanup();
       });
     }
 

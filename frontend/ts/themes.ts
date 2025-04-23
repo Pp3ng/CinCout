@@ -393,17 +393,28 @@ class ThemeStore {
       );
     }
 
-    // Update terminal theme
     if ((window as any).terminal) {
       setTimeout(() => {
-        const terminalTheme = this.getTerminalTheme();
-        (window as any).terminal.setOption("theme", terminalTheme);
-        (window as any).terminal.refresh(0, (window as any).terminal.rows - 1);
+        try {
+          // Get the terminal theme
+          const terminalTheme = this.getTerminalTheme();
+
+          if ((window as any).terminal.options) {
+            (window as any).terminal.options.theme = terminalTheme;
+
+            // Force a refresh of the terminal display
+            (window as any).terminal.refresh(
+              0,
+              (window as any).terminal.rows - 1
+            );
+          }
+        } catch (error) {
+          console.error("Error updating terminal theme:", error);
+        }
       }, 50);
     }
   }
 
-  // Get terminal theme based on current theme (pure calculation)
   getTerminalTheme(): TerminalTheme {
     const currentTheme = this.getCurrentTheme();
 
@@ -482,6 +493,9 @@ class ThemeStore {
     // Apply initial theme from storage
     const savedTheme = localStorage.getItem("preferred-theme") || "default";
     this.setTheme(savedTheme);
+
+    // Make theme getter available globally for terminal setup
+    (window as any).getTerminalTheme = this.getTerminalTheme.bind(this);
   }
 
   // React-like component mounting

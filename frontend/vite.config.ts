@@ -18,8 +18,8 @@ export default defineConfig({
         manualChunks: {
           vendor: [
             "codemirror",
-            "xterm",
-            "xterm-addon-fit",
+            "@xterm/xterm",
+            "@xterm/addon-fit",
             "html2canvas",
             "@fortawesome/fontawesome-free",
           ],

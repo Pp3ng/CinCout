@@ -1,6 +1,9 @@
 // Import required modules
-import { Terminal } from "xterm";
-import { FitAddon } from "xterm-addon-fit";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+
+// Import the CSS with the correct path for the new @xterm package
+import "@xterm/xterm/css/xterm.css";
 
 // Interface for DOM elements
 interface DomElements {
@@ -9,10 +12,40 @@ interface DomElements {
   outputTab?: HTMLElement | null;
 }
 
+// Extend FitAddon to ensure integer dimensions
+class SafeFitAddon extends FitAddon {
+  fit(): void {
+    try {
+      // Get terminal dimensions before fitting
+      const terminal = (this as any)._terminal;
+      if (!terminal || !terminal.element || !terminal.element.parentElement) {
+        return;
+      }
+
+      // Calculate dimensions based on the container size
+      const dims = this.proposeDimensions();
+
+      if (!dims || !dims.cols || !dims.rows) {
+        return;
+      }
+
+      // Ensure integer values
+      const cols = Math.max(2, Math.floor(dims.cols));
+      const rows = Math.max(1, Math.floor(dims.rows));
+
+      // Directly resize with integer values instead of calling super.fit()
+      // This avoids the potential floating point values that might be used internally
+      terminal.resize(cols, rows);
+    } catch (e) {
+      console.error("Error in SafeFitAddon.fit():", e);
+    }
+  }
+}
+
 // Terminal manager class
 class TerminalManager {
   private terminal: Terminal | null = null;
-  private fitAddon: FitAddon | null = null;
+  private fitAddon: SafeFitAddon | null = null;
   private domElements: DomElements = {};
 
   /**
@@ -73,8 +106,8 @@ class TerminalManager {
       },
     });
 
-    // Create fit addon to make terminal adapt to container size
-    this.fitAddon = new FitAddon();
+    // Create our safer fit addon that enforces integer dimensions
+    this.fitAddon = new SafeFitAddon();
     window.fitAddon = this.fitAddon;
     this.terminal.loadAddon(this.fitAddon);
     window.terminal = this.terminal;
@@ -136,8 +169,8 @@ class TerminalManager {
       ) {
         window.CinCoutSocket.sendData({
           type: "resize",
-          cols,
-          rows,
+          cols: Math.floor(cols),
+          rows: Math.floor(rows),
         });
       }
     });
@@ -154,7 +187,7 @@ class TerminalManager {
     // Simplified terminal input handling
     this.terminal.onData((data: string) => {
       if (
-        !window.CinCoutSocket.getCompilationState() === "running" ||
+        window.CinCoutSocket.getCompilationState() !== "running" ||
         !window.CinCoutSocket.isConnected()
       ) {
         console.log(
@@ -184,37 +217,27 @@ class TerminalManager {
           window.CinCoutSocket.isConnected() &&
           window.CinCoutSocket.getCompilationState() === "running"
         ) {
+          // Ensure we always send integer values to the server
+          const cols = Math.floor(this.terminal.cols);
+          const rows = Math.floor(this.terminal.rows);
+
           window.CinCoutSocket.sendData({
             type: "resize",
-            cols: this.terminal.cols,
-            rows: this.terminal.rows,
+            cols: cols,
+            rows: rows,
+          }).catch((err) => {
+            console.error("Failed to send resize data to server:", err);
           });
         }
       } catch (e) {
         console.error("Error fitting terminal:", e);
 
-        // Manual fallback resize if fit addon fails
+        // Log detailed error for debugging
         if (this.terminal) {
-          const containerElement = this.terminal.element.parentElement;
-          if (containerElement) {
-            // Get container dimensions
-            const containerWidth = containerElement.clientWidth;
-            const containerHeight = containerElement.clientHeight;
-
-            // Calculate dimensions based on character size
-            const charWidth =
-              this.terminal._core._renderService.dimensions.actualCellWidth ||
-              9;
-            const charHeight =
-              this.terminal._core._renderService.dimensions.actualCellHeight ||
-              17;
-
-            const cols = Math.max(2, Math.floor(containerWidth / charWidth));
-            const rows = Math.max(1, Math.floor(containerHeight / charHeight));
-
-            // Manually resize with integer values
-            this.terminal.resize(cols, rows);
-          }
+          console.debug("Terminal dimensions at time of error:", {
+            cols: this.terminal.cols,
+            rows: this.terminal.rows,
+          });
         }
       }
     }

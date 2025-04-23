@@ -1,251 +1,247 @@
-// Define template interfaces using Record type
-type TemplateContent = string;
-type TemplatesByName = Record<string, TemplateContent>;
-type TemplatesByLanguage = Record<string, TemplatesByName>;
+interface TemplateCache {
+  lists: Record<string, string[]>;
+  contents: Record<string, string>;
+}
 
-// Templates cache and tracking
-class TemplateManager {
-  // Private properties
-  private templates: TemplatesByLanguage = {};
-  private templateLists: Record<string, string[]> = {};// {language: templateName}
-  private loadedTemplates = new Set<string>();
-  private isInitialized = false;
-  private fetchTimeout = 10000; // 10 second timeout for fetch operations
+// Cache object
+const cache: TemplateCache = {
+  lists: {},
+  contents: {},
+};
 
-  constructor() {
-    // Make these available globally for backwards compatibility
-    (window as any).templates = this.templates;
-    (window as any).templateLists = this.templateLists;
-    (window as any).loadedTemplates = this.loadedTemplates;
+// Default timeout for fetch operations
+const FETCH_TIMEOUT = 8000; // 8 seconds
+
+// Track initialization state
+let initialized = false;
+
+/**
+ * Load template list for a specific language
+ */
+async function loadTemplateList(language: string): Promise<string[]> {
+  // Return cached list if available
+  if (cache.lists[language]) {
+    return cache.lists[language];
   }
 
-  // Load template list for a specific language with error handling and timeout
-  async loadTemplateList(language: string): Promise<string[]> {
-    try {
-      // Use cached list if available
-      if (this.templateLists[language]) {
-        return this.templateLists[language];
-      }
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.fetchTimeout);
+    const response = await fetch(`/api/templates/${language}/list`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
 
-      try {
-        const response = await fetch(`/api/templates/${language}/list`, {
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to load template list for ${language}: ${response.statusText}`
-          );
-        }
-
-        const templateNames = (await response.json()) as string[];
-
-        // Store in our cache
-        this.templateLists[language] = templateNames;
-
-        return templateNames;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    } catch (error) {
-      console.error(`Failed to load template list for ${language}:`, error);
-      return [];
-    }
-  }
-
-  // Load a single template by language and name with improved error handling
-  async loadSingleTemplate(
-    language: string,
-    templateName: string
-  ): Promise<string> {
-    const templateKey = `${language}:${templateName}`;
-
-    try {
-      // Use cached template if available
-      if (
-        this.loadedTemplates.has(templateKey) &&
-        this.templates[language] &&
-        this.templates[language][templateName]
-      ) {
-        return this.templates[language][templateName];
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.fetchTimeout);
-
-      try {
-        const response = await fetch(
-          `/api/templates/${language}/${encodeURIComponent(templateName)}`,
-          { signal: controller.signal }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to load template ${templateName} for ${language}: ${response.statusText}`
-          );
-        }
-
-        const result = await response.json();
-        const templateContent = result.content;
-
-        // Initialize language section if needed
-        if (!this.templates[language]) {
-          this.templates[language] = {};
-        }
-
-        // Store template in cache
-        this.templates[language][templateName] = templateContent;
-        this.loadedTemplates.add(templateKey);
-
-        return templateContent;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    } catch (error) {
-      console.error(
-        `Failed to load template ${templateName} for ${language}:`,
-        error
-      );
-      return ""; // Return empty template on error
-    }
-  }
-
-  // Update the template list when the language changes with improved error handling
-  async updateTemplates(): Promise<void> {
-    const languageSelect = document.getElementById(
-      "language"
-    ) as HTMLSelectElement;
-    const templateSelect = document.getElementById(
-      "template"
-    ) as HTMLSelectElement;
-
-    if (!templateSelect || !languageSelect) {
-      console.error("Template or language select elements not found");
-      return;
+    if (!response.ok) {
+      throw new Error(`Failed to load template list: ${response.statusText}`);
     }
 
-    const lang = languageSelect.value || "c";
+    const templateNames = await response.json();
 
-    // Show loading state
-    templateSelect.disabled = true;
-    templateSelect.innerHTML = "<option>Loading templates...</option>";
-
-    try {
-      // Load template list for this language
-      const templateNames = await this.loadTemplateList(lang);
-
-      // Clear existing options after successful load
-      templateSelect.innerHTML = "";
-      templateSelect.disabled = false;
-
-      // Add template options
-      for (const name of templateNames) {
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        templateSelect.appendChild(option);
-      }
-
-      // Try to select Hello World template if it exists, regardless of which language
-      if (templateSelect.options.length > 0) {
-        const helloWorldOption = Array.from(templateSelect.options).find(
-          (option) => option.value === "Hello World"
-        );
-
-        if (helloWorldOption) {
-          templateSelect.value = "Hello World";
-        } else {
-          // Select first available template
-          templateSelect.selectedIndex = 0;
-        }
-
-        // Manually trigger the change event to update the custom selector UI
-        templateSelect.dispatchEvent(new Event("change", { bubbles: true }));
-
-        // Load and set the template
-        await this.setTemplate();
-      }
-    } catch (error) {
-      console.error("Error updating templates:", error);
-      templateSelect.innerHTML = "<option>Error loading templates</option>";
-      templateSelect.disabled = false;
-    }
-  }
-
-  // Set editor content based on selected template with improved error handling
-  async setTemplate(): Promise<void> {
-    const languageSelect = document.getElementById(
-      "language"
-    ) as HTMLSelectElement;
-    const templateSelect = document.getElementById(
-      "template"
-    ) as HTMLSelectElement;
-
-    if (!templateSelect || !languageSelect || !(window as any).editor) {
-      console.error("Required elements not found");
-      return;
-    }
-
-    const lang = languageSelect.value || "c";
-    const templateName = templateSelect.value;
-
-    if (!templateName) return;
-
-    try {
-      // Show loading state in editor
-      (window as any).editor.setValue("// Loading template...");
-
-      // Load the template content
-      const templateContent = await this.loadSingleTemplate(lang, templateName);
-
-      // Set editor content
-      if (templateContent) {
-        (window as any).editor.setValue(templateContent);
-      }
-    } catch (error) {
-      console.error(`Error setting template: ${error}`);
-      (window as any).editor.setValue(
-        `// Error loading template: ${templateName}`
-      );
-    }
-  }
-
-  // Initialize editor with default template
-  initTemplates(): void {
-    if (this.isInitialized) return;
-
-    const init = async () => {
-      await this.updateTemplates();
-      this.isInitialized = true;
-    };
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => init());
-    } else {
-      init();
-    }
+    // Save to cache
+    cache.lists[language] = templateNames;
+    return templateNames;
+  } catch (error) {
+    console.error(`Failed to load template list for ${language}:`, error);
+    return [];
   }
 }
 
-// Create singleton instance
-const templateManager = new TemplateManager();
+/**
+ * Load template content for a specific language and template name
+ */
+async function loadTemplateContent(
+  language: string,
+  templateName: string
+): Promise<string> {
+  const cacheKey = `${language}:${templateName}`;
+
+  // Return cached content if available
+  if (cache.contents[cacheKey]) {
+    return cache.contents[cacheKey];
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    const response = await fetch(
+      `/api/templates/${language}/${encodeURIComponent(templateName)}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load template content: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    const content = data.content;
+
+    // Save to cache
+    cache.contents[cacheKey] = content;
+    return content;
+  } catch (error) {
+    console.error(
+      `Failed to load template ${templateName} for ${language}:`,
+      error
+    );
+    return `// Error loading template: ${error.message}`;
+  }
+}
+
+/**
+ * Update template dropdown and load selected template
+ */
+async function updateTemplateList(): Promise<void> {
+  const languageSelect = document.getElementById(
+    "language"
+  ) as HTMLSelectElement;
+  const templateSelect = document.getElementById(
+    "template"
+  ) as HTMLSelectElement;
+
+  if (!templateSelect || !languageSelect) {
+    console.error("Template or language select elements not found");
+    return;
+  }
+
+  const language = languageSelect.value || "c";
+
+  // Show loading state
+  templateSelect.disabled = true;
+  templateSelect.innerHTML = "<option>Loading templates...</option>";
+
+  try {
+    // Load template list
+    const templateNames = await loadTemplateList(language);
+
+    // Clear existing options
+    templateSelect.innerHTML = "";
+    templateSelect.disabled = false;
+
+    // Add new options
+    templateNames.forEach((name) => {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      templateSelect.appendChild(option);
+    });
+
+    // Select Hello World template if exists
+    if (templateSelect.options.length > 0) {
+      const helloWorldOption = Array.from(templateSelect.options).find(
+        (option) => option.value === "Hello World"
+      );
+
+      if (helloWorldOption) {
+        templateSelect.value = "Hello World";
+      } else {
+        // Otherwise select first template
+        templateSelect.selectedIndex = 0;
+      }
+
+      // Update custom selector UI
+      templateSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+      // Only load template content during initialization
+      // or when explicitly changing language
+      if (!initialized || document.activeElement === languageSelect) {
+        await loadSelectedTemplate();
+      }
+    }
+  } catch (error) {
+    console.error("Error updating template list:", error);
+    templateSelect.innerHTML = "<option>Failed to load templates</option>";
+    templateSelect.disabled = false;
+  }
+}
+
+/**
+ * Load the currently selected template
+ */
+async function loadSelectedTemplate(): Promise<void> {
+  const languageSelect = document.getElementById(
+    "language"
+  ) as HTMLSelectElement;
+  const templateSelect = document.getElementById(
+    "template"
+  ) as HTMLSelectElement;
+
+  if (!templateSelect || !languageSelect || !(window as any).editor) {
+    console.error("Required elements not found");
+    return;
+  }
+
+  const language = languageSelect.value || "c";
+  const templateName = templateSelect.value;
+
+  if (!templateName) return;
+
+  try {
+    // Show loading state
+    (window as any).editor.setValue("// Loading template...");
+
+    // Load template content
+    const content = await loadTemplateContent(language, templateName);
+
+    // Set editor content
+    (window as any).editor.setValue(content);
+  } catch (error) {
+    console.error("Error setting template:", error);
+    (window as any).editor.setValue(
+      `// Error loading template: ${error.message}`
+    );
+  }
+}
+
+/**
+ * Initialize template system
+ */
+function initTemplates(): void {
+  if (initialized) return;
+
+  updateTemplateList()
+    .then(() => {
+      initialized = true;
+    })
+    .catch((err) => {
+      console.error("Failed to initialize templates:", err);
+    });
+}
 
 // Set up event handlers and initialization
 document.addEventListener("DOMContentLoaded", () => {
-  templateManager.initTemplates();
+  // Initialize template system
+  initTemplates();
 
   // Set up language change handler
   const languageSelect = document.getElementById("language");
   if (languageSelect) {
     languageSelect.addEventListener("change", () => {
-      templateManager.updateTemplates();
+      // When language changes, update templates
+      updateTemplateList();
+    });
+  }
+
+  // Set up template change handler
+  const templateSelect = document.getElementById("template");
+  if (templateSelect) {
+    templateSelect.addEventListener("change", () => {
+      // Only load template content when user actually changes the template
+      if (document.activeElement === templateSelect) {
+        loadSelectedTemplate();
+      }
     });
   }
 });
 
-// Expose functions globally for backward compatibility
-(window as any).updateTemplates = () => templateManager.updateTemplates();
-(window as any).setTemplate = () => templateManager.setTemplate();
+// Export functions globally for backward compatibility
+(window as any).updateTemplates = updateTemplateList;
+(window as any).setTemplate = loadSelectedTemplate;
+(window as any).templates = {}; // Maintain for backward compatibility
+(window as any).templateLists = cache.lists;
+(window as any).loadedTemplates = new Set();

@@ -25,7 +25,6 @@ export interface CodeRequest {
   lang: string;
   compiler?: string;
   optimization?: string;
-  action?: string;
 }
 
 /**
@@ -35,50 +34,6 @@ export interface ExecResult {
   stdout: string;
   stderr: string;
 }
-
-/**
- * Result of code validation
- */
-export interface ValidationResult {
-  valid: boolean;
-  message?: string;
-  error?: string;
-}
-
-/**
- * Validates input code for basic issues
- * @param {string} code - Code to validate
- * @param {boolean} useErrorField - Use 'error' property instead of 'message' in result
- * @returns {ValidationResult} Validation result
- */
-export const validateCode = (
-  code: string,
-  useErrorField: boolean = false
-): ValidationResult => {
-  if (!code || code.trim() === "") {
-    return useErrorField
-      ? { valid: false, error: "Error: No code provided" }
-      : { valid: false, message: "Error: No code provided" };
-  }
-
-  // Check code length
-  if (code.length > 50000) {
-    const errorMsg = "Error: Code exceeds maximum length of 50,000 characters";
-    return useErrorField
-      ? { valid: false, error: errorMsg }
-      : { valid: false, message: errorMsg };
-  }
-
-  // Check line count
-  if (code.split("\n").length > 1000) {
-    const errorMsg = "Error: Code exceeds maximum of 1,000 lines";
-    return useErrorField
-      ? { valid: false, error: errorMsg }
-      : { valid: false, message: errorMsg };
-  }
-
-  return { valid: true };
-};
 
 /**
  * Environment for code compilation

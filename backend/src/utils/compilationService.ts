@@ -6,7 +6,6 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import * as tmp from "tmp";
 import { DirResult } from "tmp";
-import { WebSocket } from "ws";
 import { exec, ExecOptions } from "child_process";
 import { ExtendedWebSocket, sendWebSocketMessage } from "./webSocketHandler";
 

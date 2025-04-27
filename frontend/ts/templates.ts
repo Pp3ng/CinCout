@@ -10,36 +10,35 @@ const cache: TemplateCache = {
 };
 
 // Default timeout for fetch operations
-const FETCH_TIMEOUT = 8000; // 8 seconds
-
-// Track initialization state
+const FETCH_TIMEOUT = 5000; // 5 seconds
 let initialized = false;
+
+/**
+ * Fetch data with timeout handling
+ */
+async function fetchWithTimeout(url: string): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(response.statusText);
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 /**
  * Load template list for a specific language
  */
 async function loadTemplateList(language: string): Promise<string[]> {
   // Return cached list if available
-  if (cache.lists[language]) {
-    return cache.lists[language];
-  }
+  if (cache.lists[language]) return cache.lists[language];
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
-    const response = await fetch(`/api/templates/${language}/list`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Failed to load template list: ${response.statusText}`);
-    }
-
+    const response = await fetchWithTimeout(`/api/templates/${language}/list`);
     const templateNames = await response.json();
-
-    // Save to cache
     cache.lists[language] = templateNames;
     return templateNames;
   } catch (error) {
@@ -56,32 +55,13 @@ async function loadTemplateContent(
   templateName: string
 ): Promise<string> {
   const cacheKey = `${language}:${templateName}`;
-
-  // Return cached content if available
-  if (cache.contents[cacheKey]) {
-    return cache.contents[cacheKey];
-  }
+  if (cache.contents[cacheKey]) return cache.contents[cacheKey];
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
-    const response = await fetch(
-      `/api/templates/${language}/${encodeURIComponent(templateName)}`,
-      { signal: controller.signal }
+    const response = await fetchWithTimeout(
+      `/api/templates/${language}/${encodeURIComponent(templateName)}`
     );
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to load template content: ${response.statusText}`
-      );
-    }
-
-    const data = await response.json();
-    const content = data.content;
-
-    // Save to cache
+    const { content } = await response.json();
     cache.contents[cacheKey] = content;
     return content;
   } catch (error) {
@@ -116,14 +96,11 @@ async function updateTemplateList(): Promise<void> {
   templateSelect.innerHTML = "<option>Loading templates...</option>";
 
   try {
-    // Load template list
     const templateNames = await loadTemplateList(language);
 
-    // Clear existing options
+    // Clear existing options and add new ones
     templateSelect.innerHTML = "";
     templateSelect.disabled = false;
-
-    // Add new options
     templateNames.forEach((name) => {
       const option = document.createElement("option");
       option.value = name;
@@ -131,24 +108,15 @@ async function updateTemplateList(): Promise<void> {
       templateSelect.appendChild(option);
     });
 
-    // Select Hello World template if exists
+    // Select Hello World template if exists, otherwise first template
     if (templateSelect.options.length > 0) {
-      const helloWorldOption = Array.from(templateSelect.options).find(
+      const helloWorldIndex = Array.from(templateSelect.options).findIndex(
         (option) => option.value === "Hello World"
       );
-
-      if (helloWorldOption) {
-        templateSelect.value = "Hello World";
-      } else {
-        // Otherwise select first template
-        templateSelect.selectedIndex = 0;
-      }
-
-      // Update custom selector UI
+      templateSelect.selectedIndex = helloWorldIndex >= 0 ? helloWorldIndex : 0;
       templateSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-      // Only load template content during initialization
-      // or when explicitly changing language
+      // Load template content during initialization or explicit language change
       if (!initialized || document.activeElement === languageSelect) {
         await loadSelectedTemplate();
       }
@@ -164,6 +132,7 @@ async function updateTemplateList(): Promise<void> {
  * Load the currently selected template
  */
 async function loadSelectedTemplate(): Promise<void> {
+  const editor = (window as any).editor;
   const languageSelect = document.getElementById(
     "language"
   ) as HTMLSelectElement;
@@ -171,75 +140,46 @@ async function loadSelectedTemplate(): Promise<void> {
     "template"
   ) as HTMLSelectElement;
 
-  if (!templateSelect || !languageSelect || !(window as any).editor) {
+  if (!templateSelect || !languageSelect || !editor) {
     console.error("Required elements not found");
     return;
   }
 
   const language = languageSelect.value || "c";
   const templateName = templateSelect.value;
-
   if (!templateName) return;
 
   try {
-    // Show loading state
-    (window as any).editor.setValue("// Loading template...");
-
-    // Load template content
+    editor.setValue("// Loading template...");
     const content = await loadTemplateContent(language, templateName);
-
-    // Set editor content
-    (window as any).editor.setValue(content);
+    editor.setValue(content);
   } catch (error) {
     console.error("Error setting template:", error);
-    (window as any).editor.setValue(
-      `// Error loading template: ${error.message}`
-    );
+    editor.setValue(`// Error loading template: ${error.message}`);
   }
 }
 
-/**
- * Initialize template system
- */
-function initTemplates(): void {
-  if (initialized) return;
-
-  updateTemplateList()
-    .then(() => {
-      initialized = true;
-    })
-    .catch((err) => {
-      console.error("Failed to initialize templates:", err);
-    });
-}
-
-// Set up event handlers and initialization
+// Initialize and set up event handlers
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize template system
-  initTemplates();
+  // Initialize templates
+  updateTemplateList().then(() => {
+    initialized = true;
+  });
 
   // Set up language change handler
-  const languageSelect = document.getElementById("language");
-  if (languageSelect) {
-    languageSelect.addEventListener("change", () => {
-      // When language changes, update templates
-      updateTemplateList();
-    });
-  }
+  document
+    .getElementById("language")
+    ?.addEventListener("change", updateTemplateList);
 
   // Set up template change handler
-  const templateSelect = document.getElementById("template");
-  if (templateSelect) {
-    templateSelect.addEventListener("change", () => {
-      // Only load template content when user actually changes the template
-      if (document.activeElement === templateSelect) {
-        loadSelectedTemplate();
-      }
-    });
-  }
+  document.getElementById("template")?.addEventListener("change", (event) => {
+    if (document.activeElement === event.target) {
+      loadSelectedTemplate();
+    }
+  });
 });
 
-// Export functions globally for backward compatibility
+// Export for global access
 (window as any).updateTemplates = updateTemplateList;
 (window as any).setTemplate = loadSelectedTemplate;
 (window as any).templates = {}; // Maintain for backward compatibility

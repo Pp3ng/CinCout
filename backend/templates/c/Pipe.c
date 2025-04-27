@@ -46,6 +46,7 @@ int main()
 
     while (1) {
         printf("> ");
+        fflush(stdout);
         if (fgets(command, sizeof(command), stdin) == NULL) {
             break;
         }

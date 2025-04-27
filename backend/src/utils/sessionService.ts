@@ -73,22 +73,7 @@ export const createPtyProcess = (
 
   const ptyOptions = { ...defaultOptions, ...options };
 
-  // Try to determine the available shell - Alpine uses /bin/sh
-  let shell = "/bin/sh";
-
-  // Direct execution of the program without shell if it's an absolute path
-  if (
-    command.startsWith("/") ||
-    command.startsWith("./") ||
-    command.startsWith('"./') ||
-    command.startsWith('"/')
-  ) {
-    // Execute the program directly without shell if it's a path
-    return pty.spawn(command.replace(/^["']|["']$/g, ""), [], ptyOptions);
-  } else {
-    // Use shell for other commands
-    return pty.spawn(shell, ["-c", command], ptyOptions);
-  }
+  return pty.spawn("/bin/sh", ["-c", command], ptyOptions);
 };
 
 /**

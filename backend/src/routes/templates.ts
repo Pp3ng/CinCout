@@ -1,116 +1,96 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { asyncRouteHandler } from "../utils/routeHandler";
 
 const router = express.Router();
-
-// Templates directory path
 const TEMPLATES_DIR = path.join(__dirname, "../../templates");
-
-// Simple in-memory cache
 const templateCache: Record<string, string> = {};
 const templateListsCache: Record<string, string[]> = {};
 
-/**
- * Get all templates for a specific language
- */
+// Get all templates for a specific language
 router.get(
   "/:language/list",
-  asyncRouteHandler(async (req: Request, res: Response) => {
+  asyncRouteHandler(async (req, res) => {
     const language = req.params.language;
 
+    // Return from cache if available
+    if (templateListsCache[language]) {
+      return res.json(templateListsCache[language]);
+    }
+
     try {
-      // Check cache first
-      if (templateListsCache[language]) {
-        return res.json(templateListsCache[language]);
-      }
-
-      // Check if language directory exists
       const langPath = path.join(TEMPLATES_DIR, language);
-      try {
-        await fs.access(langPath);
-      } catch (error) {
-        return res.status(404).json({
-          error: `Language '${language}' not supported or has no templates`,
-        });
-      }
+      await fs.access(langPath); // Check if language directory exists
 
-      // Read template list
       const files = await fs.readdir(langPath);
       const templateNames = files.map((file) =>
         path.basename(file, path.extname(file))
       );
 
       if (templateNames.length === 0) {
-        return res.status(404).json({
-          error: `No templates found for language: ${language}`,
-        });
+        return res
+          .status(404)
+          .json({ error: `No templates found for language: ${language}` });
       }
 
-      // Update cache
+      // Update cache and return
       templateListsCache[language] = templateNames;
-
-      res.json(templateNames);
+      return res.json(templateNames);
     } catch (error) {
-      console.error(`Error getting templates for ${language}:`, error);
-      res.status(500).json({ error: "Internal server error" });
+      return res
+        .status(404)
+        .json({
+          error: `Language '${language}' not supported or has no templates`,
+        });
     }
   })
 );
 
-/**
- * Get template content for a specific language and template name
- */
+// Get template content for a specific language and template name
 router.get(
   "/:language/:templateName",
-  asyncRouteHandler(async (req: Request, res: Response) => {
+  asyncRouteHandler(async (req, res) => {
     const { language, templateName } = req.params;
     const cacheKey = `${language}:${templateName}`;
 
+    // Return from cache if available
+    if (templateCache[cacheKey]) {
+      return res.json({ content: templateCache[cacheKey] });
+    }
+
     try {
-      // Check cache first
-      if (templateCache[cacheKey]) {
-        return res.json({ content: templateCache[cacheKey] });
-      }
-
       const langPath = path.join(TEMPLATES_DIR, language);
+      await fs.access(langPath); // Check if language directory exists
 
-      // Check if language directory exists
-      try {
-        await fs.access(langPath);
-      } catch (error) {
-        return res.status(404).json({
-          error: `Language '${language}' not supported`,
-        });
-      }
-
-      // Find matching template file
       const files = await fs.readdir(langPath);
       const templateFile = files.find(
         (file) => path.basename(file, path.extname(file)) === templateName
       );
 
       if (!templateFile) {
-        return res.status(404).json({
-          error: `Template '${templateName}' not found for language '${language}'`,
-        });
+        return res
+          .status(404)
+          .json({
+            error: `Template '${templateName}' not found for language '${language}'`,
+          });
       }
 
       // Read template content
-      const filePath = path.join(langPath, templateFile);
-      const content = await fs.readFile(filePath, "utf8");
-
-      // Update cache
-      templateCache[cacheKey] = content;
-
-      res.json({ content });
-    } catch (error) {
-      console.error(
-        `Error loading template ${templateName} for ${language}:`,
-        error
+      const content = await fs.readFile(
+        path.join(langPath, templateFile),
+        "utf8"
       );
-      res.status(500).json({ error: "Internal server error" });
+
+      // Update cache and return
+      templateCache[cacheKey] = content;
+      return res.json({ content });
+    } catch (error) {
+      return res
+        .status(404)
+        .json({
+          error: `Template not found or language '${language}' not supported`,
+        });
     }
   })
 );

@@ -12,10 +12,7 @@ RUN apk add --no-cache \
     make \
     linux-headers
 
-# Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-# Create app directory and set permissions
+# Create app directory
 WORKDIR /app
 
 # Copy package files first to leverage Docker caching
@@ -31,12 +28,6 @@ COPY . .
 
 # Build the application
 RUN npm run build
-
-# Change ownership to the non-root user
-RUN chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
 
 # Expose the port
 EXPOSE 9527

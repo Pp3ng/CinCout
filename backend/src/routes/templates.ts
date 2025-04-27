@@ -5,17 +5,7 @@ import { asyncRouteHandler } from "../utils/routeHandler";
 
 const router = express.Router();
 
-const getTemplatesDir = () => {
-  if (process.env.NODE_ENV === "production") {
-    // path in docker container
-    return path.join(process.cwd(), "backend/templates");
-  } else {
-    // path in local dev environment
-    return path.join(process.cwd(), "templates");
-  }
-};
-
-const TEMPLATES_DIR = getTemplatesDir();
+const TEMPLATES_DIR = path.join(__dirname, "../templates");
 const templateCache: Record<string, string> = {};
 const templateListsCache: Record<string, string[]> = {};
 

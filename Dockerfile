@@ -1,61 +1,35 @@
-# Build stage
-FROM node:18-alpine AS builder
-
-# Install build dependencies
-RUN apk add --no-cache \
-    gcc \
-    g++ \
-    clang \
-    clang-extra-tools \
-    musl-dev \
-    python3 \
-    make \
-    linux-headers
+FROM node:18-bullseye AS builder
 
 # Create app directory
 WORKDIR /app
 
-# Copy package files for dependency installation
-COPY package*.json ./
-COPY backend/package*.json ./backend/
-COPY frontend/package*.json ./frontend/
-
-# Install dependencies
-RUN npm install
-RUN cd backend && npm install
-RUN cd frontend && npm install
-
-# Copy source code
+# First stage - copy and build everything
 COPY . .
-
-# Build frontend and backend
+RUN npm install
 RUN npm run build
 
-# Extract node-pty module (this is the only native module we need)
-RUN mkdir -p /tmp/node-pty-binaries
-RUN cp -r backend/node_modules/node-pty /tmp/node-pty-binaries/
+# Final stage - keep only what's needed
+FROM node:18-bullseye-slim
 
-# Production stage - super minimal image
-FROM node:18-alpine
-
-# Install only runtime dependencies for running binaries
-RUN apk add --no-cache \
+# Install only the minimum required runtime dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
     clang \
-    clang-extra-tools \
-    valgrind 
+    clang-format \
+    valgrind \
+    cppcheck \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create app directory with minimal structure
+# Create app directory
 WORKDIR /app
-RUN mkdir -p backend/node_modules/node-pty backend/dist frontend
 
-# Copy only the essential files needed to run the application
-COPY --from=builder /tmp/node-pty-binaries/node-pty /app/backend/node_modules/node-pty
-COPY --from=builder /app/frontend/dist /app/frontend/dist
-COPY --from=builder /app/backend/dist/server.bundle.js /app/backend/dist/
-COPY --from=builder /app/backend/templates /app/backend/templates
-
-# Set production environment
-ENV NODE_ENV=production
+# Copy only the exact files needed
+COPY --from=builder /app/frontend/dist ./frontend/dist
+COPY --from=builder /app/backend/dist/server.bundle.js ./backend/dist/server.bundle.js
+COPY --from=builder /app/backend/templates ./backend/templates
+COPY --from=builder /app/backend/node_modules/node-pty ./backend/node_modules/node-pty
 
 # Expose the port
 EXPOSE 9527

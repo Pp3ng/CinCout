@@ -2,7 +2,7 @@
   "name": "cincout-backend",
   "scripts": {
     "build": "tsc && esbuild dist/server.js --bundle --minify --platform=node --target=node18 --outfile=dist/server.bundle.js --external:node-pty",
-    "start": "NODE_ENV=production node dist/server.bundle.js",
+    "start": "node dist/server.bundle.js",
     "dev": "ts-node src/server.ts"
   },
   "dependencies": {

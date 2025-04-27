@@ -5,20 +5,6 @@ export default defineConfig({
   // Base public path
   base: "./",
 
-  // Development server config with API proxy
-  server: {
-    port: 3000,
-    proxy: {
-      "/api": {
-        target: "http://localhost:9527",
-        changeOrigin: true,
-      },
-      "/ws": {
-        target: "ws://localhost:9527",
-        ws: true,
-      },
-    },
-  },
 
   // Build options
   build: {

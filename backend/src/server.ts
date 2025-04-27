@@ -18,6 +18,7 @@ import styleCheckRouter from "./routes/styleCheck";
 import templatesRouter from "./routes/templates";
 import assemblyRouter from "./routes/assembly";
 import memcheckRouter from "./routes/memcheck";
+import { initSessionService } from "./utils/sessionService";
 
 const numCPUs = os.cpus().length;
 const port = 9527;
@@ -135,6 +136,9 @@ if (cluster.isPrimary) {
   // Enhance HTTP Server
   server.keepAliveTimeout = 61 * 1000; // Client Keep-Alive timeout
   server.headersTimeout = 65 * 1000; // Headers timeout
+
+  // Initialize session service
+  initSessionService();
 
   // WebSocket
   const wss = new WebSocketServer({ server, ...wsOptions });

@@ -2,17 +2,12 @@
  * Assembly code generation router
  */
 import express, { Request, Response } from "express";
-import fs from "fs-extra";
 import {
-  sanitizeOutput,
-  getCompilerCommand,
-  getStandardOption,
-  executeCommand,
-  formatOutput,
   createCompilationEnvironment,
-  asyncRouteHandler,
-  CodeRequest,
-} from "../utils/routeHandler";
+  generateAssembly,
+  CompilationOptions,
+} from "../utils/compilationService";
+import { asyncRouteHandler, CodeRequest } from "../utils/routeHandler";
 
 const router = express.Router();
 
@@ -27,40 +22,29 @@ router.post(
       compiler: selectedCompiler,
       optimization,
     } = req.body as AssemblyRequest;
-    
-    // Create compilation environment
-    const { tmpDir, sourceFile, asmFile } = createCompilationEnvironment(lang);
 
-    // Write code to temporary file
-    fs.writeFileSync(sourceFile, code);
+    // Create compilation environment
+    const env = createCompilationEnvironment(lang);
 
     try {
-      // Determine compiler and options
-      const compiler = getCompilerCommand(lang, selectedCompiler);
-      const standardOption = getStandardOption(lang);
-      const optimizationOption = optimization || "-O0";
+      // Set up compilation options
+      const options: CompilationOptions = {
+        lang,
+        compiler: selectedCompiler,
+        optimization,
+      };
 
       // Generate assembly code
-      const asmCmd = `${compiler} -S -fno-asynchronous-unwind-tables ${optimizationOption} ${standardOption} "${sourceFile}" -o "${asmFile}"`;
+      const result = await generateAssembly(env, code, options);
 
-      try {
-        await executeCommand(asmCmd);
-      } catch (error) {
-        const sanitizedError = sanitizeOutput(error as string);
-        // Apply formatting for compiler errors
-        const formattedError = formatOutput(sanitizedError, "default");
-        return res.status(400).send(`Compilation Error:\n${formattedError}`);
+      if (result.success) {
+        res.send(result.assembly);
+      } else {
+        res.status(400).send(`Compilation Error:\n${result.error}`);
       }
-
-      // Return assembly code
-      if (!asmFile) {
-        return res.status(500).send("Assembly file path is undefined");
-      }
-      const assemblyCode = fs.readFileSync(asmFile, "utf8");
-      res.send(assemblyCode);
     } finally {
       // Clean up temporary files
-      tmpDir.removeCallback();
+      env.tmpDir.removeCallback();
     }
   })
 );

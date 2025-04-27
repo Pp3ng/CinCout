@@ -2,14 +2,8 @@
  * Code formatting router
  */
 import express, { Request, Response } from "express";
-import fs from "fs-extra";
-import {
-  createTempDirectory,
-  writeCodeToFile,
-  executeCommand,
-  asyncRouteHandler,
-  CodeRequest,
-} from "../utils/routeHandler";
+import { formatCode } from "../utils/compilationService";
+import { asyncRouteHandler, CodeRequest } from "../utils/routeHandler";
 
 const router = express.Router();
 
@@ -20,21 +14,13 @@ router.post(
   asyncRouteHandler(async (req: Request, res: Response) => {
     const { code } = req.body as FormatRequest;
 
-    // Create temporary directory
-    const tmpDir = createTempDirectory();
-    const inFile = writeCodeToFile(tmpDir.name, "input.c", code);
+    // Format code using the centralized service
+    const result = await formatCode(code, "WebKit");
 
-    try {
-      // Run clang-format
-      const formatCmd = `clang-format -style=WebKit "${inFile}" -i`;
-      await executeCommand(formatCmd);
-
-      // Read formatted code
-      const formattedCode = fs.readFileSync(inFile, "utf8");
-      res.send(formattedCode);
-    } finally {
-      // Clean up temporary files
-      tmpDir.removeCallback();
+    if (result.success) {
+      res.send(result.formattedCode);
+    } else {
+      res.status(500).send(`Formatting Error: ${result.error}`);
     }
   })
 );

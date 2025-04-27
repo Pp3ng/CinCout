@@ -1,0 +1,164 @@
+{
+  "default": {
+    "name": "Default",
+    "bg": "#ffffff",
+    "bgSecondary": "#f5f7fa",
+    "text": "#1a2233",
+    "textSecondary": "#6e7a8a",
+    "accent": "#1e88e5",
+    "accentHover": "#1565c0",
+    "border": "#e0e4e8",
+    "terminal": {
+      "red": "#e53935",
+      "green": "#43a047",
+      "yellow": "#ffb300",
+      "blue": "#1e88e5",
+      "magenta": "#d81b60",
+      "cyan": "#00acc1"
+    }
+  },
+  "nord": {
+    "name": "Nord",
+    "bg": "#2e3440",
+    "bgSecondary": "#3b4252",
+    "text": "#eceff4",
+    "textSecondary": "#8fbcbb",
+    "accent": "#88c0d0",
+    "accentHover": "#81a1c1",
+    "border": "#4c566a",
+    "terminal": {
+      "red": "#bf616a",
+      "green": "#a3be8c",
+      "yellow": "#ebcb8b",
+      "blue": "#81a1c1",
+      "magenta": "#b48ead",
+      "cyan": "#8fbcbb"
+    }
+  },
+  "dracula": {
+    "name": "Dracula",
+    "bg": "#282a36",
+    "bgSecondary": "#44475a",
+    "text": "#f8f8f2",
+    "textSecondary": "#6272a4",
+    "accent": "#bd93f9",
+    "accentHover": "#ff79c6",
+    "border": "#6272a4",
+    "terminal": {
+      "red": "#ff5555",
+      "green": "#50fa7b",
+      "yellow": "#f1fa8c",
+      "blue": "#bd93f9",
+      "magenta": "#ff79c6",
+      "cyan": "#8be9fd"
+    }
+  },
+  "monokai": {
+    "name": "Monokai",
+    "bg": "#272822",
+    "bgSecondary": "#3e3d32",
+    "text": "#f8f8f2",
+    "textSecondary": "#75715e",
+    "accent": "#a6e22e",
+    "accentHover": "#fd971f",
+    "border": "#49483e",
+    "terminal": {
+      "red": "#f92672",
+      "green": "#a6e22e",
+      "yellow": "#f4bf75",
+      "blue": "#66d9ef",
+      "magenta": "#ae81ff",
+      "cyan": "#a1efe4"
+    }
+  },
+  "material": {
+    "name": "Material",
+    "bg": "#263238",
+    "bgSecondary": "#37474f",
+    "text": "#eeffff",
+    "textSecondary": "#b0bec5",
+    "accent": "#89ddff",
+    "accentHover": "#80cbc4",
+    "border": "#546e7a",
+    "terminal": {
+      "red": "#f07178",
+      "green": "#c3e88d",
+      "yellow": "#ffcb6b",
+      "blue": "#82aaff",
+      "magenta": "#c792ea",
+      "cyan": "#89ddff"
+    }
+  },
+  "ayu-dark": {
+    "name": "Ayu Dark",
+    "bg": "#0a0e14",
+    "bgSecondary": "#1f2430",
+    "text": "#f8f8f2",
+    "textSecondary": "#7a88a3",
+    "accent": "#ffb454",
+    "accentHover": "#ff8f40",
+    "border": "#11151c",
+    "terminal": {
+      "red": "#ff3333",
+      "green": "#c2d94c",
+      "yellow": "#ffb454",
+      "blue": "#59c2ff",
+      "magenta": "#d2a6ff",
+      "cyan": "#95e6cb"
+    }
+  },
+  "gruvbox-dark": {
+    "name": "Gruvbox Dark",
+    "bg": "#282828",
+    "bgSecondary": "#3c3836",
+    "text": "#fbf1c7",
+    "textSecondary": "#a89984",
+    "accent": "#b8bb26",
+    "accentHover": "#98971a",
+    "border": "#504945",
+    "terminal": {
+      "red": "#fb4934",
+      "green": "#b8bb26",
+      "yellow": "#fabd2f",
+      "blue": "#83a598",
+      "magenta": "#d3869b",
+      "cyan": "#8ec07c"
+    }
+  },
+  "the-matrix": {
+    "name": "The Matrix",
+    "bg": "#060606",
+    "bgSecondary": "#141414",
+    "text": "#00FF9C",
+    "textSecondary": "#257245",
+    "accent": "#00BB41",
+    "accentHover": "#39AA14",
+    "border": "#004000",
+    "terminal": {
+      "red": "#FF0000",
+      "green": "#00BB41",
+      "yellow": "#FFDD00",
+      "blue": "#00AAFF",
+      "magenta": "#FF00FF",
+      "cyan": "#00FFFF"
+    }
+  },
+  "seti": {
+    "name": "Seti",
+    "bg": "#151718",
+    "bgSecondary": "#1d1f20",
+    "text": "#ffffff",
+    "textSecondary": "#6d8086",
+    "accent": "#55b5db",
+    "accentHover": "#55dbbe",
+    "border": "#0e1112",
+    "terminal": {
+      "red": "#e15a60",
+      "green": "#9fca56",
+      "yellow": "#e6cd69",
+      "blue": "#55b5db",
+      "magenta": "#a074c4",
+      "cyan": "#55dbbe"
+    }
+  }
+}

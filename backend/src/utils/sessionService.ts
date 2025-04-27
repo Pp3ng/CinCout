@@ -26,7 +26,7 @@ const activeSessions = new Map<string, Session>();
  * Initialize session service
  * Sets up event listeners and other global configurations
  */
-export function initSessionService(): void {
+export const initSessionService = (): void => {
   // Set up WebSocket close event listener
   webSocketEvents.on("websocket-close", ({ sessionId }) => {
     if (activeSessions.has(sessionId)) {
@@ -48,7 +48,7 @@ export function initSessionService(): void {
       }
     });
   }, 5 * 60 * 1000); // Check every 5 minutes
-}
+};
 
 /**
  * Create a PTY instance with standardized options
@@ -56,10 +56,10 @@ export function initSessionService(): void {
  * @param {pty.IPtyForkOptions} options - Additional PTY options
  * @returns {pty.IPty} PTY process
  */
-export function createPtyProcess(
+export const createPtyProcess = (
   command: string,
   options: pty.IPtyForkOptions = {}
-): pty.IPty {
+): pty.IPty => {
   const defaultOptions: pty.IPtyForkOptions = {
     name: "xterm-256color",
     cols: 80,
@@ -73,7 +73,7 @@ export function createPtyProcess(
 
   const ptyOptions = { ...defaultOptions, ...options };
   return pty.spawn("bash", ["-c", command], ptyOptions);
-}
+};
 
 /**
  * Start a new compilation session
@@ -83,12 +83,12 @@ export function createPtyProcess(
  * @param {string} outputFile - Path to compiled executable
  * @returns {boolean} Success status
  */
-export function startCompilationSession(
+export const startCompilationSession = (
   ws: ExtendedWebSocket,
   sessionId: string,
   tmpDir: DirResult,
   outputFile: string
-): boolean {
+): boolean => {
   try {
     // Set standard terminal size
     const cols = 80;
@@ -161,7 +161,7 @@ export function startCompilationSession(
 
     return false;
   }
-}
+};
 
 /**
  * Send input to a running session
@@ -169,7 +169,10 @@ export function startCompilationSession(
  * @param {string} input - Input to send
  * @returns {boolean} Success status
  */
-export function sendInputToSession(sessionId: string, input: string): boolean {
+export const sendInputToSession = (
+  sessionId: string,
+  input: string
+): boolean => {
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     try {
@@ -181,7 +184,7 @@ export function sendInputToSession(sessionId: string, input: string): boolean {
     }
   }
   return false;
-}
+};
 
 /**
  * Resize terminal dimensions for a session
@@ -190,11 +193,11 @@ export function sendInputToSession(sessionId: string, input: string): boolean {
  * @param {number} rows - Number of rows
  * @returns {boolean} Success status
  */
-export function resizeTerminal(
+export const resizeTerminal = (
   sessionId: string,
   cols: number,
   rows: number
-): boolean {
+): boolean => {
   // Input validation
   if (typeof cols !== "number" || typeof rows !== "number") {
     console.error(`Invalid terminal dimensions: cols=${cols}, rows=${rows}`);
@@ -224,24 +227,24 @@ export function resizeTerminal(
     }
   }
   return false;
-}
+};
 
 /**
  * Update session activity timestamp
  * @param {string} sessionId - Session ID
  */
-export function updateSessionActivity(sessionId: string): void {
+export const updateSessionActivity = (sessionId: string): void => {
   const session = activeSessions.get(sessionId);
   if (session) {
     session.lastActivity = Date.now();
   }
-}
+};
 
 /**
  * Terminate a session
  * @param {string} sessionId - Session ID
  */
-export function terminateSession(sessionId: string): void {
+export const terminateSession = (sessionId: string): void => {
   const session = activeSessions.get(sessionId);
   if (session) {
     try {
@@ -258,13 +261,13 @@ export function terminateSession(sessionId: string): void {
       cleanupSession(sessionId);
     }
   }
-}
+};
 
 /**
  * Clean up session resources
  * @param {string} sessionId - Session ID
  */
-export function cleanupSession(sessionId: string): void {
+export const cleanupSession = (sessionId: string): void => {
   const session = activeSessions.get(sessionId);
   if (session) {
     if (session.tmpDir) {
@@ -296,21 +299,21 @@ export function cleanupSession(sessionId: string): void {
     // Always remove the session from active sessions map
     activeSessions.delete(sessionId);
   }
-}
+};
 
 /**
  * Get all active sessions
  * @returns {Map<string, Session>} Map of active sessions
  */
-export function getActiveSessions(): Map<string, Session> {
+export const getActiveSessions = (): Map<string, Session> => {
   return activeSessions;
-}
+};
 
 /**
  * Get a specific session
  * @param {string} sessionId - Session ID
  * @returns {Session | undefined} Session or undefined if not found
  */
-export function getSession(sessionId: string): Session | undefined {
+export const getSession = (sessionId: string): Session | undefined => {
   return activeSessions.get(sessionId);
-}
+};

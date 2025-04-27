@@ -38,9 +38,9 @@ export interface ExecutionResult {
  * @param {string} lang - Programming language ('c' or 'cpp')
  * @returns {CompilationEnvironment} Object with file paths
  */
-export function createCompilationEnvironment(
+export const createCompilationEnvironment = (
   lang: string
-): CompilationEnvironment {
+): CompilationEnvironment => {
   const tmpDir = tmp.dirSync({ prefix: "CinCout-", unsafeCleanup: true });
   const sourceExtension = lang === "cpp" ? "cpp" : "c";
   const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
@@ -48,16 +48,16 @@ export function createCompilationEnvironment(
   const asmFile = path.join(tmpDir.name, "program.s");
 
   return { tmpDir, sourceFile, outputFile, asmFile };
-}
+};
 
 /**
  * Write code to a file
  * @param {string} filePath - Path to write to
  * @param {string} code - Code content
  */
-export function writeCodeToFile(filePath: string, code: string): void {
+export const writeCodeToFile = (filePath: string, code: string): void => {
   fs.writeFileSync(filePath, code, "utf8");
-}
+};
 
 /**
  * Get compiler command based on language and compiler selection
@@ -65,7 +65,7 @@ export function writeCodeToFile(filePath: string, code: string): void {
  * @param {string} compiler - Compiler selection
  * @returns {string} Compiler command
  */
-export function getCompilerCommand(lang: string, compiler?: string): string {
+export const getCompilerCommand = (lang: string, compiler?: string): string => {
   return lang === "cpp"
     ? compiler === "clang"
       ? "clang++"
@@ -73,16 +73,16 @@ export function getCompilerCommand(lang: string, compiler?: string): string {
     : compiler === "clang"
     ? "clang"
     : "gcc";
-}
+};
 
 /**
  * Get language standard option based on language
  * @param {string} lang - Programming language ('c' or 'cpp')
  * @returns {string} Standard option
  */
-export function getStandardOption(lang: string): string {
+export const getStandardOption = (lang: string): string => {
   return lang === "cpp" ? "-std=c++20" : "-std=c11";
-}
+};
 
 /**
  * Execute a shell command
@@ -90,13 +90,13 @@ export function getStandardOption(lang: string): string {
  * @param {object} options - Execution options
  * @returns {Promise<{stdout: string, stderr: string}>} Promise with stdout and stderr
  */
-export function executeCommand(
+export const executeCommand = (
   command: string,
   options: ExecOptions & {
     shell?: boolean | string;
     failOnError?: boolean;
   } = {}
-): Promise<ExecutionResult> {
+): Promise<ExecutionResult> => {
   return new Promise((resolve, reject) => {
     exec(command, options, (error, stdout, stderr) => {
       if (error && options.failOnError !== false) {
@@ -110,19 +110,19 @@ export function executeCommand(
       });
     });
   });
-}
+};
 
 /**
  * Clean up file paths from output
  * @param {string} output - Output to sanitize
  * @returns {string} Sanitized output
  */
-export function sanitizeOutput(output: string): string {
+export const sanitizeOutput = (output: string): string => {
   if (!output) {
     return "";
   }
   return output.replace(/[^:\s]+\.(cpp|c|h|hpp):/g, "");
-}
+};
 
 /**
  * Format output for display
@@ -130,10 +130,10 @@ export function sanitizeOutput(output: string): string {
  * @param {string} outputType - Type of output (default, memcheck, style, etc.)
  * @returns {string} Formatted HTML output
  */
-export function formatOutput(
+export const formatOutput = (
   text: string,
   outputType: string = "default"
-): string {
+): string => {
   if (!text) return "";
 
   // Only apply HTML sanitization and formatting for output types that need it
@@ -223,7 +223,7 @@ export function formatOutput(
   }
 
   return text;
-}
+};
 
 /**
  * Compile code with options
@@ -232,11 +232,11 @@ export function formatOutput(
  * @param {CompilationOptions} options - Compilation options
  * @returns {Promise<{success: boolean, output?: string, error?: string}>} Compilation result
  */
-export async function compileCode(
+export const compileCode = async (
   env: CompilationEnvironment,
   code: string,
   options: CompilationOptions
-): Promise<{ success: boolean; output?: string; error?: string }> {
+): Promise<{ success: boolean; output?: string; error?: string }> => {
   try {
     // Write code to source file
     writeCodeToFile(env.sourceFile, code);
@@ -264,7 +264,7 @@ export async function compileCode(
     const formattedError = formatOutput(sanitizedError, "default");
     return { success: false, error: formattedError };
   }
-}
+};
 
 /**
  * Generate assembly code
@@ -273,11 +273,11 @@ export async function compileCode(
  * @param {CompilationOptions} options - Compilation options
  * @returns {Promise<{success: boolean, assembly?: string, error?: string}>} Assembly generation result
  */
-export async function generateAssembly(
+export const generateAssembly = async (
   env: CompilationEnvironment,
   code: string,
   options: CompilationOptions
-): Promise<{ success: boolean; assembly?: string; error?: string }> {
+): Promise<{ success: boolean; assembly?: string; error?: string }> => {
   try {
     // Write code to source file
     writeCodeToFile(env.sourceFile, code);
@@ -308,7 +308,7 @@ export async function generateAssembly(
     const formattedError = formatOutput(sanitizedError, "default");
     return { success: false, error: formattedError };
   }
-}
+};
 
 /**
  * Run memory check on code
@@ -317,11 +317,11 @@ export async function generateAssembly(
  * @param {CompilationOptions} options - Compilation options
  * @returns {Promise<{success: boolean, report?: string, error?: string}>} Memory check result
  */
-export async function runMemoryCheck(
+export const runMemoryCheck = async (
   env: CompilationEnvironment,
   code: string,
   options: CompilationOptions
-): Promise<{ success: boolean; report?: string; error?: string }> {
+): Promise<{ success: boolean; report?: string; error?: string }> => {
   try {
     // Write code to source file
     writeCodeToFile(env.sourceFile, code);
@@ -388,7 +388,7 @@ export async function runMemoryCheck(
       error: `Error during memory check: ${error}`,
     };
   }
-}
+};
 
 /**
  * Format code using clang-format
@@ -396,10 +396,10 @@ export async function runMemoryCheck(
  * @param {string} style - Formatting style
  * @returns {Promise<{success: boolean, formattedCode?: string, error?: string}>} Formatting result
  */
-export async function formatCode(
+export const formatCode = async (
   code: string,
   style: string = "WebKit"
-): Promise<{ success: boolean; formattedCode?: string; error?: string }> {
+): Promise<{ success: boolean; formattedCode?: string; error?: string }> => {
   // Create temporary directory
   const tmpDir = tmp.dirSync({
     prefix: "CinCout-Format-",
@@ -427,16 +427,16 @@ export async function formatCode(
     // Clean up
     tmpDir.removeCallback();
   }
-}
+};
 
 /**
  * Run style check on code
  * @param {string} code - Source code to check
  * @returns {Promise<{success: boolean, report?: string, error?: string}>} Style check result
  */
-export async function runStyleCheck(
+export const runStyleCheck = async (
   code: string
-): Promise<{ success: boolean; report?: string; error?: string }> {
+): Promise<{ success: boolean; report?: string; error?: string }> => {
   // Create temporary directory
   const tmpDir = tmp.dirSync({ prefix: "CinCout-Style-", unsafeCleanup: true });
   const inFile = path.join(tmpDir.name, "input.cpp");
@@ -505,7 +505,7 @@ export async function runStyleCheck(
     // Clean up
     tmpDir.removeCallback();
   }
-}
+};
 
 /**
  * Send WebSocket message with compilation status
@@ -513,14 +513,14 @@ export async function runStyleCheck(
  * @param {string} type - Message type
  * @param {any} data - Message data
  */
-export function sendCompilationMessage(
+export const sendCompilationMessage = (
   ws: ExtendedWebSocket,
   type: string,
   data?: any
-): void {
+): void => {
   sendWebSocketMessage(ws, {
     type,
     ...data,
     timestamp: Date.now(),
   });
-}
+};

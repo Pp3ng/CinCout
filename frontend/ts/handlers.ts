@@ -1,13 +1,16 @@
 // Import utility functions
 import { debounce, takeCodeSnap, showNotification } from "./utils";
-import { terminalManager } from "./terminal";
 import { themeStoreInstance } from "./themes";
 import CompileSocketManager, {
   CompileOptions,
   CompileStateUpdater,
 } from "./compileSocket";
 
-// Define WebSocket-related interfaces - These would typically be in a types.ts file
+// ------------------------------------------------------------
+// Types - Move to separate types.ts file for React migration
+// ------------------------------------------------------------
+
+// Define WebSocket-related interfaces
 export interface CinCoutSocket {
   init: (messageHandler: (event: MessageEvent) => void) => void;
   sendData: (data: any) => Promise<void>;
@@ -34,7 +37,241 @@ export interface UIState {
   vimMode: boolean;
 }
 
-// Context/State Management (mimicking React's Context API)
+// DOM Elements interface for better type safety
+interface DOMElements {
+  template: HTMLElement | null;
+  vimMode: HTMLInputElement | null;
+  language: HTMLSelectElement | null;
+  outputTab: HTMLElement | null;
+  assemblyTab: HTMLElement | null;
+  output: HTMLElement | null;
+  assembly: HTMLElement | null;
+  compile: HTMLElement | null;
+  memcheck: HTMLElement | null;
+  format: HTMLElement | null;
+  viewAssembly: HTMLElement | null;
+  styleCheck: HTMLElement | null;
+  themeSelect: HTMLSelectElement | null;
+  outputPanel: HTMLElement | null;
+  closeOutput: HTMLElement | null;
+  codesnap: HTMLElement | null;
+  compiler: HTMLSelectElement | null;
+  optimization: HTMLSelectElement | null;
+}
+
+// ------------------------------------------------------------
+// Services - These will become React hooks/services
+// ------------------------------------------------------------
+
+/**
+ * API Service - handles all API calls
+ * In React, this would become a custom hook (useApiService)
+ */
+export class ApiService {
+  static async fetchAssembly(options: CompileOptions): Promise<string> {
+    const response = await fetch("/api/assembly", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Assembly API error: ${response.statusText}`);
+    }
+
+    return await response.text();
+  }
+
+  static async runMemCheck(options: CompileOptions): Promise<string> {
+    const response = await fetch("/api/memcheck", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Memcheck API error: ${response.statusText}`);
+    }
+
+    return await response.text();
+  }
+
+  static async formatCode(code: string, lang: string): Promise<string> {
+    const response = await fetch("/api/format", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, lang }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Format API error: ${response.statusText}`);
+    }
+
+    return await response.text();
+  }
+
+  static async runStyleCheck(code: string, lang: string): Promise<string> {
+    const response = await fetch("/api/styleCheck", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, lang }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Style check API error: ${response.statusText}`);
+    }
+
+    return await response.text();
+  }
+}
+
+/**
+ * Editor Service - handles editor-specific functionality
+ * In React, this would become a custom hook (useEditor)
+ */
+export class EditorService {
+  static getValue(): string {
+    return (window as any).editor?.getValue() || "";
+  }
+
+  static setValue(value: string): void {
+    if ((window as any).editor) {
+      (window as any).editor.setValue(value);
+    }
+  }
+
+  static getCursor(): any {
+    return (window as any).editor?.getCursor();
+  }
+
+  static setCursor(cursor: any): void {
+    if ((window as any).editor) {
+      (window as any).editor.setCursor(cursor);
+    }
+  }
+
+  static getScrollInfo(): any {
+    return (window as any).editor?.getScrollInfo();
+  }
+
+  static scrollTo(left: number, top: number): void {
+    if ((window as any).editor) {
+      (window as any).editor.scrollTo(left, top);
+    }
+  }
+
+  static refresh(): void {
+    if ((window as any).editor) {
+      (window as any).editor.refresh();
+    }
+  }
+
+  static setOption(key: string, value: any): void {
+    if ((window as any).editor) {
+      (window as any).editor.setOption(key, value);
+    }
+  }
+
+  static setAssemblyValue(value: string): void {
+    if ((window as any).assemblyView) {
+      (window as any).assemblyView.setValue(value);
+    }
+  }
+}
+
+/**
+ * DOM Service - handles DOM interactions
+ * In React, these would be handled by component state and refs
+ */
+export class DOMService {
+  static getElements(): DOMElements {
+    return {
+      template: document.getElementById("template"),
+      vimMode: document.getElementById("vimMode") as HTMLInputElement,
+      language: document.getElementById("language") as HTMLSelectElement,
+      outputTab: document.getElementById("outputTab"),
+      assemblyTab: document.getElementById("assemblyTab"),
+      output: document.getElementById("output"),
+      assembly: document.getElementById("assembly"),
+      compile: document.getElementById("compile"),
+      memcheck: document.getElementById("memcheck"),
+      format: document.getElementById("format"),
+      viewAssembly: document.getElementById("viewAssembly"),
+      styleCheck: document.getElementById("styleCheck"),
+      themeSelect: document.getElementById("theme-select") as HTMLSelectElement,
+      outputPanel: document.getElementById("outputPanel"),
+      closeOutput: document.getElementById("closeOutput"),
+      codesnap: document.getElementById("codeSnap"),
+      compiler: document.getElementById("compiler") as HTMLSelectElement,
+      optimization: document.getElementById(
+        "optimization"
+      ) as HTMLSelectElement,
+    };
+  }
+
+  static createLoadingElement(text: string): HTMLDivElement {
+    const loadingDiv = document.createElement("div");
+    loadingDiv.className = "loading";
+    loadingDiv.textContent = text;
+    return loadingDiv;
+  }
+
+  static showLoadingInOutput(text: string): void {
+    const output = document.getElementById("output");
+    if (output) {
+      output.innerHTML = `<div class='loading'>${text}</div>`;
+    }
+  }
+
+  static setOutput(html: string): void {
+    const output = document.getElementById("output");
+    if (output) {
+      output.innerHTML = html;
+    }
+  }
+
+  static showOutputPanel(): void {
+    const outputPanel = document.getElementById("outputPanel");
+    if (outputPanel) {
+      outputPanel.style.display = "flex";
+      document.querySelector(".editor-panel")?.classList.add("with-output");
+    }
+  }
+
+  static hideOutputPanel(): void {
+    const outputPanel = document.getElementById("outputPanel");
+    if (outputPanel) {
+      outputPanel.style.display = "none";
+      document.querySelector(".editor-panel")?.classList.remove("with-output");
+    }
+  }
+
+  static activateTab(tabId: string): void {
+    const tab = document.getElementById(tabId);
+    if (tab) {
+      tab.click();
+    }
+  }
+
+  static getCompileOptions(): CompileOptions {
+    const elements = this.getElements();
+    return {
+      code: EditorService.getValue(),
+      lang: elements.language?.value || "c",
+      compiler: elements.compiler?.value || "gcc",
+      optimization: elements.optimization?.value || "O0",
+    };
+  }
+}
+
+// ------------------------------------------------------------
+// State Management - Will become React Context/Redux
+// ------------------------------------------------------------
+
+/**
+ * Store - React-like state management
+ * In React, this would be replaced by useState, useReducer, or Redux
+ */
 export class AppState {
   private state: UIState;
   private listeners: Array<(state: UIState) => void>;
@@ -53,7 +290,6 @@ export class AppState {
     this.listeners = [];
   }
 
-  // React-like state update
   setState(partialState: Partial<UIState>): void {
     this.state = { ...this.state, ...partialState };
     this.notifyListeners();
@@ -63,7 +299,6 @@ export class AppState {
     return { ...this.state };
   }
 
-  // React-like subscription mechanism
   subscribe(listener: (state: UIState) => void): () => void {
     this.listeners.push(listener);
     return () => {
@@ -95,31 +330,29 @@ class CompileStateAdapter implements CompileStateUpdater {
   }
 
   showOutput(): void {
-    const outputPanel = document.getElementById("outputPanel");
-    if (outputPanel) {
-      outputPanel.style.display = "flex";
-      this.appState.setState({ isOutputVisible: true });
-    }
-    document.querySelector(".editor-panel")?.classList.add("with-output");
+    DOMService.showOutputPanel();
+    this.appState.setState({ isOutputVisible: true });
   }
 
   activateOutputTab(): void {
-    const outputTab = document.getElementById("outputTab");
-    if (outputTab) {
-      outputTab.click();
-      this.appState.setState({ activeTab: "output" });
-    }
+    DOMService.activateTab("outputTab");
+    this.appState.setState({ activeTab: "output" });
   }
 
   refreshEditor(): void {
-    if ((window as any).editor) {
-      setTimeout(() => (window as any).editor.refresh(), 10);
-    }
+    setTimeout(() => EditorService.refresh(), 10);
   }
 }
 
-// Component-like module for code actions
-export class CodeActions {
+// ------------------------------------------------------------
+// Feature Controllers - Will become React components/custom hooks
+// ------------------------------------------------------------
+
+/**
+ * CodeActionsController - Manages code-related actions
+ * In React, this would become custom hooks (useCodeActions)
+ */
+export class CodeActionsController {
   private appState: AppState;
   private compileSocketManager: CompileSocketManager | null = null;
 
@@ -132,140 +365,86 @@ export class CodeActions {
   }
 
   async viewAssembly(options: CompileOptions): Promise<void> {
-    const assemblyTab = document.getElementById("assemblyTab");
-    if (assemblyTab) {
-      assemblyTab.click();
-      this.appState.setState({ activeTab: "assembly" });
-    }
+    // Update UI state
+    this.appState.setState({ activeTab: "assembly" });
+    DOMService.activateTab("assemblyTab");
 
-    // Create a loading div
-    const loadingDiv = document.createElement("div");
-    loadingDiv.className = "loading";
-    loadingDiv.textContent = "Generating assembly code";
-
-    // Get assembly div and its CodeMirror container
+    // Get assembly div and prepare loading state
     const assemblyDiv = document.getElementById("assembly") as HTMLElement;
+    const loadingDiv = DOMService.createLoadingElement(
+      "Generating assembly code"
+    );
     const cmContainer = assemblyDiv.querySelector(".CodeMirror");
 
-    // Insert loadingDiv before cmcontainer
+    // Show loading state
     if (cmContainer) {
       assemblyDiv.insertBefore(loadingDiv, cmContainer);
     } else {
       assemblyDiv.appendChild(loadingDiv);
     }
 
-    if (window.assemblyView) {
-      window.assemblyView.setValue("");
-    }
+    EditorService.setAssemblyValue("");
 
     try {
-      const response = await fetch("/api/assembly", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code: options.code,
-          lang: options.lang,
-          compiler: options.compiler,
-          optimization: options.optimization,
-        }),
-      });
+      const data = await ApiService.fetchAssembly(options);
 
-      const data = await response.text();
-
-      // Remove loading div
+      // Remove loading div and update view
       if (loadingDiv.parentNode) {
         loadingDiv.parentNode.removeChild(loadingDiv);
       }
 
-      const trimmedData = data.trim();
-      if (window.assemblyView) {
-        window.assemblyView.setValue(trimmedData);
-      }
+      EditorService.setAssemblyValue(data.trim());
     } catch (error) {
-      // Remove loading div
+      // Remove loading div and show error
       if (loadingDiv.parentNode) {
         loadingDiv.parentNode.removeChild(loadingDiv);
       }
 
-      if (window.assemblyView) {
-        window.assemblyView.setValue("Error: " + error);
-      }
+      EditorService.setAssemblyValue("Error: " + error);
     }
   }
 
   async runMemCheck(options: CompileOptions): Promise<void> {
-    const outputTab = document.getElementById("outputTab");
-    if (outputTab) {
-      outputTab.click();
-      this.appState.setState({ activeTab: "output" });
-    }
-
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = "<div class='loading'>Running memory check...</div>";
-    }
+    // Update UI state
+    this.appState.setState({ activeTab: "output" });
+    DOMService.activateTab("outputTab");
+    DOMService.showLoadingInOutput("Running memory check...");
 
     try {
-      const response = await fetch("/api/memcheck", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code: options.code,
-          lang: options.lang,
-          compiler: options.compiler,
-          optimization: options.optimization,
-        }),
-      });
-
-      const data = await response.text();
-
-      if (output) {
-        output.innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`;
-      }
+      const data = await ApiService.runMemCheck(options);
+      DOMService.setOutput(
+        `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`
+      );
     } catch (error) {
       console.error("Memcheck error:", error);
-      if (output) {
-        output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-      }
+      DOMService.setOutput(
+        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`
+      );
     }
   }
 
   async formatCode(code: string, lang: string): Promise<void> {
-    const cursor = (window as any).editor.getCursor();
+    const cursor = EditorService.getCursor();
 
     try {
-      const response = await fetch("/api/format", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code: code,
-          lang: lang,
-        }),
-      });
+      const data = await ApiService.formatCode(code, lang);
 
-      const data = await response.text();
-      // Remove leading and trailing newlines
+      // Apply formatting changes while preserving editor state
       const formattedData = data.replace(/^\n+/, "").replace(/\n+$/, "");
-      const scrollInfo = (window as any).editor.getScrollInfo();
-      (window as any).editor.setValue(formattedData);
-      (window as any).editor.setCursor(cursor);
-      (window as any).editor.scrollTo(scrollInfo.left, scrollInfo.top);
-      (window as any).editor.refresh();
+      const scrollInfo = EditorService.getScrollInfo();
 
-      // Show success notification in the center of the editor panel
+      EditorService.setValue(formattedData);
+      EditorService.setCursor(cursor);
+      EditorService.scrollTo(scrollInfo.left, scrollInfo.top);
+      EditorService.refresh();
+
+      // Show success notification
       showNotification("success", "Code formatted successfully", 2000, {
         top: "50%",
         left: "50%",
       });
     } catch (error) {
       console.error("Format error:", error);
-      // Show error notification in the center of the editor panel
       showNotification("error", "Failed to format code", 3000, {
         top: "50%",
         left: "50%",
@@ -274,56 +453,43 @@ export class CodeActions {
   }
 
   async runStyleCheck(code: string, lang: string): Promise<void> {
-    const outputTab = document.getElementById("outputTab");
-    if (outputTab) {
-      outputTab.click();
-      this.appState.setState({ activeTab: "output" });
-    }
-
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = "<div class='loading'>Running style check...</div>";
-    }
+    // Update UI state
+    this.appState.setState({ activeTab: "output" });
+    DOMService.activateTab("outputTab");
+    DOMService.showLoadingInOutput("Running style check...");
 
     try {
-      const response = await fetch("/api/styleCheck", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code: code,
-          lang: lang,
-        }),
-      });
+      const data = await ApiService.runStyleCheck(code, lang);
 
-      const data = await response.text();
+      // Process and format the output
       const lines = data.split("\n");
       const formattedLines = lines
         .map((line) => {
           if (line.trim()) {
-            // The line is already formatted by the backend
             return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${line}</div>`;
           }
           return "";
         })
         .filter((line) => line);
 
-      if (output) {
-        output.innerHTML = `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join(
+      DOMService.setOutput(
+        `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join(
           "\n"
-        )}</div>`;
-      }
+        )}</div>`
+      );
     } catch (error) {
-      if (output) {
-        output.innerHTML = `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
-      }
+      DOMService.setOutput(
+        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`
+      );
     }
   }
 }
 
-// React-like hooks for editor settings
-export class EditorSettings {
+/**
+ * EditorSettingsController - Manages editor settings
+ * In React, this would become a custom hook (useEditorSettings)
+ */
+export class EditorSettingsController {
   private appState: AppState;
 
   constructor(appState: AppState) {
@@ -339,18 +505,23 @@ export class EditorSettings {
   setVimMode(enabled: boolean): void {
     this.appState.setState({ vimMode: enabled });
     localStorage.setItem("cincout-vim-mode", enabled.toString());
-    if ((window as any).editor) {
-      (window as any).editor.setOption("keyMap", enabled ? "vim" : "default");
-    }
+    EditorService.setOption("keyMap", enabled ? "vim" : "default");
   }
 }
 
-// Main App Component - pulls everything together
+// ------------------------------------------------------------
+// Main Application Class
+// ------------------------------------------------------------
+
+/**
+ * Main App Controller
+ * In React, this would be App component
+ */
 export class CinCoutApp {
   private appState: AppState;
   private compileSocketManager: CompileSocketManager;
-  private codeActions: CodeActions;
-  private editorSettings: EditorSettings;
+  private codeActions: CodeActionsController;
+  private editorSettings: EditorSettingsController;
 
   constructor() {
     // Initialize state
@@ -359,47 +530,35 @@ export class CinCoutApp {
     // Create state adapter for CompileSocketManager
     const stateAdapter = new CompileStateAdapter(this.appState);
 
-    // Initialize components (like React's useXXX hooks)
+    // Initialize controllers
     this.compileSocketManager = new CompileSocketManager(
       (window as any).CinCoutSocket,
       stateAdapter
     );
 
-    this.codeActions = new CodeActions(this.appState);
+    this.codeActions = new CodeActionsController(this.appState);
     this.codeActions.setCompileSocketManager(this.compileSocketManager);
-    this.editorSettings = new EditorSettings(this.appState);
-
-    // Event handlers will be attached in init()
+    this.editorSettings = new EditorSettingsController(this.appState);
   }
 
   init(): void {
     document.addEventListener("DOMContentLoaded", () => {
       this.setupEventListeners();
-      // No need to initialize templates here, it's handled in templates.ts
     });
   }
 
   private setupEventListeners(): void {
-    // Collect DOM elements
-    const elements = {
-      template: document.getElementById("template"),
-      vimMode: document.getElementById("vimMode") as HTMLInputElement,
-      language: document.getElementById("language") as HTMLSelectElement,
-      outputTab: document.getElementById("outputTab"),
-      assemblyTab: document.getElementById("assemblyTab"),
-      output: document.getElementById("output"),
-      assembly: document.getElementById("assembly"),
-      compile: document.getElementById("compile"),
-      memcheck: document.getElementById("memcheck"),
-      format: document.getElementById("format"),
-      viewAssembly: document.getElementById("viewAssembly"),
-      styleCheck: document.getElementById("styleCheck"),
-      themeSelect: document.getElementById("theme-select") as HTMLSelectElement,
-      outputPanel: document.getElementById("outputPanel"),
-      closeOutput: document.getElementById("closeOutput"),
-      codesnap: document.getElementById("codeSnap"),
-    };
+    // Get all DOM elements once
+    const elements = DOMService.getElements();
 
+    // Setup event listeners for all elements
+    this.setupTemplateListeners(elements);
+    this.setupEditorActionListeners(elements);
+    this.setupCompilationListeners(elements);
+    this.setupSettingsListeners(elements);
+  }
+
+  private setupTemplateListeners(elements: DOMElements): void {
     // Template change handler
     if (elements.template) {
       elements.template.addEventListener("change", () => {
@@ -408,50 +567,12 @@ export class CinCoutApp {
         }
       });
     }
+  }
 
+  private setupEditorActionListeners(elements: DOMElements): void {
     // Code snapshot button
     if (elements.codesnap) {
       elements.codesnap.addEventListener("click", debounce(takeCodeSnap, 300));
-    }
-
-    // Compile button
-    if (elements.compile) {
-      elements.compile.addEventListener(
-        "click",
-        debounce(() => {
-          const options = this.getCompileOptions();
-          this.compileSocketManager.compile(options);
-        }, 300)
-      );
-    }
-
-    // Close output panel
-    if (elements.closeOutput) {
-      elements.closeOutput.addEventListener("click", () => {
-        this.compileSocketManager.cleanup();
-      });
-    }
-
-    // View Assembly button
-    if (elements.viewAssembly) {
-      elements.viewAssembly.addEventListener(
-        "click",
-        debounce(() => {
-          const options = this.getCompileOptions();
-          this.codeActions.viewAssembly(options);
-        }, 300)
-      );
-    }
-
-    // Memory check button
-    if (elements.memcheck) {
-      elements.memcheck.addEventListener(
-        "click",
-        debounce(() => {
-          const options = this.getCompileOptions();
-          this.codeActions.runMemCheck(options);
-        }, 300)
-      );
     }
 
     // Format button
@@ -459,8 +580,8 @@ export class CinCoutApp {
       elements.format.addEventListener(
         "click",
         debounce(() => {
-          const code = (window as any).editor.getValue();
-          const lang = (elements.language as HTMLSelectElement).value;
+          const code = EditorService.getValue();
+          const lang = elements.language?.value || "c";
           this.codeActions.formatCode(code, lang);
         }, 300)
       );
@@ -471,13 +592,59 @@ export class CinCoutApp {
       elements.styleCheck.addEventListener(
         "click",
         debounce(() => {
-          const code = (window as any).editor.getValue();
-          const lang = (elements.language as HTMLSelectElement).value;
+          const code = EditorService.getValue();
+          const lang = elements.language?.value || "c";
           this.codeActions.runStyleCheck(code, lang);
         }, 300)
       );
     }
+  }
 
+  private setupCompilationListeners(elements: DOMElements): void {
+    // Compile button
+    if (elements.compile) {
+      elements.compile.addEventListener(
+        "click",
+        debounce(() => {
+          const options = DOMService.getCompileOptions();
+          this.compileSocketManager.compile(options);
+        }, 300)
+      );
+    }
+
+    // Close output panel
+    if (elements.closeOutput) {
+      elements.closeOutput.addEventListener("click", () => {
+        this.compileSocketManager.cleanup();
+        DOMService.hideOutputPanel();
+        this.appState.setState({ isOutputVisible: false });
+      });
+    }
+
+    // View Assembly button
+    if (elements.viewAssembly) {
+      elements.viewAssembly.addEventListener(
+        "click",
+        debounce(() => {
+          const options = DOMService.getCompileOptions();
+          this.codeActions.viewAssembly(options);
+        }, 300)
+      );
+    }
+
+    // Memory check button
+    if (elements.memcheck) {
+      elements.memcheck.addEventListener(
+        "click",
+        debounce(() => {
+          const options = DOMService.getCompileOptions();
+          this.codeActions.runMemCheck(options);
+        }, 300)
+      );
+    }
+  }
+
+  private setupSettingsListeners(elements: DOMElements): void {
     // Theme selection
     if (elements.themeSelect) {
       elements.themeSelect.addEventListener("change", () => {
@@ -485,8 +652,10 @@ export class CinCoutApp {
       });
 
       // Initialize with saved theme
-      elements.themeSelect.value = this.appState.getState().theme;
-      this.editorSettings.setTheme(elements.themeSelect.value);
+      if (elements.themeSelect) {
+        elements.themeSelect.value = this.appState.getState().theme;
+        this.editorSettings.setTheme(elements.themeSelect.value);
+      }
     }
 
     // Vim mode toggle
@@ -496,29 +665,19 @@ export class CinCoutApp {
       });
 
       // Initialize with saved vim mode
-      elements.vimMode.checked = this.appState.getState().vimMode;
-      this.editorSettings.setVimMode(elements.vimMode.checked);
+      if (elements.vimMode) {
+        elements.vimMode.checked = this.appState.getState().vimMode;
+        this.editorSettings.setVimMode(elements.vimMode.checked);
+      }
     }
-  }
-
-  private getCompileOptions(): CompileOptions {
-    return {
-      code: (window as any).editor.getValue(),
-      lang: (document.getElementById("language") as HTMLSelectElement).value,
-      compiler: (document.getElementById("compiler") as HTMLSelectElement)
-        .value,
-      optimization: (
-        document.getElementById("optimization") as HTMLSelectElement
-      ).value,
-    };
   }
 }
 
-// Initialize app on load (equivalent to ReactDOM.render)
+// Initialize app on load
 const app = new CinCoutApp();
 app.init();
 
-// Declare global objects (unchanged from original code)
+// Declare global objects
 declare global {
   interface Window {
     CinCoutSocket: CinCoutSocket;

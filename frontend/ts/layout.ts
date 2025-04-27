@@ -1,18 +1,14 @@
-// Use Immediately Invoked Function Expression (IIFE) to create closure and avoid global namespace pollution
+// Layout manager module - React-ready architecture
 (() => {
-  // Component state interface
+  // === Types ===
+
+  // Component state interface (would be React component state)
   interface PanelState {
     isOutputVisible: boolean;
     activeTab: "output" | "assembly";
   }
 
-  // Global state - would be React component state
-  let panelState: PanelState = {
-    isOutputVisible: false,
-    activeTab: "output",
-  };
-
-  // Component references - would be React refs
+  // DOM elements references (would be React refs)
   interface UIElements {
     outputPanel: HTMLElement | null;
     editorPanel: HTMLElement | null;
@@ -21,10 +17,10 @@
     assemblyTab: HTMLElement | null;
     outputContent: HTMLElement | null;
     assemblyContent: HTMLElement | null;
-    actionButtons: (HTMLElement | null)[];
+    actionButtons: HTMLElement[];
   }
 
-  // Declare global window properties
+  // Window interface extension for global access (would be eliminated in React)
   declare global {
     interface Window {
       editor: any;
@@ -39,19 +35,35 @@
     }
   }
 
-  // Initialize on DOM ready - equivalent to React's useEffect with empty dependency array
-  document.addEventListener("DOMContentLoaded", () => {
-    const elements = getElements();
+  // === State ===
 
-    // Initialize UI based on state - React's initial render
+  // Initial state (would be React's useState initial value)
+  const initialState: PanelState = {
+    isOutputVisible: false,
+    activeTab: "output",
+  };
+
+  // Current state (would be React state)
+  let panelState: PanelState = { ...initialState };
+
+  // === Component Implementation ===
+
+  // Main initialization function (would be React's useEffect)
+  const initialize = (): void => {
+    const elements = getUIElements();
+    setupEventListeners(elements);
     renderUI(elements);
+  };
 
-    // Set up event handlers - similar to React's useEffect for adding event listeners
-    setupEventHandlers(elements);
-  });
+  // Get all required DOM elements (would be React refs)
+  const getUIElements = (): UIElements => {
+    // Get action buttons with one query instead of multiple getElementById calls
+    const actionButtons = Array.from(
+      document.querySelectorAll(
+        "#compile, #viewAssembly, #styleCheck, #memcheck"
+      )
+    ) as HTMLElement[];
 
-  // Get all DOM elements - similar to React's ref pattern
-  const getElements = (): UIElements => {
     return {
       outputPanel: document.getElementById("outputPanel"),
       editorPanel: document.querySelector(".editor-panel"),
@@ -60,181 +72,124 @@
       assemblyTab: document.getElementById("assemblyTab"),
       outputContent: document.getElementById("output"),
       assemblyContent: document.getElementById("assembly"),
-      actionButtons: [
-        document.getElementById("compile"),
-        document.getElementById("viewAssembly"),
-        document.getElementById("styleCheck"),
-        document.getElementById("memcheck"),
-      ],
+      actionButtons,
     };
   };
 
-  // Setup all event handlers - similar to React's useEffect hooks
-  const setupEventHandlers = (elements: UIElements): void => {
-    setupCloseButton(elements);
-    setupActionButtons(elements);
-    setupTabSwitching(elements);
-    setupResizeHandler();
-  };
+  // Setup all event listeners (would be React useEffect hooks)
+  const setupEventListeners = (elements: UIElements): void => {
+    // Close button
+    elements.closeOutputBtn?.addEventListener("click", () => {
+      setState({ isOutputVisible: false });
+      renderUI(elements);
+    });
 
-  // Setup close button handler
-  const setupCloseButton = (elements: UIElements): void => {
-    if (elements.closeOutputBtn) {
-      elements.closeOutputBtn.addEventListener("click", () => {
-        // Update state - like React's setState
-        panelState.isOutputVisible = false;
-
-        // Render UI with new state - like React's re-render
-        renderUI(elements);
-      });
-    }
-  };
-
-  // Setup action buttons
-  const setupActionButtons = (elements: UIElements): void => {
+    // Action buttons
     elements.actionButtons.forEach((button) => {
-      if (button) {
-        button.addEventListener(
-          "click",
-          (e) => {
-            // Check if there's a running process
-            handleRunningProcess();
-
-            // Update state - like React's setState
-            panelState.isOutputVisible = true;
-
-            // Set active tab based on button
-            if (button?.id === "viewAssembly") {
-              panelState.activeTab = "assembly";
-            } else {
-              panelState.activeTab = "output";
-            }
-
-            // Render UI with new state - like React's re-render
-            renderUI(elements);
-          },
-          true
-        ); // capture phase
-      }
-    });
-  };
-
-  // Setup tab switching
-  const setupTabSwitching = (elements: UIElements): void => {
-    if (elements.outputTab) {
-      elements.outputTab.addEventListener("click", () => {
-        // Check if there's a running process when switching from assembly
-        if (panelState.activeTab === "assembly") {
+      button?.addEventListener(
+        "click",
+        () => {
           handleRunningProcess();
-        }
 
-        // Update state - like React's setState
-        panelState.activeTab = "output";
+          setState({
+            isOutputVisible: true,
+            activeTab: button.id === "viewAssembly" ? "assembly" : "output",
+          });
 
-        // Render UI with new state - like React's re-render
-        renderUI(elements);
-      });
-    }
-
-    if (elements.assemblyTab) {
-      elements.assemblyTab.addEventListener("click", () => {
-        // Check if there's a running process when switching from output
-        if (panelState.activeTab === "output") {
-          handleRunningProcess();
-        }
-
-        // Update state - like React's setState
-        panelState.activeTab = "assembly";
-
-        // Render UI with new state - like React's re-render
-        renderUI(elements);
-      });
-    }
-  };
-
-  // Setup window resize handler
-  const setupResizeHandler = (): void => {
-    window.addEventListener("resize", () => {
-      refreshEditors();
+          renderUI(elements);
+        },
+        true
+      );
     });
+
+    // Tab switching
+    elements.outputTab?.addEventListener("click", () => {
+      if (panelState.activeTab === "assembly") handleRunningProcess();
+      setState({ activeTab: "output" });
+      renderUI(elements);
+    });
+
+    elements.assemblyTab?.addEventListener("click", () => {
+      if (panelState.activeTab === "output") handleRunningProcess();
+      setState({ activeTab: "assembly" });
+      renderUI(elements);
+    });
+
+    // Window resize handler (using debounce for performance)
+    window.addEventListener("resize", refreshEditors);
   };
 
-  // Render UI based on state - similar to React's render method
+  // Update state (would be React's setState)
+  const setState = (newState: Partial<PanelState>): void => {
+    panelState = { ...panelState, ...newState };
+  };
+
+  // Render UI based on state (would be React's render method)
   const renderUI = (elements: UIElements): void => {
-    // Update visibility based on state
+    const { isOutputVisible, activeTab } = panelState;
+
+    // Output panel visibility
     if (elements.outputPanel && elements.editorPanel) {
-      elements.outputPanel.style.display = panelState.isOutputVisible
-        ? "flex"
-        : "none";
-
-      if (panelState.isOutputVisible) {
-        elements.editorPanel.classList.add("with-output");
-      } else {
-        elements.editorPanel.classList.remove("with-output");
-      }
+      elements.outputPanel.style.display = isOutputVisible ? "flex" : "none";
+      elements.editorPanel.classList.toggle("with-output", isOutputVisible);
     }
 
-    // Update active tab based on state
+    // Active tab
     if (elements.outputTab && elements.assemblyTab) {
-      if (panelState.activeTab === "output") {
-        elements.outputTab.classList.add("active");
-        elements.assemblyTab.classList.remove("active");
-        if (elements.outputContent) {
-          elements.outputContent.innerHTML = "";
-        }
-      } else {
-        elements.assemblyTab.classList.add("active");
-        elements.outputTab.classList.remove("active");
+      const isOutputActive = activeTab === "output";
+      elements.outputTab.classList.toggle("active", isOutputActive);
+      elements.assemblyTab.classList.toggle("active", !isOutputActive);
+
+      // Clear output when switching to output tab
+      if (isOutputActive && elements.outputContent) {
+        elements.outputContent.innerHTML = "";
       }
     }
 
-    // Update content visibility based on state
+    // Content visibility
     if (elements.outputContent && elements.assemblyContent) {
       elements.outputContent.style.display =
-        panelState.activeTab === "output" ? "block" : "none";
+        activeTab === "output" ? "block" : "none";
       elements.assemblyContent.style.display =
-        panelState.activeTab === "assembly" ? "block" : "none";
+        activeTab === "assembly" ? "block" : "none";
     }
 
     // Refresh editors after UI changes
     refreshEditors();
   };
 
-  // Helper to refresh editors - would be useEffect in React
+  // Handle editors refresh
   const refreshEditors = (): void => {
-    // Use setTimeout to ensure rendering is complete
-    setTimeout(() => {
-      // Refresh CodeMirror editor if it exists
-      if (window.editor) {
-        window.editor.refresh();
-      }
+    // Main editor refresh
+    if (window.editor) {
+      window.editor.refresh();
+    }
 
-      // Refresh assembly view if it exists and is visible
-      if (panelState.activeTab === "assembly" && window.assemblyView) {
-        window.assemblyView.refresh();
-      }
+    // Assembly view refresh (only if visible)
+    if (panelState.activeTab === "assembly" && window.assemblyView) {
+      window.assemblyView.refresh();
+    }
 
-      // Handle terminal resize if it exists
-      if (window.fitAddon && window.terminal) {
-        try {
-          // Just use the fit addon to resize the terminal
-          window.fitAddon.fit();
-        } catch (error) {
-          console.error("Error fitting terminal:", error);
-        }
+    // Terminal resize
+    if (window.fitAddon && window.terminal) {
+      try {
+        window.fitAddon.fit();
+      } catch (error) {
+        console.error("Error fitting terminal:", error);
       }
-    }, 10);
+    }
   };
 
-  // Helper to handle running process - would be a custom hook in React
+  // Handle running process (disconnect WebSocket if needed)
   const handleRunningProcess = (): void => {
     if (
-      window.CinCoutSocket &&
-      typeof window.CinCoutSocket.isProcessRunning === "function" &&
-      typeof window.CinCoutSocket.isConnected === "function" &&
-      window.CinCoutSocket.isConnected()
+      window.CinCoutSocket?.isConnected?.() &&
+      typeof window.CinCoutSocket.disconnect === "function"
     ) {
       window.CinCoutSocket.disconnect();
     }
   };
+
+  // Initialize on DOM content loaded
+  document.addEventListener("DOMContentLoaded", initialize);
 })();

@@ -1,28 +1,45 @@
-FROM node:18-bullseye
+FROM node:18-alpine
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install build tools, Python and necessary dependencies for node-pty and C/C++ compilers
+RUN apk add --no-cache \
     gcc \
     g++ \
     clang \
-    clang-format \
+    clang-extra-tools \
     valgrind \
-    cppcheck \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    musl-dev \
+    python3 \
+    make \
+    linux-headers
 
-# Create app directory
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Create app directory and set permissions
 WORKDIR /app
 
-# Copy all files
+# Copy package files first to leverage Docker caching
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+
+# Install dependencies with proper build environment
+RUN npm install
+RUN cd backend && npm install
+
+# Copy the rest of the application
 COPY . .
 
-# Install root dependencies and run build script
-RUN npm install
+# Build the application
 RUN npm run build
+
+# Change ownership to the non-root user
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
 
 # Expose the port
 EXPOSE 9527
 
-# Just start the server (everything is already built)
+# Start the server
 CMD ["npm", "start"]

@@ -3,7 +3,7 @@
   "scripts": {
     "build": "vite build",
     "preview": "vite preview",
-    "dev": "vite dev",
+    "dev": "vite",
     "analyze": "vite build --report"
   },
   "dependencies": {

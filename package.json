@@ -5,11 +5,14 @@
     "build:frontend": "cd frontend && npm install && npm run build",
     "build:backend": "cd backend && npm install && npm run build",
     "clean": "rm -rf node_modules package-lock.json frontend/node_modules frontend/dist frontend/package-lock.json backend/node_modules backend/dist backend/package-lock.json",
-    "start": "cd backend && npm run start"
+    "start": "cd backend && npm run start",
+    "predev": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\""
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
     "@types/ws": "^8.5.10",
+    "concurrently": "^8.2.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {

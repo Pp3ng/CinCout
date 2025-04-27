@@ -4,7 +4,16 @@ import * as path from "path";
 import { asyncRouteHandler } from "../utils/routeHandler";
 
 const router = express.Router();
-const TEMPLATES_DIR = path.join(__dirname, "../../templates");
+
+const getTemplatesDir = () => {
+  if (process.env.NODE_ENV !== "production") {
+    return path.join(__dirname, "../../templates");
+  } else {
+    return path.join(process.cwd(), "templates");
+  }
+};
+
+const TEMPLATES_DIR = getTemplatesDir();
 const templateCache: Record<string, string> = {};
 const templateListsCache: Record<string, string[]> = {};
 
@@ -38,11 +47,9 @@ router.get(
       templateListsCache[language] = templateNames;
       return res.json(templateNames);
     } catch (error) {
-      return res
-        .status(404)
-        .json({
-          error: `Language '${language}' not supported or has no templates`,
-        });
+      return res.status(404).json({
+        error: `Language '${language}' not supported or has no templates`,
+      });
     }
   })
 );
@@ -69,11 +76,9 @@ router.get(
       );
 
       if (!templateFile) {
-        return res
-          .status(404)
-          .json({
-            error: `Template '${templateName}' not found for language '${language}'`,
-          });
+        return res.status(404).json({
+          error: `Template '${templateName}' not found for language '${language}'`,
+        });
       }
 
       // Read template content
@@ -86,11 +91,9 @@ router.get(
       templateCache[cacheKey] = content;
       return res.json({ content });
     } catch (error) {
-      return res
-        .status(404)
-        .json({
-          error: `Template not found or language '${language}' not supported`,
-        });
+      return res.status(404).json({
+        error: `Template not found or language '${language}' not supported`,
+      });
     }
   })
 );

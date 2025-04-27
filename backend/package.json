@@ -1,8 +1,9 @@
 {
-  "name": "webcpp-backend",
+  "name": "cincout-backend",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js"
+    "build": "tsc && esbuild dist/server.js --bundle --minify --platform=node --target=node18 --outfile=dist/server.bundle.js --external:node-pty",
+    "start": "NODE_ENV=production node dist/server.bundle.js",
+    "dev": "ts-node src/server.ts"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
@@ -26,6 +27,7 @@
     "@types/fs-extra": "^11.0.1",
     "@types/tmp": "^0.2.3",
     "@types/uuid": "^9.0.1",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "esbuild": "^0.20.0"
   }
 }

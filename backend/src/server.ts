@@ -47,7 +47,7 @@ if (cluster.isPrimary) {
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
-  cluster.on("exit", (worker, code, signal) => {
+  cluster.on("exit", (worker, _code, _signal) => {
     // resart worker if it dies
     console.warn(`Worker ${worker.process.pid} died, forking a new one`);
     cluster.fork();

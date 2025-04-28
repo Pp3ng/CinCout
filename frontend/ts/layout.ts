@@ -1,8 +1,5 @@
-// === Type Definitions ===
-interface PanelState {
-  isOutputVisible: boolean;
-  activeTab: "output" | "assembly";
-}
+// Import types from centralized type definition
+import { PanelState } from "./types";
 
 // Component structure designed from React perspective
 class LayoutManager {

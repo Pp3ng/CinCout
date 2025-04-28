@@ -3,44 +3,12 @@
  */
 
 import { terminalManager } from "./terminal";
-import { CompilationState } from "./websocket";
-
-// Interface for compile options
-export interface CompileOptions {
-  lang: string;
-  compiler: string;
-  optimization: string;
-  code: string;
-}
-
-// Interface for WebSocket messages
-export interface WebSocketMessage {
-  type: string;
-  [key: string]: any;
-}
-
-// Interface for the Socket API
-export interface CinCoutSocket {
-  init: (messageHandler: (event: MessageEvent) => void) => void;
-  sendData: (data: any) => Promise<void>;
-  isConnected: () => boolean;
-  getSessionId: () => string | null;
-  setSessionId: (id: string) => void;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  setProcessRunning: (running: boolean) => void;
-  isProcessRunning: () => boolean;
-  updateStateFromMessage: (type: string) => void;
-  getCompilationState: () => CompilationState | string;
-}
-
-// Interface for UI state updates
-export interface CompileStateUpdater {
-  updateCompilationState: (state: CompilationState | string) => void;
-  showOutput: () => void;
-  activateOutputTab: () => void;
-  refreshEditor: () => void;
-}
+import {
+  CompileOptions,
+  WebSocketMessage,
+  CinCoutSocket,
+  CompileStateUpdater,
+} from "./types";
 
 /**
  * CompileSocketManager handles the WebSocket communication for code compilation

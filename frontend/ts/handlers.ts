@@ -1,64 +1,14 @@
 // Import utility functions
 import { debounce, takeCodeSnap, showNotification } from "./utils";
 import { themeStoreInstance } from "./themes";
-import CompileSocketManager, {
+import CompileSocketManager from "./compileSocket";
+import {
   CompileOptions,
   CompileStateUpdater,
-} from "./compileSocket";
-import { CompilationState } from "./websocket";
-
-// ------------------------------------------------------------
-// Types - Move to separate types.ts file for React migration
-// ------------------------------------------------------------
-
-// Define WebSocket-related interfaces
-export interface CinCoutSocket {
-  init: (messageHandler: (event: MessageEvent) => void) => void;
-  sendData: (data: any) => Promise<void>;
-  isConnected: () => boolean;
-  getSessionId: () => string | null;
-  setSessionId: (id: string) => void;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  setProcessRunning: (running: boolean) => void;
-  isProcessRunning: () => boolean;
-  updateStateFromMessage: (type: string) => void;
-  getCompilationState: () => string;
-}
-
-// Interfaces for typed state management - React style
-export interface UIState {
-  isOutputVisible: boolean;
-  activeTab: "output" | "assembly";
-  isLoading: boolean;
-  loadingMessage: string;
-  compilationState: CompilationState;
-  isProcessRunning?: boolean;
-  theme: string;
-  vimMode: boolean;
-}
-
-// DOM Elements interface for better type safety
-interface DOMElements {
-  template: HTMLElement | null;
-  vimMode: HTMLInputElement | null;
-  language: HTMLSelectElement | null;
-  outputTab: HTMLElement | null;
-  assemblyTab: HTMLElement | null;
-  output: HTMLElement | null;
-  assembly: HTMLElement | null;
-  compile: HTMLElement | null;
-  memcheck: HTMLElement | null;
-  format: HTMLElement | null;
-  viewAssembly: HTMLElement | null;
-  styleCheck: HTMLElement | null;
-  themeSelect: HTMLSelectElement | null;
-  outputPanel: HTMLElement | null;
-  closeOutput: HTMLElement | null;
-  codesnap: HTMLElement | null;
-  compiler: HTMLSelectElement | null;
-  optimization: HTMLSelectElement | null;
-}
+  UIState,
+  DOMElements,
+  CompilationState,
+} from "./types";
 
 // ------------------------------------------------------------
 // Services - These will become React hooks/services
@@ -694,22 +644,3 @@ export class CinCoutApp {
 // Initialize app on load
 const app = new CinCoutApp();
 app.init();
-
-// Declare global objects
-declare global {
-  interface Window {
-    CinCoutSocket: CinCoutSocket;
-    editor: any;
-    assemblyView: any;
-    fitAddon: any;
-    terminal: any;
-    templates: any;
-    templateLists: Record<string, string[]>;
-    loadedTemplates: Set<string>;
-    updateTemplates: () => Promise<void>;
-    setTemplate: () => Promise<void>;
-    html2canvas: any;
-    getTerminalTheme: () => any;
-    resetCompilationState: () => void;
-  }
-}

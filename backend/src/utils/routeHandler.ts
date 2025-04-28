@@ -4,25 +4,6 @@
 import { Request, Response, NextFunction } from "express";
 
 /**
- * Standard API response structure
- */
-export interface ApiResponse {
-  success: boolean;
-  data?: any;
-  error?: string;
-}
-
-/**
- * Base request interface for code operations
- */
-export interface CodeRequest {
-  code: string;
-  lang: string;
-  compiler?: string;
-  optimization?: string;
-}
-
-/**
  * Generic async route handler to reduce boilerplate and standardize error handling
  * @param fn - The route handler function to wrap
  * @returns A middleware function that handles errors

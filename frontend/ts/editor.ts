@@ -1,9 +1,5 @@
-import CodeMirror, { Editor } from "codemirror";
-
-type EditorInstances = {
-  editor: Editor;
-  assemblyView: Editor;
-};
+import CodeMirror from "codemirror";
+import { EditorInstances } from "./types";
 
 const setupEditors = (): EditorInstances => {
   const codeElement = document.getElementById("code") as HTMLTextAreaElement;
@@ -66,7 +62,8 @@ const setupFontZoomHandler = (editor: Editor, assemblyView: Editor) => {
     (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        fontSize = e.deltaY < 0 ? Math.min(fontSize + 1, 24) : Math.max(fontSize - 1, 8);
+        fontSize =
+          e.deltaY < 0 ? Math.min(fontSize + 1, 24) : Math.max(fontSize - 1, 8);
         applyFontSize();
       }
     },

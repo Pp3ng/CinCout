@@ -11,54 +11,8 @@ import "codemirror/theme/the-matrix.css";
 // Import theme definitions from JSON file
 import themeDefinitions from "../config/themes.json";
 
-// Types for theme system
-type ThemeMap = Record<string, Theme>;
-
-interface TerminalColors {
-  red: string;
-  green: string;
-  yellow: string;
-  blue: string;
-  magenta: string;
-  cyan: string;
-}
-
-interface Theme {
-  name: string;
-  bg: string;
-  bgSecondary: string;
-  text: string;
-  textSecondary: string;
-  accent: string;
-  accentHover: string;
-  border: string;
-  terminal: TerminalColors;
-}
-
-interface TerminalTheme {
-  background: string;
-  foreground: string;
-  cursor: string;
-  cursorAccent: string;
-  selection: string;
-  black: string;
-  red: string;
-  green: string;
-  yellow: string;
-  blue: string;
-  magenta: string;
-  cyan: string;
-  white: string;
-  brightBlack: string;
-  brightRed: string;
-  brightGreen: string;
-  brightYellow: string;
-  brightBlue: string;
-  brightMagenta: string;
-  brightCyan: string;
-  brightWhite: string;
-  [key: string]: string;
-}
+// Import types from centralized types file
+import { ThemeMap, Theme, TerminalTheme } from "./types";
 
 // Theme management
 const createThemeStore = () => {

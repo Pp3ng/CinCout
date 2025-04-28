@@ -1,13 +1,9 @@
 // WebSocket communication module
+import { CompilationState, CinCoutSocket as CinCoutSocketType } from "./types";
+
 let socket: WebSocket | null = null;
 let sessionId: string | null = null;
 let messageHandler: ((event: MessageEvent) => void) | null = null;
-
-export enum CompilationState {
-  IDLE = "idle",
-  COMPILING = "compiling",
-  RUNNING = "running",
-}
 
 let compilationState: CompilationState = CompilationState.IDLE;
 
@@ -17,7 +13,7 @@ export const resetState = () => {
   compilationState = CompilationState.IDLE;
 };
 
-export const CinCoutSocket = {
+export const CinCoutSocket: CinCoutSocketType = {
   init(handler: (event: MessageEvent) => void) {
     messageHandler = handler;
   },

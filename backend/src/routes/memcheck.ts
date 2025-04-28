@@ -1,45 +1,46 @@
 /**
- * Memory checking router
+ * Memory check router
  */
 import express, { Request, Response } from "express";
-import {
-  createCompilationEnvironment,
-  runMemoryCheck,
-  CompilationOptions,
-} from "../utils/compilationService";
-import { asyncRouteHandler, CodeRequest } from "../utils/routeHandler";
+import { runMemoryCheck } from "../utils/compilationService";
+import { asyncRouteHandler } from "../utils/routeHandler";
+import { createCompilationEnvironment } from "../utils/compilationService";
+import { MemcheckRequest } from "../types";
 
 const router = express.Router();
-
-interface MemcheckRequest extends CodeRequest {}
 
 router.post(
   "/",
   asyncRouteHandler(async (req: Request, res: Response) => {
     const { code, lang, compiler, optimization } = req.body as MemcheckRequest;
 
-    // Create compilation environment
-    const env = createCompilationEnvironment(lang);
+    if (!code) {
+      return res.status(400).send("No code provided");
+    }
+
+    // Create environment for memory check
+    const env = createCompilationEnvironment(lang || "c");
 
     try {
-      // Set up compilation options
-      const options: CompilationOptions = {
-        lang,
+      // Run memory check
+      const result = await runMemoryCheck(env, code, {
+        lang: lang || "c",
         compiler,
         optimization,
-      };
+      });
 
-      // Run memory check
-      const result = await runMemoryCheck(env, code, options);
+      // Clean up temporary files
+      env.tmpDir.removeCallback();
 
       if (result.success) {
         res.send(result.report);
       } else {
-        res.status(400).send(`Compilation Error:\n${result.error}`);
+        res.status(500).send(`Memory check error: ${result.error}`);
       }
-    } finally {
-      // Clean up temporary files
+    } catch (error) {
+      // Ensure cleanup on error
       env.tmpDir.removeCallback();
+      throw error;
     }
   })
 );

@@ -1,41 +1,12 @@
-// Constants and Types
-export enum DomElementId {
-  COMPILE = "compile",
-  CLOSE_OUTPUT = "closeOutput",
-  VIEW_ASSEMBLY = "viewAssembly",
-  FORMAT = "format",
-  STYLE_CHECK = "styleCheck",
-  MEMORY_CHECK = "memcheck",
-  OUTPUT_PANEL = "outputPanel",
-  LANGUAGE = "language",
-  SHORTCUTS_CONTENT = "shortcuts-content",
-  CODESNAP = "codeSnap",
-}
-
-export type PlatformType = "MacOS" | "Other";
-
-export interface ShortcutDefinition {
-  action: () => void;
-  description: string;
-  displayKeys: string[];
-}
-
-export type ShortcutMap = Record<string, ShortcutDefinition>;
-
-export interface ShortcutCategories {
-  common: ShortcutMap;
-  mac: ShortcutMap;
-  other: ShortcutMap;
-  special: ShortcutMap;
-}
-
-export interface ShortcutState {
-  currentOS: PlatformType;
-  isMac: boolean;
-  shortcuts: ShortcutCategories;
-}
-
-export type KeyHandler = (e: KeyboardEvent) => boolean;
+// Import types from centralized types file
+import {
+  DomElementId,
+  PlatformType,
+  ShortcutDefinition,
+  ShortcutCategories,
+  ShortcutState,
+  KeyHandler,
+} from "./types";
 
 // Utilities and actions
 const getEditor = () => (window as any).editor;

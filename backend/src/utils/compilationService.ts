@@ -5,32 +5,13 @@
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as tmp from "tmp";
-import { DirResult } from "tmp";
 import { exec, ExecOptions } from "child_process";
 import { ExtendedWebSocket, sendWebSocketMessage } from "./webSocketHandler";
-
-// Interface for compilation environment
-export interface CompilationEnvironment {
-  tmpDir: DirResult;
-  sourceFile: string;
-  outputFile: string;
-  asmFile: string;
-}
-
-// Interface for compilation options
-export interface CompilationOptions {
-  lang: string; // 'c' or 'cpp'
-  compiler?: string; // 'gcc', 'g++', 'clang', 'clang++'
-  optimization?: string; // Optimization level
-  standard?: string; // Language standard override
-}
-
-// Interface for execution result
-export interface ExecutionResult {
-  stdout: string;
-  stderr: string;
-  exitCode: number;
-}
+import {
+  CompilationEnvironment,
+  CompilationOptions,
+  ExecutionResult,
+} from "../types";
 
 /**
  * Creates a compilation environment with appropriate files

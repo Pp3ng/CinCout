@@ -1,9 +1,5 @@
 // Custom Select Component
-interface SelectOption {
-  readonly value: string;
-  readonly text: string;
-  readonly selected: boolean;
-}
+import { SelectOption } from "./types";
 
 class CustomSelect {
   private container: HTMLElement;

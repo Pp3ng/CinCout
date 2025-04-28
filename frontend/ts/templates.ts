@@ -1,7 +1,4 @@
-interface TemplateCache {
-  lists: Record<string, string[]>;
-  contents: Record<string, string>;
-}
+import { TemplateCache } from "./types";
 
 // Cache object
 const cache: TemplateCache = {

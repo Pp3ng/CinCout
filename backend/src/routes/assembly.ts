@@ -1,50 +1,41 @@
 /**
- * Assembly code generation router
+ * Assembly code generation route
  */
 import express, { Request, Response } from "express";
+import { asyncRouteHandler } from "../utils/routeHandler";
+import { AssemblyRequest } from "../types";
 import {
   createCompilationEnvironment,
   generateAssembly,
-  CompilationOptions,
 } from "../utils/compilationService";
-import { asyncRouteHandler, CodeRequest } from "../utils/routeHandler";
 
 const router = express.Router();
-
-interface AssemblyRequest extends CodeRequest {}
 
 router.post(
   "/",
   asyncRouteHandler(async (req: Request, res: Response) => {
-    const {
-      code,
-      lang,
-      compiler: selectedCompiler,
+    const { code, lang, compiler, optimization } = req.body as AssemblyRequest;
+
+    if (!code) {
+      return res.status(400).send("No code provided");
+    }
+
+    // Create environment and generate assembly
+    const env = createCompilationEnvironment(lang || "c");
+    const result = await generateAssembly(env, code, {
+      lang: lang || "c",
+      compiler,
       optimization,
-    } = req.body as AssemblyRequest;
+    });
 
-    // Create compilation environment
-    const env = createCompilationEnvironment(lang);
+    // Clean up temporary files
+    env.tmpDir.removeCallback();
 
-    try {
-      // Set up compilation options
-      const options: CompilationOptions = {
-        lang,
-        compiler: selectedCompiler,
-        optimization,
-      };
-
-      // Generate assembly code
-      const result = await generateAssembly(env, code, options);
-
-      if (result.success) {
-        res.send(result.assembly);
-      } else {
-        res.status(400).send(`Compilation Error:\n${result.error}`);
-      }
-    } finally {
-      // Clean up temporary files
-      env.tmpDir.removeCallback();
+    // Return assembly or error
+    if (result.success && result.assembly) {
+      res.send(result.assembly);
+    } else {
+      res.status(500).send(result.error || "Unknown error generating assembly");
     }
   })
 );

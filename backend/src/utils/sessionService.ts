@@ -4,20 +4,12 @@
  */
 import * as pty from "node-pty";
 import { DirResult } from "tmp";
+import { Session } from "../types";
 import {
-  ExtendedWebSocket,
   sendWebSocketMessage,
   webSocketEvents,
+  ExtendedWebSocket,
 } from "./webSocketHandler";
-
-// Interface for session
-export interface Session {
-  pty: pty.IPty;
-  tmpDir: DirResult;
-  lastActivity: number;
-  dimensions: { cols: number; rows: number };
-  sessionType: string;
-}
 
 // Store active sessions with structured type information
 const activeSessions = new Map<string, Session>();
@@ -136,10 +128,11 @@ export const startCompilationSession = (
     // Handle PTY exit
     ptyProcess.onExit(({ exitCode }) => {
       try {
-        // Send exit notification
+        // Send exit notification with enhanced information
         sendWebSocketMessage(ws, {
           type: "exit",
           code: exitCode,
+          success: exitCode === 0,
           timestamp: Date.now(),
         });
 

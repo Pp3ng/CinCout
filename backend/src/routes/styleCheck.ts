@@ -1,20 +1,23 @@
 /**
- * Style checking router
+ * Style check router
  */
 import express, { Request, Response } from "express";
 import { runStyleCheck } from "../utils/compilationService";
-import { asyncRouteHandler, CodeRequest } from "../utils/routeHandler";
+import { asyncRouteHandler } from "../utils/routeHandler";
+import { StyleCheckRequest } from "../types";
 
 const router = express.Router();
-
-interface StyleCheckRequest extends CodeRequest {}
 
 router.post(
   "/",
   asyncRouteHandler(async (req: Request, res: Response) => {
     const { code } = req.body as StyleCheckRequest;
 
-    // Run style check using the centralized service
+    if (!code) {
+      return res.status(400).send("No code provided");
+    }
+
+    // Run style check
     const result = await runStyleCheck(code);
 
     if (result.success) {

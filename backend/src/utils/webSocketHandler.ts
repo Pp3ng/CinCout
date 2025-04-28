@@ -1,144 +1,106 @@
 /**
- * WebSocket handler utility
- * Provides common WebSocket functionality for route handlers
+ * WebSocket Handler
+ * Centralized utilities for WebSocket management
  */
-import { WebSocket, WebSocketServer } from "ws";
-import { v4 as uuidv4 } from "uuid";
+import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
+import { WebSocketMessage } from "../types";
+import { v4 as uuidv4 } from "uuid";
 
-// Extended WebSocket interface to add properties
+// Define ExtendedWebSocket interface for local use
 export interface ExtendedWebSocket extends WebSocket {
-  sessionId?: string;
-  isAlive?: boolean;
-  _pongTimeout?: NodeJS.Timeout; // Added property for pong timeout
+  sessionId: string;
+  isAlive: boolean;
 }
 
-// Global event emitter for WebSocket events
+// Event emitter for WebSocket events
 export const webSocketEvents = new EventEmitter();
 
+// Ping interval in milliseconds
+const PING_INTERVAL = 30000;
+
 /**
- * Setup WebSocket connection with basic handlers
- * @param {WebSocketServer} wss - WebSocket server instance
- * @param {Function} messageHandler - Function to handle incoming messages
+ * Setup WebSocket server with standard configuration
+ * @param {WebSocketServer} wss - WebSocket server to configure
+ * @param {function} messageHandler - Handler for incoming messages
  */
 export const setupWebSocketServer = (
   wss: WebSocketServer,
   messageHandler: (ws: ExtendedWebSocket, data: any) => void
 ): void => {
-  // Setup heartbeat interval checker
-  const interval = setInterval(() => {
-    wss.clients.forEach((ws: WebSocket) => {
-      const extWs = ws as ExtendedWebSocket;
-      if (!extWs.isAlive) {
-        console.log(
-          `Terminating stale WS connection (${
-            (extWs as any)._socket?.remoteAddress || "unknown"
-          })`
-        );
-        return extWs.terminate();
-      }
-      extWs.isAlive = false;
-      extWs.ping();
-      // If no pong within 10s, will be terminated in next round
-      extWs._pongTimeout = setTimeout(() => {
-        if (!extWs.isAlive) extWs.terminate();
-      }, 10000);
-    });
-  }, 30000);
-
-  // Cleanup interval on server close
-  wss.on("close", () => clearInterval(interval));
-
+  // Connection handler
   wss.on("connection", (ws: WebSocket) => {
-    const extWs = ws as ExtendedWebSocket;
+    const extendedWs = ws as ExtendedWebSocket;
 
-    // Create unique session ID for each connection
-    const sessionId = uuidv4();
-    extWs.sessionId = sessionId;
+    // Initialize properties
+    extendedWs.isAlive = true;
+    extendedWs.sessionId = uuidv4();
 
-    // Set isAlive flag for heartbeat
-    extWs.isAlive = true;
-
-    // Handle pong messages - client is alive
-    extWs.on("pong", () => {
-      extWs.isAlive = true;
-      clearTimeout(extWs._pongTimeout); // Clear pong timeout when pong is received
+    // Send confirmation with session ID
+    sendWebSocketMessage(extendedWs, {
+      type: "connected",
+      sessionId: extendedWs.sessionId,
     });
 
-    // Set up auto-close timeout - if 3 minutes with no activity, close connection
-    const autoCloseTimeout = setTimeout(() => {
-      if (extWs.readyState === WebSocket.OPEN) {
-        extWs.close();
-      }
-    }, 180000); // 3 minutes timeout
-
-    // Handle incoming messages
-    extWs.on("message", (message: Buffer | string | ArrayBuffer | Buffer[]) => {
+    // Handle messages
+    ws.on("message", (message: Buffer | ArrayBuffer | Buffer[]) => {
       try {
-        // Reset timeout on any message
-        clearTimeout(autoCloseTimeout);
-
-        const data = JSON.parse(
-          typeof message === "string" ? message : message.toString()
-        );
-
-        // Call the message handler provided by the route
-        messageHandler(extWs, data);
+        const data = JSON.parse(message.toString());
+        messageHandler(extendedWs, data);
       } catch (error) {
-        console.error("Error processing WebSocket message:", error);
-        extWs.send(
-          JSON.stringify({
-            type: "error",
-            message: "Error processing request: " + (error as Error).message,
-            timestamp: Date.now(),
-          })
-        );
+        console.error("Error parsing message:", error);
+        sendWebSocketMessage(extendedWs, {
+          type: "error",
+          message: "Invalid message format",
+        });
       }
     });
 
-    // Handle WebSocket close
-    extWs.on("close", () => {
-      clearTimeout(autoCloseTimeout);
-      clearTimeout(extWs._pongTimeout); // Clear pong timeout on close
-
-      // Emit event for session closure so handlers can clean up resources
-      webSocketEvents.emit("websocket-close", { sessionId });
+    // Handle pong responses
+    ws.on("pong", () => {
+      extendedWs.isAlive = true;
     });
 
-    // Send session ID back to client
-    extWs.send(
-      JSON.stringify({
-        type: "connected",
-        sessionId,
-        timestamp: Date.now(),
-      })
-    );
+    // Handle close events
+    ws.on("close", () => {
+      if (extendedWs.sessionId) {
+        webSocketEvents.emit("websocket-close", {
+          sessionId: extendedWs.sessionId,
+        });
+      }
+    });
+  });
+
+  // Setup heartbeat mechanism
+  const interval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      const extendedWs = ws as ExtendedWebSocket;
+      if (extendedWs.isAlive === false) {
+        ws.terminate();
+        return;
+      }
+
+      extendedWs.isAlive = false;
+      ws.ping();
+    });
+  }, PING_INTERVAL);
+
+  // Clean up interval on server close
+  wss.on("close", () => {
+    clearInterval(interval);
   });
 };
 
 /**
- * Send a JSON message through WebSocket
+ * Send a formatted message to a WebSocket client
  * @param {ExtendedWebSocket} ws - WebSocket connection
- * @param {any} data - Data to send (will be JSON stringified)
- * @returns {boolean} Whether message was sent successfully
+ * @param {object} data - Data to send
  */
 export const sendWebSocketMessage = (
   ws: ExtendedWebSocket,
-  data: any
-): boolean => {
-  try {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({
-          ...data,
-          timestamp: Date.now(),
-        })
-      );
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error("Error sending WebSocket message:", error);
-    return false;
+  data: WebSocketMessage
+): void => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(data));
   }
 };

@@ -3,11 +3,10 @@
  */
 import express, { Request, Response } from "express";
 import { formatCode } from "../utils/compilationService";
-import { asyncRouteHandler, CodeRequest } from "../utils/routeHandler";
+import { asyncRouteHandler } from "../utils/routeHandler";
+import { FormatRequest } from "../types";
 
 const router = express.Router();
-
-interface FormatRequest extends CodeRequest {}
 
 router.post(
   "/",

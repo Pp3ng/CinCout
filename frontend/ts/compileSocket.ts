@@ -1,52 +1,113 @@
 /**
- * CompileSocket - Module handling compilation-related WebSocket communication
+ * CompileSocket - Module handling compilation-related Socket.IO communication
  */
-
 import { terminalManager } from "./terminal";
-import {
-  CompileOptions,
-  WebSocketMessage,
-  CinCoutSocket,
-  CompileStateUpdater,
-} from "./types";
+import { CompileOptions, CompileStateUpdater } from "./types";
+import { socketManager, SocketEvents } from "./websocket";
 
 /**
- * CompileSocketManager handles the WebSocket communication for code compilation
+ * CompileSocketManager handles the Socket.IO communication for code compilation
  */
 export class CompileSocketManager {
-  private socket: CinCoutSocket;
   private stateUpdater: CompileStateUpdater;
 
   /**
    * Create a new CompileSocketManager
-   *
-   * @param socket WebSocket interface for communication
    * @param stateUpdater Interface to update UI state based on socket events
    */
-  constructor(socket: CinCoutSocket, stateUpdater: CompileStateUpdater) {
-    this.socket = socket;
+  constructor(stateUpdater: CompileStateUpdater) {
     this.stateUpdater = stateUpdater;
-    this.socket.init(this.handleWebSocketMessage.bind(this));
+    this.setupEventListeners();
   }
 
   /**
-   * Clean up the WebSocket connection and send cleanup request to server
+   * Set up event listeners for Socket.IO events
+   */
+  private setupEventListeners(): void {
+    // Handle compilation events
+    socketManager.on(SocketEvents.COMPILING, () => {
+      this.stateUpdater.showOutput();
+      this.stateUpdater.activateOutputTab();
+      this.showOutputMessage('<div class="loading">Compiling</div>');
+      this.stateUpdater.refreshEditor();
+      this.updateCompilationState();
+    });
+
+    socketManager.on(SocketEvents.COMPILE_SUCCESS, () => {
+      // Reset any existing terminal first
+      terminalManager.dispose();
+
+      this.stateUpdater.showOutput();
+      this.stateUpdater.activateOutputTab();
+
+      // Set up the terminal with the correct DOM elements
+      terminalManager.setDomElements({
+        output: document.getElementById("output"),
+        outputPanel: document.getElementById("outputPanel"),
+        outputTab: document.getElementById("outputTab"),
+      });
+
+      // Initialize terminal
+      terminalManager.setupTerminal();
+      this.stateUpdater.refreshEditor();
+      this.updateCompilationState();
+    });
+
+    socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
+      this.stateUpdater.showOutput();
+      this.stateUpdater.activateOutputTab();
+      this.showOutputMessage(
+        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
+      );
+      socketManager.disconnect();
+      this.updateCompilationState();
+    });
+
+    // Handle execution events
+    socketManager.on(SocketEvents.OUTPUT, (data) => {
+      terminalManager.write(data.output);
+    });
+
+    socketManager.on(SocketEvents.ERROR, (data) => {
+      console.error("Received error from server:", data.message);
+      terminalManager.writeError(data.message);
+    });
+
+    socketManager.on(SocketEvents.EXIT, (data) => {
+      // Display the exit message
+      terminalManager.writeExitMessage(data.code);
+
+      socketManager.disconnect();
+
+      this.updateCompilationState();
+    });
+  }
+
+  /**
+   * Update the UI based on the current compilation state
+   */
+  private updateCompilationState(): void {
+    this.stateUpdater.updateCompilationState(
+      socketManager.getCompilationState()
+    );
+  }
+
+  /**
+   * Clean up the Socket.IO connection and send cleanup request to server
    */
   cleanup(): void {
     try {
-      const sessionId = this.socket.getSessionId();
-      if (sessionId && this.socket.isConnected()) {
+      const sessionId = socketManager.getSessionId();
+      if (sessionId && socketManager.isConnected()) {
         console.log(
           `Sending cleanup request for session ${sessionId} and disconnecting...`
         );
-        this.socket
-          .sendData({
-            type: "cleanup",
-            sessionId: sessionId,
-          })
+
+        socketManager
+          .emit(SocketEvents.CLEANUP)
           .catch((e) => console.error("Error sending cleanup message:", e));
 
-        this.socket.disconnect();
+        socketManager.disconnect();
       }
     } catch (error) {
       console.error("Failed to handle cleanup:", error);
@@ -54,12 +115,11 @@ export class CompileSocketManager {
   }
 
   /**
-   * Compile code using WebSocket communication
-   *
+   * Compile code using Socket.IO communication
    * @param options Compilation options including code, language, compiler, etc.
    */
   async compile(options: CompileOptions): Promise<void> {
-    if (this.socket.isProcessRunning()) {
+    if (socketManager.isProcessRunning()) {
       console.log("A process is already running, ignoring compile request");
       return;
     }
@@ -75,158 +135,28 @@ export class CompileSocketManager {
       this.stateUpdater.showOutput();
       this.showOutputMessage('<div class="loading">Connecting...</div>');
 
-      await this.socket.connect();
+      await socketManager.connect();
       this.showOutputMessage(
         '<div class="loading">Sending code for compilation...</div>'
       );
 
-      await this.socket.sendData({
-        type: "compile",
+      await socketManager.emit(SocketEvents.COMPILE, {
         code: options.code,
         lang: options.lang,
         compiler: options.compiler,
         optimization: options.optimization,
       });
     } catch (error) {
-      console.error("WebSocket operation failed:", error);
+      console.error("Socket operation failed:", error);
       this.showOutputMessage(
-        '<div class="error-output">Error: WebSocket connection failed. Please try again.</div>'
+        '<div class="error-output">Error: Socket connection failed. Please try again.</div>'
       );
 
       try {
-        this.socket.disconnect();
+        socketManager.disconnect();
       } catch (e) {
         console.error("Error disconnecting after failure:", e);
       }
-    }
-  }
-
-  /**
-   * Handle WebSocket messages from the server
-   *
-   * @param event MessageEvent from the WebSocket
-   */
-  private handleWebSocketMessage(event: MessageEvent): void {
-    const data = JSON.parse(event.data) as WebSocketMessage;
-    this.socket.updateStateFromMessage(data.type);
-
-    this.stateUpdater.updateCompilationState(this.socket.getCompilationState());
-
-    switch (data.type) {
-      case "connected":
-        this.socket.setSessionId(data.sessionId);
-        break;
-
-      case "compiling":
-        this.stateUpdater.showOutput();
-        this.stateUpdater.activateOutputTab();
-        this.showOutputMessage('<div class="loading">Compiling</div>');
-        this.stateUpdater.refreshEditor();
-        break;
-
-      case "compile-error":
-        // Handle compilation error
-        this.stateUpdater.showOutput();
-        this.stateUpdater.activateOutputTab();
-        this.showOutputMessage(
-          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
-        );
-        this.socket.disconnect();
-        break;
-
-      case "compile-success":
-        // Reset any existing terminal first
-        terminalManager.dispose();
-
-        this.stateUpdater.showOutput();
-        this.stateUpdater.activateOutputTab();
-
-        // Set up the terminal with the correct DOM elements
-        terminalManager.setDomElements({
-          output: document.getElementById("output"),
-          outputPanel: document.getElementById("outputPanel"),
-          outputTab: document.getElementById("outputTab"),
-        });
-
-        // Initialize terminal - this works for both regular compilation and memcheck
-        terminalManager.setupTerminal();
-        this.stateUpdater.refreshEditor();
-        break;
-
-      case "memcheck-start":
-        this.stateUpdater.showOutput();
-        this.stateUpdater.activateOutputTab();
-
-        // Make sure terminal is ready for memcheck output if it wasn't set up by compile-success
-        if (!terminalManager.getTerminal()) {
-          terminalManager.setDomElements({
-            output: document.getElementById("output"),
-            outputPanel: document.getElementById("outputPanel"),
-            outputTab: document.getElementById("outputTab"),
-          });
-          terminalManager.setupTerminal();
-        }
-        break;
-
-      case "output":
-        terminalManager.write(data.output);
-        break;
-
-      case "error":
-        console.error(
-          "Received error from server:",
-          data.output || data.message
-        );
-        terminalManager.writeError(data.output || data.message);
-        break;
-
-      case "memcheck-report":
-        // Display memcheck report through the terminal instead of replacing it
-        if (data.output) {
-          // First clear the terminal to show the formatted report cleanly
-          if (terminalManager.getTerminal()) {
-            // Write report to the terminal with proper formatting
-            terminalManager.write(
-              "\r\n\x1b[36m---- Memory Check Results ----\x1b[0m\r\n\r\n"
-            );
-            terminalManager.write(data.output);
-            terminalManager.write(
-              "\r\n\x1b[36m---- End of Memory Check ----\x1b[0m\r\n"
-            );
-          } else {
-            // Fallback to old approach if terminal is not available
-            const output = document.getElementById("output");
-            if (output) {
-              output.innerHTML = `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data.output}</div>`;
-            }
-          }
-
-          // After displaying the memcheck report, disconnect the WebSocket
-          setTimeout(() => {
-            this.socket.disconnect();
-          }, 100);
-        }
-        break;
-
-      case "exit":
-        // First display the exit message
-        terminalManager.writeExitMessage(data.code);
-
-        // If we're running a memcheck session, immediately show the "waiting for report" message
-        if (data.isMemcheck === true) {
-          const output = document.getElementById("output");
-          if (output) {
-            output.innerHTML = `<div class="loading">Processing memory check results...</div>`;
-          }
-          // Don't disconnect - wait for the memcheck-report message
-        } else {
-          // Regular run - disconnect immediately
-          this.socket.disconnect();
-        }
-        break;
-
-      default:
-        console.log(`Unknown message type: ${data.type}`);
     }
   }
 

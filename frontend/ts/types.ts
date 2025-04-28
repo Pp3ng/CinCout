@@ -110,7 +110,7 @@ export enum CompilationState {
 
 // CinCout socket interface
 export interface CinCoutSocket {
-  init: (messageHandler: (event: MessageEvent) => void) => void;
+  init: (messageHandler: (eventName: string, data: any) => void) => void;
   sendData: (data: any) => Promise<void>;
   isConnected: () => boolean;
   getSessionId: () => string | null;

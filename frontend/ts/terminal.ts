@@ -2,64 +2,32 @@
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { TerminalDomElements, TerminalOptions } from "./types";
+import { socketManager, SocketEvents } from "./websocket";
 
 // Import the CSS with the correct path for the new @xterm package
 import "@xterm/xterm/css/xterm.css";
-
-// === Utilities ===
-
-// Extend FitAddon to ensure integer dimensions
-class SafeFitAddon extends FitAddon {
-  fit(): void {
-    try {
-      // Get terminal dimensions before fitting
-      const terminal = (this as any)._terminal;
-      if (!terminal || !terminal.element || !terminal.element.parentElement) {
-        return;
-      }
-
-      // Calculate dimensions based on the container size
-      const dims = this.proposeDimensions();
-
-      if (!dims || !dims.cols || !dims.rows) {
-        return;
-      }
-
-      // Ensure integer values
-      const cols = Math.max(2, Math.floor(dims.cols));
-      const rows = Math.max(1, Math.floor(dims.rows));
-
-      // Directly resize with integer values instead of calling super.fit()
-      // This avoids the potential floating point values that might be used internally
-      terminal.resize(cols, rows);
-    } catch (e) {
-      console.error("Error in SafeFitAddon.fit():", e);
-    }
-  }
-}
 
 // === Main Component ===
 
 /**
  * TerminalManager - Manages terminal functionality
- * In React, this would become a custom hook (useTerminal) or a React component
  */
 class TerminalManager {
-  // Component state (would be React useState)
+  // Component state
   private terminal: Terminal | null = null;
-  private fitAddon: SafeFitAddon | null = null;
+  private fitAddon: FitAddon | null = null;
   private domElements: TerminalDomElements = {};
 
   /**
    * Initialize the terminal manager with DOM elements
-   * @param elements - DOM elements required for terminal operation (would be React refs)
+   * @param elements - DOM elements required for terminal operation
    */
   constructor(elements: TerminalDomElements = {}) {
     this.domElements = elements;
   }
 
   /**
-   * Set DOM elements (would be handled by React refs in useEffect)
+   * Set DOM elements
    * @param elements - DOM elements to set
    */
   setDomElements = (elements: TerminalDomElements): void => {
@@ -67,21 +35,21 @@ class TerminalManager {
   };
 
   /**
-   * Create and set up the terminal (would be part of React's useEffect)
+   * Create and set up the terminal
    */
   setupTerminal = (): Terminal => {
-    // Clear previous content (would be handled by React's clean rendering)
+    // Clear previous content
     if (this.domElements.output) {
       this.domElements.output.innerHTML =
         '<div id="terminal-container" class="terminal-container"></div>';
     }
 
-    // Get terminal theme from context (would be React Context in React)
+    // Get terminal theme
     const currentTheme = (window as any).getTerminalTheme
       ? (window as any).getTerminalTheme()
       : {};
 
-    // Create terminal config (would be React props or state)
+    // Create terminal config
     const terminalOptions: TerminalOptions = {
       cursorBlink: true,
       cursorStyle: "block",
@@ -95,14 +63,13 @@ class TerminalManager {
 
     // Create terminal instance with options
     this.terminal = new Terminal(terminalOptions);
-
-    // Create our safer fit addon that enforces integer dimensions
-    this.fitAddon = new SafeFitAddon();
-    window.fitAddon = this.fitAddon;
-    this.terminal.loadAddon(this.fitAddon);
     window.terminal = this.terminal;
 
-    // Open terminal in container (would be React ref.current in React)
+    // Create and load fit addon
+    this.fitAddon = new FitAddon();
+    this.terminal.loadAddon(this.fitAddon);
+
+    // Open terminal in container
     const terminalContainer = document.getElementById("terminal-container");
     if (!terminalContainer) {
       console.error("Terminal container not found");
@@ -114,17 +81,47 @@ class TerminalManager {
     // Add custom key event handler after opening
     this.terminal.attachCustomKeyEventHandler(this.handleTerminalKeyEvents);
 
-    // Setup effects after render (would be React useEffect)
+    // Fit terminal to container
+    this.fitTerminal();
+
+    // Setup effects after render
     this.setupAfterRender();
 
-    // Set up event handlers (would be handled by React useEffect)
+    // Set up event handlers
     this.setupEventListeners();
 
     return this.terminal;
   };
 
   /**
-   * Handle terminal keyboard events (pure function)
+   * Fit terminal to container and notify server of new dimensions
+   */
+  fitTerminal = (): void => {
+    if (!this.terminal || !this.fitAddon) return;
+
+    try {
+      // Fit terminal to container
+      this.fitAddon.fit();
+
+      // Get new dimensions
+      const cols = this.terminal.cols;
+      const rows = this.terminal.rows;
+
+      // Send resize event to server if connected and running
+      if (socketManager.isConnected() && socketManager.isProcessRunning()) {
+        socketManager
+          .emit(SocketEvents.RESIZE, { cols, rows })
+          .catch((error) => {
+            console.error("Error sending resize event:", error);
+          });
+      }
+    } catch (e) {
+      console.error("Error fitting terminal:", e);
+    }
+  };
+
+  /**
+   * Handle terminal keyboard events
    */
   private handleTerminalKeyEvents = (event: KeyboardEvent): boolean => {
     // Pass through all non-Escape key events to terminal
@@ -142,12 +139,10 @@ class TerminalManager {
   };
 
   /**
-   * Set up effects after terminal is rendered (would be React useEffect)
+   * Set up effects after terminal is rendered
    */
   private setupAfterRender = (): void => {
     setTimeout(() => {
-      this.handleTerminalResize();
-
       // Force terminal redraw to apply new theme
       try {
         if (this.terminal) {
@@ -166,7 +161,7 @@ class TerminalManager {
   };
 
   /**
-   * Apply custom cursor styling (would be CSS-in-JS in React)
+   * Apply custom cursor styling
    */
   private applyCursorStyling = (): void => {
     setTimeout(() => {
@@ -185,23 +180,34 @@ class TerminalManager {
   };
 
   /**
-   * Set up event listeners (would be React useEffect)
+   * Set up event listeners
    */
   private setupEventListeners = (): void => {
     // Setup terminal input handling
     this.setupTerminalInput();
 
-    // Listen for window resize events (would be handled with useEffect cleanup)
-    window.addEventListener("resize", this.handleTerminalResize);
-
-    // After terminal is opened, send size information to the server
-    if (this.terminal) {
-      this.terminal.onResize(this.handleTerminalResize);
-    }
+    // Add resize event listener
+    window.addEventListener("resize", this.handleResize);
   };
 
   /**
-   * Set up terminal input handling (would be React event handler)
+   * Handle window resize event
+   */
+  private handleResize = (): void => {
+    // Debounce resize events to avoid too many calls
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
+
+    this.resizeTimeout = setTimeout(() => {
+      this.fitTerminal();
+    }, 100);
+  };
+
+  private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Set up terminal input handling
    */
   private setupTerminalInput = (): void => {
     if (!this.terminal) return;
@@ -211,13 +217,10 @@ class TerminalManager {
   };
 
   /**
-   * Handle terminal input (pure function, would be React event handler)
+   * Handle terminal input
    */
   private handleTerminalInput = (data: string): void => {
-    if (
-      window.CinCoutSocket.getCompilationState() !== "running" ||
-      !window.CinCoutSocket.isConnected()
-    ) {
+    if (!socketManager.isProcessRunning() || !socketManager.isConnected()) {
       console.log(
         "Not sending terminal input: program not running or socket closed"
       );
@@ -225,53 +228,17 @@ class TerminalManager {
     }
 
     // Send all input characters to the server for PTY to handle
-    window.CinCoutSocket.sendData({
-      type: "input",
-      input: data,
-    });
+    socketManager
+      .emit(SocketEvents.INPUT, {
+        input: data,
+      })
+      .catch((error) => {
+        console.error("Error sending input to server:", error);
+      });
   };
 
   /**
-   * Handle terminal resize events (pure function, would be React event handler)
-   */
-  handleTerminalResize = (): void => {
-    if (!this.fitAddon || !this.terminal) return;
-
-    try {
-      this.fitAddon.fit();
-
-      // Send the adjusted size to the server
-      if (
-        window.CinCoutSocket.isConnected() &&
-        window.CinCoutSocket.getCompilationState() === "running"
-      ) {
-        // Ensure we always send integer values to the server
-        const cols = Math.floor(this.terminal.cols);
-        const rows = Math.floor(this.terminal.rows);
-
-        window.CinCoutSocket.sendData({
-          type: "resize",
-          cols: cols,
-          rows: rows,
-        }).catch((err) => {
-          console.error("Failed to send resize data to server:", err);
-        });
-      }
-    } catch (e) {
-      console.error("Error fitting terminal:", e);
-
-      // Log detailed error for debugging
-      if (this.terminal) {
-        console.debug("Terminal dimensions at time of error:", {
-          cols: this.terminal.cols,
-          rows: this.terminal.rows,
-        });
-      }
-    }
-  };
-
-  /**
-   * Write data to the terminal (would be React state update)
+   * Write data to the terminal
    * @param data - The data to write to the terminal
    */
   write = (data: string): void => {
@@ -281,7 +248,7 @@ class TerminalManager {
   };
 
   /**
-   * Write error message to the terminal in red (would be styled component in React)
+   * Write error message to the terminal in red
    * @param message - Error message to write
    */
   writeError = (message: string): void => {
@@ -327,19 +294,31 @@ class TerminalManager {
   };
 
   /**
-   * Clean up the terminal (would be React useEffect cleanup)
+   * Clean up the terminal
    */
   dispose = (): void => {
-    // Remove event listeners (for clean unmount like in React useEffect cleanup)
-    window.removeEventListener("resize", this.handleTerminalResize);
+    // Remove event listeners
+    window.removeEventListener("resize", this.handleResize);
+
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+      this.resizeTimeout = null;
+    }
+
+    if (this.fitAddon) {
+      try {
+        this.fitAddon.dispose();
+        this.fitAddon = null;
+      } catch (e) {
+        console.error("Error disposing fit addon:", e);
+      }
+    }
 
     if (this.terminal) {
       try {
         this.terminal.dispose();
         this.terminal = null;
-        this.fitAddon = null;
         window.terminal = null;
-        window.fitAddon = null;
       } catch (e) {
         console.error("Error disposing terminal:", e);
       }
@@ -347,14 +326,14 @@ class TerminalManager {
   };
 
   /**
-   * Get the terminal instance (would be React ref/state getter)
+   * Get the terminal instance
    */
   getTerminal = (): Terminal | null => {
     return this.terminal;
   };
 }
 
-// Create singleton instance (would be React Context in React)
+// Create singleton instance
 export const terminalManager = new TerminalManager();
 
 // Export the Terminal type for use in other modules

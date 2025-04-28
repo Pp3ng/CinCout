@@ -1,16 +1,22 @@
-/* Terminal styles */
+/*
+ * terminal.css
+ * Styles for the terminal display and output panels
+ */
+
+/* Terminal container */
 .terminal-container {
   width: 100%;
   height: 100%;
   overflow: hidden;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  border-radius: 4px;
-  padding: 4px;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
   box-sizing: border-box;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Base xterm styling */
 .xterm {
   height: 100%;
   color: var(--text-primary) !important;
@@ -24,7 +30,7 @@
   -ms-overflow-style: none; /* For Internet Explorer and Edge */
 }
 
-/* Ensure terminal interface matches theme color scheme */
+/* Terminal interface theming */
 .xterm-screen {
   transition: background-color 0.3s ease, color 0.3s ease;
   color: var(--text-primary) !important;
@@ -34,12 +40,11 @@
   color: var(--text-primary) !important;
 }
 
-/* Individual line in xterm */
 .xterm-rows > div {
   color: var(--text-primary) !important;
 }
 
-/* Synchronize terminal cursor color with theme */
+/* Terminal cursor styling */
 .xterm-cursor {
   background-color: var(--accent) !important;
   color: var(--bg-primary) !important;
@@ -53,7 +58,7 @@
   box-shadow: var(--shadow-accent-sm) !important;
 }
 
-/* Terminal text selection color */
+/* Terminal selection styling */
 .xterm-selection {
   background-color: var(--accent) !important;
   opacity: 0.3;
@@ -73,21 +78,15 @@
   }
 }
 
-/* Override styles for xterm scrollbar */
+/* Hide default xterm scrollbar */
 .xterm-viewport::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;
 }
 
-.xterm-viewport::-webkit-scrollbar-track {
-  display: none;
-}
-
-.xterm-viewport::-webkit-scrollbar-thumb {
-  display: none;
-}
-
+.xterm-viewport::-webkit-scrollbar-track,
+.xterm-viewport::-webkit-scrollbar-thumb,
 .xterm-viewport::-webkit-scrollbar-thumb:hover {
   display: none;
 }
@@ -104,4 +103,65 @@
 
 .xterm-cursor.xterm-cursor-blink {
   animation: cursor-blink 1s step-end infinite !important;
+}
+
+/* Output areas */
+#output,
+#assembly {
+  height: calc(100% - 48px);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-sm);
+  padding: 6px;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+}
+
+/* Output styling for different types */
+.highlighted-output,
+.memcheck-output,
+.style-check-output,
+.error-output,
+.default-output {
+  margin: 0;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+/* Terminal loading indicator */
+.loading {
+  padding: 12px;
+  text-align: center;
+  color: var(--accent);
+  font-style: italic;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.loading:after {
+  content: "...";
+  animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+  0%,
+  20% {
+    content: ".";
+  }
+  40% {
+    content: "..";
+  }
+  60% {
+    content: "...";
+  }
+  80%,
+  100% {
+    content: "";
+  }
 }

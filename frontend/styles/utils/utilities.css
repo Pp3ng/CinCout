@@ -1,0 +1,196 @@
+/*
+ * utilities.css
+ * Utility classes for text formatting, highlighting, and other shared styles
+ */
+
+/* Error and warning outputs */
+.error-output {
+  background-color: rgba(255, 85, 85, 0.1);
+  border-left: 2px solid #ff5555;
+  box-shadow: var(--shadow-error-sm);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.error-output:hover {
+  box-shadow: var(--shadow-error-md);
+  background-color: rgba(255, 85, 85, 0.15);
+}
+
+.style-check-output {
+  background-color: var(--bg-secondary);
+  border-left: 2px solid var(--accent);
+  box-shadow: var(--shadow-accent-sm);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.style-check-output:hover {
+  box-shadow: var(--shadow-accent-md);
+  background-color: rgba(var(--accent-rgb), 0.05);
+}
+
+/* Line and column number highlighting */
+.line-number {
+  color: #bd93f9;
+  font-weight: bold;
+  text-shadow: 0 0 2px rgba(189, 147, 249, 0.3);
+}
+
+.column-number {
+  color: #8be9fd;
+  font-weight: bold;
+  text-shadow: 0 0 2px rgba(139, 233, 253, 0.3);
+}
+
+/* Highlighting for specific types of messages */
+.error-highlight {
+  color: var(--error);
+  font-weight: bold;
+  text-shadow: 0 0 3px rgba(var(--error-rgb), 0.3);
+}
+
+.warning-highlight {
+  color: var(--warning);
+  font-weight: bold;
+  text-shadow: 0 0 3px rgba(var(--warning-rgb), 0.3);
+}
+
+.note-highlight {
+  color: var(--note);
+  font-style: italic;
+  text-shadow: 0 0 2px rgba(var(--note-rgb), 0.25);
+}
+
+/* Text formatting helpers */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-bold {
+  font-weight: bold;
+}
+
+.text-italic {
+  font-style: italic;
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+}
+
+/* Spacing helpers */
+.mt-xs {
+  margin-top: var(--spacing-xs);
+}
+.mt-sm {
+  margin-top: var(--spacing-sm);
+}
+.mt-md {
+  margin-top: var(--spacing-md);
+}
+.mt-lg {
+  margin-top: var(--spacing-lg);
+}
+
+.mb-xs {
+  margin-bottom: var(--spacing-xs);
+}
+.mb-sm {
+  margin-bottom: var(--spacing-sm);
+}
+.mb-md {
+  margin-bottom: var(--spacing-md);
+}
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Flexbox helpers */
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Memory check specific styles */
+.memcheck-leak {
+  border-left: 2px solid #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+  padding: var(--spacing-sm);
+  margin: var(--spacing-sm) 0;
+  display: block;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.memcheck-leak:hover {
+  background: rgba(239, 68, 68, 0.08);
+  transform: translateX(3px);
+  box-shadow: var(--shadow-md);
+}
+
+.memcheck-output {
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-md);
+  font-family: var(--font-mono);
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+  margin-bottom: var(--spacing-sm);
+}
+
+.leak-headline {
+  color: #ef4444;
+  font-weight: bold;
+  display: block;
+  margin: var(--spacing-md) 0 var(--spacing-sm);
+  padding: 6px 10px;
+  border-left: 3px solid #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}

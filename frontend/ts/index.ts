@@ -4,16 +4,8 @@ import "codemirror/addon/hint/show-hint.css";
 import "codemirror/addon/fold/foldgutter.css";
 import "@xterm/xterm/css/xterm.css";
 
-// 2. Import local CSS
-import "../css/base.css";
-import "../css/buttons.css";
-import "../css/components.css";
-import "../css/layout.css";
-import "../css/memcheck.css";
-import "../css/responsive.css";
-import "../css/select.css";
-import "../css/terminal.css";
-import "../css/utils.css";
+// 2. Import main CSS
+import "../styles/main.css";
 
 // 3. Import external libraries and resources
 import "@fortawesome/fontawesome-free/css/all.min.css";

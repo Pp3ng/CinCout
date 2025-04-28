@@ -1,0 +1,26 @@
+/*
+ * main.css
+ * Main entry point that imports all CSS files in the correct cascade order
+ */
+
+/* Base styles - Reset, variables, and global elements */
+@import "./base/reset.css";
+@import "./base/variables.css";
+@import "./base/base.css";
+
+/* Layout - Core layout structure */
+@import "./layout/layout.css";
+
+/* Components - Reusable UI elements */
+@import "./components/buttons.css";
+@import "./components/dropdown.css";
+@import "./components/select.css";
+@import "./components/editor.css";
+@import "./components/terminal.css";
+
+/* Utils - Utilities, animations and helpers */
+@import "./utils/utilities.css";
+@import "./utils/animations.css";
+
+/* Responsive styles - Apply last for proper overrides */
+@import "./layout/responsive.css";

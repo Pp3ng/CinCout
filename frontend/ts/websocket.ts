@@ -1,153 +1,225 @@
-// WebSocket communication module
-import { CompilationState, CinCoutSocket as CinCoutSocketType } from "./types";
+// Socket.IO communication module
+import { io, Socket } from "socket.io-client";
+import { CompilationState } from "./types";
 
-let socket: WebSocket | null = null;
-let sessionId: string | null = null;
-let messageHandler: ((event: MessageEvent) => void) | null = null;
+// Create a strongly-typed event system matching backend
+export enum SocketEvents {
+  // Connection lifecycle events
+  CONNECT = "connect",
+  DISCONNECT = "disconnect",
 
-let compilationState: CompilationState = CompilationState.IDLE;
+  // Compilation events
+  COMPILE = "compile",
+  COMPILING = "compiling",
+  COMPILE_SUCCESS = "compile_success",
+  COMPILE_ERROR = "compile_error",
 
-export const resetState = () => {
-  socket = null;
-  sessionId = null;
-  compilationState = CompilationState.IDLE;
-};
+  // Execution events
+  OUTPUT = "output",
+  INPUT = "input",
+  EXIT = "exit",
+  RESIZE = "resize",
 
-export const CinCoutSocket: CinCoutSocketType = {
-  init(handler: (event: MessageEvent) => void) {
-    messageHandler = handler;
-  },
+  // Session management
+  SESSION_CREATED = "session_created",
+  CLEANUP = "cleanup",
+  CLEANUP_COMPLETE = "cleanup_complete",
 
-  async sendData(data: any): Promise<void> {
+  // Error handling
+  ERROR = "error",
+}
+
+// Socket manager class
+class SocketManager {
+  private socket: Socket | null = null;
+  private sessionId: string | null = null;
+  private eventHandlers: Map<string, Set<(data: any) => void>> = new Map();
+  private compilationState: CompilationState = CompilationState.IDLE;
+
+  /**
+   * Connect to the Socket.IO server
+   * @returns {Promise<Socket>} Socket instance
+   */
+  connect(): Promise<Socket> {
     return new Promise((resolve, reject) => {
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        reject(new Error("WebSocket is not connected"));
+      if (this.socket && this.socket.connected) {
+        resolve(this.socket);
+        return;
+      }
+
+      // Create socket with optimal settings
+      this.socket = io({
+        transports: ["websocket"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 10000,
+      });
+
+      // Setup core event handlers
+      this.socket.once(SocketEvents.CONNECT, () => {
+        console.log("Socket connected");
+        this.compilationState = CompilationState.RUNNING;
+        resolve(this.socket as Socket);
+      });
+
+      this.socket.once("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+        reject(error);
+      });
+
+      this.socket.on(SocketEvents.DISCONNECT, (reason) => {
+        console.log("Socket disconnected:", reason);
+        if (reason === "io server disconnect") {
+          this.socket?.connect();
+        }
+      });
+
+      // Handle session creation
+      this.socket.on(SocketEvents.SESSION_CREATED, (data) => {
+        this.sessionId = data.sessionId;
+        console.log(`Session created: ${this.sessionId}`);
+        this.notifyListeners(SocketEvents.SESSION_CREATED, data);
+      });
+
+      // Update compilation state based on events
+      this.socket.on(SocketEvents.COMPILING, () => {
+        this.compilationState = CompilationState.COMPILING;
+        this.notifyListeners(SocketEvents.COMPILING, {});
+      });
+
+      this.socket.on(SocketEvents.COMPILE_SUCCESS, () => {
+        this.compilationState = CompilationState.RUNNING;
+        this.notifyListeners(SocketEvents.COMPILE_SUCCESS, {});
+      });
+
+      this.socket.on(SocketEvents.COMPILE_ERROR, (data) => {
+        this.compilationState = CompilationState.IDLE;
+        this.notifyListeners(SocketEvents.COMPILE_ERROR, data);
+      });
+
+      this.socket.on(SocketEvents.EXIT, (data) => {
+        this.compilationState = CompilationState.IDLE;
+        this.notifyListeners(SocketEvents.EXIT, data);
+      });
+
+      // Forward all other events to listeners
+      [
+        SocketEvents.OUTPUT,
+        SocketEvents.ERROR,
+        SocketEvents.CLEANUP_COMPLETE,
+      ].forEach((event) => {
+        this.socket?.on(event, (data) => {
+          this.notifyListeners(event, data);
+        });
+      });
+    });
+  }
+
+  /**
+   * Disconnect from the Socket.IO server
+   */
+  disconnect(): void {
+    if (!this.socket) return;
+
+    this.socket.disconnect();
+    this.sessionId = null;
+    this.compilationState = CompilationState.IDLE;
+  }
+
+  /**
+   * Send an event to the server
+   * @param {string} event - Event name
+   * @param {any} data - Event data
+   * @returns {Promise<void>}
+   */
+  emit(event: string, data: any = {}): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.socket.connected) {
+        reject(new Error("Socket not connected"));
         return;
       }
 
       try {
-        socket.send(JSON.stringify(data));
+        this.socket.emit(event, data);
         resolve();
-      } catch (e) {
-        console.error("Error sending data:", e);
-        reject(e);
+      } catch (error) {
+        reject(error);
       }
     });
-  },
+  }
 
+  /**
+   * Add an event listener
+   * @param {string} event - Event name
+   * @param {function} handler - Event handler
+   */
+  on(event: string, handler: (data: any) => void): void {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, new Set());
+    }
+    this.eventHandlers.get(event)?.add(handler);
+  }
+
+  /**
+   * Remove an event listener
+   * @param {string} event - Event name
+   * @param {function} handler - Event handler to remove
+   */
+  off(event: string, handler: (data: any) => void): void {
+    this.eventHandlers.get(event)?.delete(handler);
+  }
+
+  /**
+   * Notify all listeners of an event
+   * @param {string} event - Event name
+   * @param {any} data - Event data
+   */
+  private notifyListeners(event: string, data: any): void {
+    this.eventHandlers.get(event)?.forEach((handler) => {
+      try {
+        handler(data);
+      } catch (error) {
+        console.error(`Error in event handler for ${event}:`, error);
+      }
+    });
+  }
+
+  /**
+   * Check if the socket is connected
+   * @returns {boolean} Connection status
+   */
   isConnected(): boolean {
-    return socket !== null && socket.readyState === WebSocket.OPEN;
-  },
+    return !!this.socket && this.socket.connected;
+  }
 
+  /**
+   * Get session ID
+   * @returns {string | null} Session ID
+   */
   getSessionId(): string | null {
-    return sessionId;
-  },
+    return this.sessionId;
+  }
 
-  setSessionId(id: string): void {
-    sessionId = id;
-  },
+  /**
+   * Get compilation state
+   * @returns {CompilationState} Current compilation state
+   */
+  getCompilationState(): CompilationState {
+    return this.compilationState;
+  }
 
-  async connect(): Promise<void> {
-    if (this.isConnected()) {
-      return;
-    }
-
-    await initWebSocket();
-    compilationState = CompilationState.RUNNING;
-  },
-
-  disconnect(): void {
-    compilationState = CompilationState.IDLE;
-
-    if (socket) {
-      try {
-        socket.onclose = null;
-        socket.close();
-        socket = null;
-        sessionId = null;
-      } catch (e) {
-        console.error("Error closing WebSocket:", e);
-      }
-    }
-  },
-
-  setProcessRunning(running: boolean): void {
-    compilationState = running
-      ? CompilationState.RUNNING
-      : CompilationState.IDLE;
-  },
-
+  /**
+   * Check if a process is running
+   * @returns {boolean} True if a process is running
+   */
   isProcessRunning(): boolean {
-    return compilationState !== CompilationState.IDLE;
-  },
-
-  updateStateFromMessage(type: string): void {
-    switch (type) {
-      case "compiling":
-        compilationState = CompilationState.COMPILING;
-        break;
-      case "compile-success":
-        compilationState = CompilationState.RUNNING;
-        break;
-      case "compile-error":
-      case "exit":
-        compilationState = CompilationState.IDLE;
-        break;
-    }
-  },
-
-  getCompilationState(): string {
-    return compilationState;
-  },
-};
-
-// Attach to window for global access
-(window as any).CinCoutSocket = CinCoutSocket;
-(window as any).resetCompilationState = resetState;
-
-function initWebSocket(): Promise<WebSocket> {
-  return new Promise((resolve, reject) => {
-    // Ensure no existing connection
-    if (socket) {
-      try {
-        socket.onclose = null;
-        socket.close();
-        socket = null;
-      } catch (e) {
-        console.error("Error closing existing WebSocket:", e);
-      }
-    }
-
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-
-    try {
-      socket = new WebSocket(`${protocol}//${host}`);
-
-      socket.onopen = () => {
-        resolve(socket as WebSocket);
-      };
-
-      socket.onmessage = (event: MessageEvent) => {
-        if (messageHandler) {
-          messageHandler(event);
-        }
-      };
-
-      socket.onclose = (event: CloseEvent) => {
-        console.log("WebSocket connection closed", event.code, event.reason);
-        socket = null;
-        sessionId = null;
-        resetState();
-      };
-
-      socket.onerror = (error: Event) => {
-        console.error("WebSocket error:", error);
-        reject(error);
-      };
-    } catch (error) {
-      console.error("Error creating WebSocket:", error);
-      reject(error);
-    }
-  });
+    return this.compilationState !== CompilationState.IDLE;
+  }
 }
+
+// Create singleton instance
+export const socketManager = new SocketManager();
+
+// Export as window global for legacy support
+(window as any).CinCoutSocket = socketManager;

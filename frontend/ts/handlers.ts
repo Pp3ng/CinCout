@@ -494,11 +494,8 @@ export class CinCoutApp {
     // Create state adapter for CompileSocketManager
     const stateAdapter = new CompileStateAdapter(this.appState);
 
-    // Initialize controllers
-    this.compileSocketManager = new CompileSocketManager(
-      (window as any).CinCoutSocket,
-      stateAdapter
-    );
+    // Initialize controllers with new socketManager
+    this.compileSocketManager = new CompileSocketManager(stateAdapter);
 
     this.codeActions = new CodeActionsController(this.appState);
     this.codeActions.setCompileSocketManager(this.compileSocketManager);

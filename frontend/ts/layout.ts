@@ -78,9 +78,6 @@ class LayoutManager {
       if (this.state.activeTab === "output") this.handleRunningProcess();
       this.setState({ activeTab: "assembly" });
     });
-
-    // Window resize handler
-    window.addEventListener("resize", this.refreshEditors);
   }
 
   // Update state (will be converted to React's setState)
@@ -134,15 +131,6 @@ class LayoutManager {
     // Assembly view refresh (only when visible)
     if (this.state.activeTab === "assembly" && window.assemblyView) {
       window.assemblyView.refresh();
-    }
-
-    // Terminal resize
-    if (window.fitAddon && window.terminal) {
-      try {
-        window.fitAddon.fit();
-      } catch (error) {
-        console.error("Error fitting terminal:", error);
-      }
     }
   };
 

@@ -6,7 +6,7 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import * as tmp from "tmp";
 import { exec, ExecOptions } from "child_process";
-import { ExtendedWebSocket, sendWebSocketMessage } from "./webSocketHandler";
+import { SessionSocket, emitToClient } from "./webSocketHandler";
 import {
   CompilationEnvironment,
   CompilationOptions,
@@ -488,19 +488,17 @@ export const runStyleCheck = async (
 };
 
 /**
- * Send WebSocket message with compilation status
- * @param {ExtendedWebSocket} ws - WebSocket connection
- * @param {string} type - Message type
+ * Send message with compilation status
+ * @param {SessionSocket} socket - Socket.IO connection
+ * @param {string} event - Event name
  * @param {any} data - Message data
  */
 export const sendCompilationMessage = (
-  ws: ExtendedWebSocket,
-  type: string,
+  socket: SessionSocket,
+  event: string,
   data?: any
 ): void => {
-  sendWebSocketMessage(ws, {
-    type,
+  emitToClient(socket, event, {
     ...data,
-    timestamp: Date.now(),
   });
 };

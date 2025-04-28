@@ -1,107 +1,47 @@
 /**
- * WebSocket handler for code compilation and execution
+ * Socket.IO handler for code compilation and execution
  */
-import { WebSocketServer } from "ws";
+import http from "http";
 import {
   compileCode,
   createCompilationEnvironment,
   writeCodeToFile,
 } from "../utils/compilationService";
 import {
-  setupWebSocketServer,
-  sendWebSocketMessage,
-  ExtendedWebSocket,
+  createSocketServer,
+  emitToClient,
+  SessionSocket,
+  socketEvents,
+  SocketEvents,
 } from "../utils/webSocketHandler";
 import {
   startCompilationSession,
   sendInputToSession,
-  resizeTerminal,
   terminateSession,
   initSessionService,
+  createSession,
+  resizeTerminal,
 } from "../utils/sessionService";
 
 // Initialize session service
 initSessionService();
 
-// Message handler for WebSocket connections
-const handleCompileWebSocketMessage = (
-  ws: ExtendedWebSocket,
-  data: any
-): void => {
-  const sessionId = ws.sessionId;
-
-  if (!sessionId) {
-    sendWebSocketMessage(ws, {
-      type: "error",
-      message: "Session ID not found",
-    });
-    return;
+/**
+ * Handle compilation requests
+ * @param {SessionSocket} socket - Socket.IO connection
+ * @param {any} data - Compilation request data
+ */
+const handleCompileRequest = (
+  socket: SessionSocket,
+  data: {
+    code: string;
+    lang: string;
+    compiler?: string;
+    optimization?: string;
   }
-
-  try {
-    switch (data.type) {
-      case "compile":
-        // Handle compilation request
-        compileAndRunWithPTY(
-          ws,
-          sessionId,
-          data.code,
-          data.lang,
-          data.compiler,
-          data.optimization
-        );
-        break;
-
-      case "input":
-        // Send user input to the program
-        if (!sendInputToSession(sessionId, data.input)) {
-          sendWebSocketMessage(ws, {
-            type: "error",
-            message: "No active compilation session to receive input",
-          });
-        }
-        break;
-
-      case "resize":
-        // Handle terminal resize request
-        if (data.cols && data.rows) {
-          resizeTerminal(sessionId, data.cols, data.rows);
-        }
-        break;
-
-      case "cleanup":
-        // Handle explicit cleanup request
-        terminateSession(sessionId);
-        sendWebSocketMessage(ws, {
-          type: "cleanup-complete",
-        });
-        break;
-
-      default:
-        sendWebSocketMessage(ws, {
-          type: "error",
-          message: "Unknown action type: " + data.type,
-        });
-        break;
-    }
-  } catch (error) {
-    console.error("Error processing message:", error);
-    sendWebSocketMessage(ws, {
-      type: "error",
-      message: "Error processing request: " + (error as Error).message,
-    });
-  }
-};
-
-// Compile and run code with PTY for true terminal experience
-const compileAndRunWithPTY = (
-  ws: ExtendedWebSocket,
-  sessionId: string,
-  code: string,
-  lang: string,
-  compiler?: string,
-  optimization?: string
 ): void => {
+  const { code, lang, compiler, optimization } = data;
+
   // Create compilation environment
   const env = createCompilationEnvironment(lang);
 
@@ -110,19 +50,19 @@ const compileAndRunWithPTY = (
     writeCodeToFile(env.sourceFile, code);
 
     // Notify client that compilation has started
-    sendWebSocketMessage(ws, { type: "compiling" });
+    emitToClient(socket, SocketEvents.COMPILING, {});
 
     // Compile the code
     compileCode(env, code, { lang, compiler, optimization })
       .then((result) => {
         if (result.success) {
           // Compilation successful, notify client
-          sendWebSocketMessage(ws, { type: "compile-success" });
+          emitToClient(socket, SocketEvents.COMPILE_SUCCESS, {});
 
           // Start compilation session with PTY
           const success = startCompilationSession(
-            ws,
-            sessionId,
+            socket,
+            socket.sessionId,
             env.tmpDir,
             env.outputFile
           );
@@ -133,8 +73,7 @@ const compileAndRunWithPTY = (
           }
         } else {
           // Compilation error
-          sendWebSocketMessage(ws, {
-            type: "compile-error",
+          emitToClient(socket, SocketEvents.COMPILE_ERROR, {
             output: result.error,
           });
 
@@ -144,9 +83,11 @@ const compileAndRunWithPTY = (
       })
       .catch((error) => {
         // Unexpected error
-        console.error(`Unexpected error for session ${sessionId}:`, error);
-        sendWebSocketMessage(ws, {
-          type: "error",
+        console.error(
+          `Unexpected error for session ${socket.sessionId}:`,
+          error
+        );
+        emitToClient(socket, SocketEvents.ERROR, {
           message: "Unexpected error: " + (error as Error).message,
         });
 
@@ -155,11 +96,10 @@ const compileAndRunWithPTY = (
       });
   } catch (error) {
     console.error(
-      `Error setting up compilation for session ${sessionId}:`,
+      `Error setting up compilation for session ${socket.sessionId}:`,
       error
     );
-    sendWebSocketMessage(ws, {
-      type: "error",
+    emitToClient(socket, SocketEvents.ERROR, {
       message: "Error setting up compilation: " + (error as Error).message,
     });
 
@@ -168,9 +108,57 @@ const compileAndRunWithPTY = (
   }
 };
 
-// Setup WebSocket handlers for compilation
-const setupCompileWebSocketHandlers = (wss: WebSocketServer): void => {
-  setupWebSocketServer(wss, handleCompileWebSocketMessage);
-};
+/**
+ * Setup Socket.IO handlers for compilation
+ * @param {http.Server} server - HTTP server for Socket.IO
+ * @returns {void}
+ */
+export const setupCompileSocketHandlers = (server: http.Server): void => {
+  // Create Socket.IO server
+  createSocketServer(server);
 
-export { setupCompileWebSocketHandlers };
+  // Handle new socket connections
+  socketEvents.on("socket-connect", ({ socket }) => {
+    const sessionSocket = socket as SessionSocket;
+
+    // Generate and assign a session ID
+    createSession(sessionSocket);
+
+    // Set up event handlers for compilation-related messages
+    socket.on(
+      SocketEvents.COMPILE,
+      (data: {
+        code: string;
+        lang: string;
+        compiler?: string;
+        optimization?: string;
+      }) => {
+        handleCompileRequest(sessionSocket, data);
+      }
+    );
+
+    // Handle input from client to program
+    socket.on(SocketEvents.INPUT, (data: { input: string }) => {
+      if (!sendInputToSession(sessionSocket.sessionId, data.input)) {
+        emitToClient(socket, SocketEvents.ERROR, {
+          message: "No active compilation session to receive input",
+        });
+      }
+    });
+
+    socket.on(SocketEvents.RESIZE, (data: { cols: number; rows: number }) => {
+      const { cols, rows } = data;
+      if (!resizeTerminal(sessionSocket.sessionId, cols, rows)) {
+        console.warn(
+          `Failed to resize terminal for session ${sessionSocket.sessionId}: cols=${cols}, rows=${rows}`
+        );
+      }
+    });
+
+    // Handle cleanup requests
+    socket.on(SocketEvents.CLEANUP, () => {
+      terminateSession(sessionSocket.sessionId);
+      emitToClient(socket, SocketEvents.CLEANUP_COMPLETE, {});
+    });
+  });
+};

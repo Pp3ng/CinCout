@@ -5,14 +5,13 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import path from "path";
 import http from "http";
-import { WebSocketServer } from "ws";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
 import morgan from "morgan";
 import helmet from "helmet";
 
 // Routes & WebSockets
-import { setupCompileWebSocketHandlers } from "./ws/compile";
+import { setupCompileSocketHandlers } from "./ws/compile";
 import formatRouter from "./routes/format";
 import styleCheckRouter from "./routes/styleCheck";
 import templatesRouter from "./routes/templates";
@@ -23,22 +22,7 @@ import { initSessionService } from "./utils/sessionService";
 const numCPUs = os.cpus().length;
 const port = 9527;
 
-// WebSocket compression options
-const wsOptions = {
-  perMessageDeflate: {
-    zlibDeflateOptions: {
-      level: 6, // Compression level (1-9, 6 is default)
-      memLevel: 8, // Memory allocation for compression (1-9, 8 is default)
-      chunkSize: 1024 * 64, // Processing chunk size
-    },
-    serverNoContextTakeover: true, // Disable context takeover on server
-    clientNoContextTakeover: true, // Disable context takeover on client
-    serverMaxWindowBits: 10, // Lower window size for server compression
-    concurrencyLimit: 10, // Limit concurrent compression operations
-    threshold: 1024, // Only compress messages larger than this size
-  },
-  clientTracking: true, // Keep track of connected clients
-};
+// Socket.IO will handle its own compression
 
 if (cluster.isPrimary) {
   // Master process
@@ -140,9 +124,8 @@ if (cluster.isPrimary) {
   // Initialize session service
   initSessionService();
 
-  // WebSocket
-  const wss = new WebSocketServer({ server, ...wsOptions });
-  setupCompileWebSocketHandlers(wss);
+  // Setup Socket.IO handlers (passing the HTTP server instead of creating a WebSocketServer)
+  setupCompileSocketHandlers(server);
 
   // Mount routes
   app.use("/api/format", formatRouter);

@@ -4,6 +4,7 @@
  */
 import * as pty from "node-pty";
 import { DirResult } from "tmp";
+import { Socket } from "socket.io";
 
 // ==========================================
 // Server & API Types
@@ -74,18 +75,27 @@ export interface Session {
   lastActivity: number;
   dimensions: { cols: number; rows: number };
   sessionType: string;
+  socketId?: string; // Optional Socket.IO socket ID for reference
 }
 
 // ==========================================
-// WebSocket Types
+// Socket.IO Types
 // ==========================================
 
 /**
- * WebSocket message structure
+ * Socket.IO message structure (previously WebSocketMessage)
  */
 export interface WebSocketMessage {
   type: string;
   [key: string]: any;
+}
+
+/**
+ * Extended Socket.IO socket with session information
+ */
+export interface ExtendedSocket extends Socket {
+  sessionId: string;
+  isAlive?: boolean; // For backwards compatibility
 }
 
 // ==========================================

@@ -4,11 +4,14 @@
  */
 import * as pty from "node-pty";
 import { DirResult } from "tmp";
+import { v4 as uuidv4 } from "uuid";
+import { Socket } from "socket.io";
 import { Session } from "../types";
 import {
-  sendWebSocketMessage,
-  webSocketEvents,
-  ExtendedWebSocket,
+  socketEvents,
+  SessionSocket,
+  SocketEvents,
+  emitToClient,
 } from "./webSocketHandler";
 
 // Store active sessions with structured type information
@@ -19,9 +22,9 @@ const activeSessions = new Map<string, Session>();
  * Sets up event listeners and other global configurations
  */
 export const initSessionService = (): void => {
-  // Set up WebSocket close event listener
-  webSocketEvents.on("websocket-close", ({ sessionId }) => {
-    if (activeSessions.has(sessionId)) {
+  // Clean up sessions when sockets disconnect
+  socketEvents.on("socket-disconnect", ({ sessionId }) => {
+    if (sessionId && activeSessions.has(sessionId)) {
       terminateSession(sessionId);
     }
   });
@@ -70,14 +73,14 @@ export const createPtyProcess = (
 
 /**
  * Start a new compilation session
- * @param {ExtendedWebSocket} ws - WebSocket connection
+ * @param {Socket} socket - Socket.IO connection
  * @param {string} sessionId - Session ID
  * @param {DirResult} tmpDir - Temporary directory
  * @param {string} outputFile - Path to compiled executable
  * @returns {boolean} Success status
  */
 export const startCompilationSession = (
-  ws: ExtendedWebSocket,
+  socket: Socket,
   sessionId: string,
   tmpDir: DirResult,
   outputFile: string
@@ -106,6 +109,7 @@ export const startCompilationSession = (
       lastActivity: Date.now(),
       dimensions: { cols, rows },
       sessionType: "compilation",
+      socketId: socket.id,
     });
 
     // Handle PTY output
@@ -115,10 +119,8 @@ export const startCompilationSession = (
         updateSessionActivity(sessionId);
 
         // Send output to client
-        sendWebSocketMessage(ws, {
-          type: "output",
+        emitToClient(socket, SocketEvents.OUTPUT, {
           output: data,
-          timestamp: Date.now(),
         });
       } catch (e) {
         console.error(`Error sending output for session ${sessionId}:`, e);
@@ -129,11 +131,9 @@ export const startCompilationSession = (
     ptyProcess.onExit(({ exitCode }) => {
       try {
         // Send exit notification with enhanced information
-        sendWebSocketMessage(ws, {
-          type: "exit",
+        emitToClient(socket, SocketEvents.EXIT, {
           code: exitCode,
           success: exitCode === 0,
-          timestamp: Date.now(),
         });
 
         // Clean up
@@ -148,13 +148,27 @@ export const startCompilationSession = (
     return true;
   } catch (ptyError) {
     console.error(`Error creating PTY for session ${sessionId}:`, ptyError);
-    sendWebSocketMessage(ws, {
-      type: "error",
-      output: `Error executing program: ${(ptyError as Error).message}`,
+    emitToClient(socket, SocketEvents.ERROR, {
+      message: `Error executing program: ${(ptyError as Error).message}`,
     });
 
     return false;
   }
+};
+
+/**
+ * Create a new session for a socket
+ * @param {Socket} socket - Socket.IO socket
+ * @returns {string} Generated session ID
+ */
+export const createSession = (socket: Socket): string => {
+  const sessionId = uuidv4();
+  (socket as SessionSocket).sessionId = sessionId;
+
+  // Notify the client of the new session
+  emitToClient(socket, SocketEvents.SESSION_CREATED, { sessionId });
+
+  return sessionId;
 };
 
 /**
@@ -181,6 +195,17 @@ export const sendInputToSession = (
 };
 
 /**
+ * Update session activity timestamp
+ * @param {string} sessionId - Session ID
+ */
+export const updateSessionActivity = (sessionId: string): void => {
+  const session = activeSessions.get(sessionId);
+  if (session) {
+    session.lastActivity = Date.now();
+  }
+};
+
+/**
  * Resize terminal dimensions for a session
  * @param {string} sessionId - Session ID
  * @param {number} cols - Number of columns
@@ -192,46 +217,23 @@ export const resizeTerminal = (
   cols: number,
   rows: number
 ): boolean => {
-  // Input validation
-  if (typeof cols !== "number" || typeof rows !== "number") {
-    console.error(`Invalid terminal dimensions: cols=${cols}, rows=${rows}`);
-    return false;
-  }
-
-  // Ensure integer values and reasonable bounds
-  cols = Math.max(2, Math.floor(cols));
-  rows = Math.max(1, Math.floor(rows));
-
   const session = activeSessions.get(sessionId);
   if (session && session.pty) {
     try {
-      // Only resize if dimensions actually changed
-      if (
-        session.dimensions.cols !== cols ||
-        session.dimensions.rows !== rows
-      ) {
-        session.pty.resize(cols, rows);
-        session.dimensions = { cols, rows };
-        updateSessionActivity(sessionId);
-        return true;
-      }
-      return true; // Already at requested size
+      // Update terminal dimensions
+      session.pty.resize(cols, rows);
+
+      // Update session dimensions
+      session.dimensions = { cols, rows };
+
+      // Update session activity
+      updateSessionActivity(sessionId);
+      return true;
     } catch (e) {
       console.error(`Error resizing terminal for session ${sessionId}:`, e);
     }
   }
   return false;
-};
-
-/**
- * Update session activity timestamp
- * @param {string} sessionId - Session ID
- */
-export const updateSessionActivity = (sessionId: string): void => {
-  const session = activeSessions.get(sessionId);
-  if (session) {
-    session.lastActivity = Date.now();
-  }
 };
 
 /**

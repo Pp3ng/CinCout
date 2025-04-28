@@ -37,129 +37,110 @@ export interface ShortcutState {
 
 export type KeyHandler = (e: KeyboardEvent) => boolean;
 
-// Pure utility functions
+// Utilities and actions
+const getEditor = () => (window as any).editor;
+const getElement = (id: DomElementId) => document.getElementById(id);
+
 export const ShortcutUtils = {
-  detectOS(): PlatformType {
-    return /Mac/.test(window.navigator.userAgent) ? "MacOS" : "Other";
+  detectOS: (): PlatformType =>
+    /Mac/.test(window.navigator.userAgent) ? "MacOS" : "Other",
+
+  triggerButton: (id: DomElementId): void => {
+    getElement(id)?.click();
   },
 
-  triggerButton(id: DomElementId): void {
-    const element = document.getElementById(id);
-    if (element) element.click();
-  },
-
-  normalizeKeyCombo(event: KeyboardEvent): string {
+  normalizeKeyCombo: (event: KeyboardEvent): string => {
     const key = event.key.toLowerCase();
     if (key === "enter") return "Enter";
     if (key === "escape") return "Escape";
 
-    const modifiers = [];
-    if (event.ctrlKey) modifiers.push("ctrl");
-    if (event.altKey) modifiers.push("alt");
-    if (event.metaKey) modifiers.push("meta");
-    if (event.shiftKey) modifiers.push("shift");
+    const modifiers = [
+      event.ctrlKey && "ctrl",
+      event.altKey && "alt",
+      event.metaKey && "meta",
+      event.shiftKey && "shift",
+    ].filter(Boolean);
 
     const prefix = modifiers.length > 0 ? modifiers.join("+") + "+" : "";
-    if (prefix && (key.length === 1 || /^[0-9]$/.test(key)))
-      return prefix + key;
-    return event.key;
+    return prefix && (key.length === 1 || /^[0-9]$/.test(key))
+      ? prefix + key
+      : event.key;
   },
 };
 
-// Action functions (will be used in React components)
+// Action functions
 export const Actions = {
-  async saveCodeToFile(): Promise<void> {
-    const editor = (window as any).editor;
+  saveCodeToFile: async (): Promise<void> => {
+    const editor = getEditor();
     if (!editor) return;
 
-    const code = editor.getValue();
-    const languageElement = document.getElementById(
-      DomElementId.LANGUAGE
-    ) as HTMLSelectElement;
-    const fileType = languageElement?.value === "cpp" ? "cpp" : "c";
-
     try {
-      const blob = new Blob([code], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
+      const code = editor.getValue();
+      const fileType =
+        (getElement(DomElementId.LANGUAGE) as HTMLSelectElement)?.value ===
+        "cpp"
+          ? "cpp"
+          : "c";
 
-      // Create and trigger the download
-      const downloadLink = document.createElement("a");
-      downloadLink.href = url;
-      downloadLink.download = `code.${fileType}`;
-      downloadLink.click();
+      const url = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
+      Object.assign(document.createElement("a"), {
+        href: url,
+        download: `code.${fileType}`,
+      }).click();
 
-      // Clean up the URL object after download starts
       setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error("Failed to save file:", error);
     }
   },
 
-  async openCodeFromFile(): Promise<void> {
+  openCodeFromFile: async (): Promise<void> => {
     try {
-      // Create a file input and trigger click
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = ".c,.cpp";
+      const fileInput = Object.assign(document.createElement("input"), {
+        type: "file",
+        accept: ".c,.cpp",
+      });
       fileInput.click();
 
-      // Wait for file selection using a promise
       const file = await new Promise<File | null>((resolve) => {
-        fileInput.onchange = (e: Event) => {
-          const input = e.target as HTMLInputElement;
-          resolve(input.files?.[0] || null);
-        };
-        // Handle cancellation
+        fileInput.onchange = (e) =>
+          resolve((e.target as HTMLInputElement).files?.[0] || null);
         fileInput.oncancel = () => resolve(null);
       });
 
       if (!file) return;
 
-      // Read file contents
       const content = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === "string") {
-            resolve(reader.result);
-          } else {
-            reject(new Error("Failed to read file as text"));
-          }
-        };
+        reader.onload = () =>
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error("Failed to read file as text"));
         reader.onerror = () => reject(reader.error);
         reader.readAsText(file);
       });
 
-      // Update editor content
-      const editor = (window as any).editor;
-      if (editor) {
-        editor.setValue(content);
-      }
+      getEditor()?.setValue(content);
     } catch (error) {
       console.error("Failed to open file:", error);
     }
   },
 
-  toggleCodeFolding(): void {
-    const editor = (window as any).editor;
-    if (editor) {
-      editor.foldCode(editor.getCursor());
-    }
+  toggleCodeFolding: (): void => {
+    const editor = getEditor();
+    if (editor) editor.foldCode(editor.getCursor());
   },
 
-  closeOutputPanel(): void {
-    const outputPanel = document.getElementById(DomElementId.OUTPUT_PANEL);
+  closeOutputPanel: (): void => {
+    const outputPanel = getElement(DomElementId.OUTPUT_PANEL);
     if (outputPanel && outputPanel.style.display !== "none") {
       ShortcutUtils.triggerButton(DomElementId.CLOSE_OUTPUT);
-
-      Promise.resolve().then(() => {
-        const editor = (window as any).editor;
-        if (editor) editor.focus();
-      });
+      Promise.resolve().then(() => getEditor()?.focus());
     }
   },
 };
 
-// Shortcut configuration factory (pure function)
+// Shortcut configuration factory
 export function createShortcutConfig(isMac: boolean): ShortcutCategories {
   const cmdKey = isMac ? "meta" : "ctrl";
 
@@ -191,7 +172,6 @@ export function createShortcutConfig(isMac: boolean): ShortcutCategories {
         displayKeys: isMac ? ["⌘", "P"] : ["Ctrl", "P"],
       },
     },
-
     mac: {
       "ctrl+1": {
         action: () => ShortcutUtils.triggerButton(DomElementId.VIEW_ASSEMBLY),
@@ -214,7 +194,6 @@ export function createShortcutConfig(isMac: boolean): ShortcutCategories {
         displayKeys: ["^", "4"],
       },
     },
-
     other: {
       "alt+1": {
         action: () => ShortcutUtils.triggerButton(DomElementId.VIEW_ASSEMBLY),
@@ -237,7 +216,6 @@ export function createShortcutConfig(isMac: boolean): ShortcutCategories {
         displayKeys: ["Alt", "4"],
       },
     },
-
     special: {
       Escape: {
         action: Actions.closeOutputPanel,
@@ -248,11 +226,11 @@ export function createShortcutConfig(isMac: boolean): ShortcutCategories {
   };
 }
 
-// Special key handlers (pure function)
+// Special key handlers
 export function getSpecialKeyHandlers(): Record<string, KeyHandler> {
   return {
     Escape: (e) => {
-      const outputPanel = document.getElementById(DomElementId.OUTPUT_PANEL);
+      const outputPanel = getElement(DomElementId.OUTPUT_PANEL);
       if (outputPanel && outputPanel.style.display !== "none") {
         e.preventDefault();
         Actions.closeOutputPanel();
@@ -260,7 +238,6 @@ export function getSpecialKeyHandlers(): Record<string, KeyHandler> {
       }
       return false;
     },
-
     Enter: (e) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
@@ -272,22 +249,18 @@ export function getSpecialKeyHandlers(): Record<string, KeyHandler> {
   };
 }
 
-// React-like hooks for state management
+// Store implementation
 export function createShortcutStore() {
-  // Initialize state
   const currentOS = ShortcutUtils.detectOS();
   const isMac = currentOS === "MacOS";
-  const initialState: ShortcutState = {
+  const state: ShortcutState = {
     currentOS,
     isMac,
     shortcuts: createShortcutConfig(isMac),
   };
 
-  // State and listeners
-  let state = initialState;
   const listeners: Array<() => void> = [];
 
-  // Store API
   return {
     getState: () => ({ ...state }),
 
@@ -299,19 +272,17 @@ export function createShortcutStore() {
       };
     },
 
-    // Event handler
     handleKeyboardEvent: (event: KeyboardEvent): void => {
-      // Check special keys
+      // Check special keys first
       const specialHandlers = getSpecialKeyHandlers();
-      const specialHandler = specialHandlers[event.key];
-      if (specialHandler && specialHandler(event)) return;
+      if (specialHandlers[event.key]?.(event)) return;
 
-      // Normalize and check other shortcuts
+      // Check other shortcuts
       const normalizedKey = ShortcutUtils.normalizeKeyCombo(event);
       const { common, mac, other } = state.shortcuts;
-      const platformMap = state.isMac ? mac : other;
+      const shortcut =
+        common[normalizedKey] || (state.isMac ? mac : other)[normalizedKey];
 
-      const shortcut = common[normalizedKey] || platformMap[normalizedKey];
       if (shortcut) {
         event.preventDefault();
         shortcut.action();
@@ -320,26 +291,20 @@ export function createShortcutStore() {
   };
 }
 
-// UI Renderer - this will become a React component
+// UI Renderer
 export function renderShortcutsList(state: ShortcutState): void {
-  const shortcutsContainer = document.getElementById(
-    DomElementId.SHORTCUTS_CONTENT
-  );
-  if (!shortcutsContainer) return;
+  const container = getElement(DomElementId.SHORTCUTS_CONTENT);
+  if (!container) return;
 
-  // Create shortcut list item HTML
-  const createShortcutListItem = (shortcut: ShortcutDefinition): string => {
-    const keyHtml = shortcut.displayKeys
+  const createListItem = ({
+    displayKeys,
+    description,
+  }: ShortcutDefinition): string =>
+    `${displayKeys
       .map((key) => `<kbd>${key}</kbd>`)
-      .join(" + ");
-    return `${keyHtml} - ${shortcut.description}`;
-  };
+      .join(" + ")} - ${description}`;
 
-  // Clear and create new list
-  shortcutsContainer.innerHTML = "";
   const ul = document.createElement("ul");
-
-  // Add all shortcuts
   const { common, special } = state.shortcuts;
   const platformShortcuts = state.isMac
     ? state.shortcuts.mac
@@ -351,41 +316,35 @@ export function renderShortcutsList(state: ShortcutState): void {
     ...Object.values(special),
   ].forEach((shortcut) => {
     const li = document.createElement("li");
-    li.innerHTML = createShortcutListItem(shortcut);
+    li.innerHTML = createListItem(shortcut);
     ul.appendChild(li);
   });
 
-  shortcutsContainer.appendChild(ul);
+  container.innerHTML = "";
+  container.appendChild(ul);
 }
 
-// Initialize shortcuts
+// Initialize app
 const store = createShortcutStore();
 
 export function initializeShortcuts(): () => void {
-  // Render initial shortcuts list
   renderShortcutsList(store.getState());
 
-  // Set up event listeners
   const keydownHandler = store.handleKeyboardEvent;
   document.addEventListener("keydown", keydownHandler);
 
-  // Special Escape handler for terminal
   const escapeHandler = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      const handled = getSpecialKeyHandlers().Escape(event);
-      if (handled) return;
-    }
+    if (event.key === "Escape" && getSpecialKeyHandlers().Escape(event)) return;
   };
   document.addEventListener("keydown", escapeHandler, true);
 
-  // Return cleanup function
   return () => {
     document.removeEventListener("keydown", keydownHandler);
     document.removeEventListener("keydown", escapeHandler, true);
   };
 }
 
-// React-style hook interface
+// Hook interface
 export function useShortcuts() {
   return {
     getState: store.getState,
@@ -393,9 +352,7 @@ export function useShortcuts() {
   };
 }
 
-// Initialize on DOM ready (only in browser environment)
+// Auto-initialize
 if (typeof document !== "undefined") {
-  document.addEventListener("DOMContentLoaded", () => {
-    initializeShortcuts();
-  });
+  document.addEventListener("DOMContentLoaded", initializeShortcuts);
 }

@@ -1,68 +1,52 @@
-/**
- * CustomSelect - A class-based implementation of custom select elements
- * Designed for easier migration to React components in the future
- */
-
+// Custom Select Component
 interface SelectOption {
-  value: string;
-  text: string;
-  selected: boolean;
+  readonly value: string;
+  readonly text: string;
+  readonly selected: boolean;
 }
 
 class CustomSelect {
-  private select: HTMLSelectElement;
-  private container!: HTMLElement;
-  private optionsContainer!: HTMLElement;
+  private container: HTMLElement;
+  private optionsContainer: HTMLElement;
 
-  constructor(selectElement: HTMLSelectElement) {
-    this.select = selectElement;
-
-    // Skip if already enhanced
+  constructor(private select: HTMLSelectElement) {
     if (
       this.select.parentNode instanceof Element &&
       this.select.parentNode.classList.contains("custom-select-container")
     ) {
+      this.container = this.select.parentNode as HTMLElement;
+      this.optionsContainer = this.container.querySelector(
+        ".select-options"
+      ) as HTMLElement;
       return;
     }
 
-    this.container = this.createContainer();
-    this.optionsContainer = this.createOptionsContainer();
-    this.initialize();
-  }
+    this.container = document.createElement("div");
+    this.container.className = "custom-select-container";
+    this.container.setAttribute("data-for", this.select.id);
 
-  private createContainer(): HTMLElement {
-    const container = document.createElement("div");
-    container.className = "custom-select-container";
-    container.setAttribute("data-for", this.select.id);
+    this.optionsContainer = document.createElement("div");
+    this.optionsContainer.className = "select-options";
 
     if (this.select.parentNode) {
-      this.select.parentNode.insertBefore(container, this.select);
-      container.appendChild(this.select);
+      this.select.parentNode.insertBefore(this.container, this.select);
+      this.container.appendChild(this.select);
+      this.container.appendChild(this.optionsContainer);
     }
 
-    return container;
-  }
-
-  private createOptionsContainer(): HTMLElement {
-    const optionsContainer = document.createElement("div");
-    optionsContainer.className = "select-options";
-    this.container.appendChild(optionsContainer);
-    return optionsContainer;
+    this.initialize();
   }
 
   private initialize(): void {
     this.buildOptions();
     this.setupEventListeners();
 
-    // Update UI after the next event loop
     setTimeout(() => this.updateSelectedUI(), 0);
   }
 
   private setupEventListeners(): void {
-    // Handle native select change events
     this.select.addEventListener("change", () => this.updateSelectedUI());
 
-    // Handle container mouse interactions
     this.container.addEventListener("mouseenter", () => {
       this.optionsContainer.style.display = "block";
     });
@@ -78,7 +62,6 @@ class CustomSelect {
 
   private updateSelectedUI(): void {
     const selectedIndex = this.select.selectedIndex;
-
     this.optionsContainer
       .querySelectorAll(".custom-option")
       .forEach((opt, index) => {
@@ -99,32 +82,23 @@ class CustomSelect {
 
     this.getOptions().forEach((option, index) => {
       const customOption = document.createElement("div");
-      customOption.className = "custom-option";
-      if (option.selected) customOption.classList.add("selected");
-
+      customOption.className = `custom-option${
+        option.selected ? " selected" : ""
+      }`;
       customOption.textContent = option.text;
-      customOption.setAttribute("data-value", option.value);
-      customOption.setAttribute("data-index", index.toString());
+      customOption.dataset.value = option.value;
+      customOption.dataset.index = index.toString();
 
       customOption.addEventListener("click", () => {
         this.select.selectedIndex = index;
         this.select.dispatchEvent(new Event("change", { bubbles: true }));
-
-        this.optionsContainer
-          .querySelectorAll(".custom-option")
-          .forEach((opt) => opt.classList.remove("selected"));
-        customOption.classList.add("selected");
-
-        setTimeout(() => {
-          this.optionsContainer.style.display = "none";
-        }, 100);
+        this.optionsContainer.style.display = "none";
       });
 
       this.optionsContainer.appendChild(customOption);
     });
   }
 
-  // Method to update custom select when options change
   public refresh(): void {
     this.buildOptions();
     this.updateSelectedUI();
@@ -138,12 +112,11 @@ class CustomSelectManager {
   private selects: Map<HTMLSelectElement, CustomSelect> = new Map();
 
   public init(): void {
-    // Initialize all selects on page load
-    document.querySelectorAll("select").forEach((select) => {
-      this.enhance(select as HTMLSelectElement);
-    });
+    document
+      .querySelectorAll("select")
+      .forEach((select) => this.enhance(select as HTMLSelectElement));
 
-    this.setupMutationObserver();
+    this.observeTemplateSelect();
   }
 
   public enhance(selectElement: HTMLSelectElement): CustomSelect {
@@ -158,7 +131,7 @@ class CustomSelectManager {
     return this.selects.get(selectElement);
   }
 
-  private setupMutationObserver(): void {
+  private observeTemplateSelect(): void {
     const templateSelect = document.getElementById(
       "template"
     ) as HTMLSelectElement;
@@ -167,14 +140,11 @@ class CustomSelectManager {
     const customSelect = this.getCustomSelect(templateSelect);
     if (!customSelect) return;
 
-    const observer = new MutationObserver(() => {
-      customSelect.refresh();
+    new MutationObserver(() => customSelect.refresh()).observe(templateSelect, {
+      childList: true,
     });
-
-    observer.observe(templateSelect, { childList: true });
   }
 }
 
-// Initialize the manager on DOM load
 const selectManager = new CustomSelectManager();
 window.addEventListener("DOMContentLoaded", () => selectManager.init());

@@ -1,70 +1,39 @@
-// Layout manager module - React-ready architecture
-(() => {
-  // === Types ===
+// === Type Definitions ===
+interface PanelState {
+  isOutputVisible: boolean;
+  activeTab: "output" | "assembly";
+}
 
-  // Component state interface (would be React component state)
-  interface PanelState {
-    isOutputVisible: boolean;
-    activeTab: "output" | "assembly";
-  }
-
-  // DOM elements references (would be React refs)
-  interface UIElements {
-    outputPanel: HTMLElement | null;
-    editorPanel: HTMLElement | null;
-    closeOutputBtn: HTMLElement | null;
-    outputTab: HTMLElement | null;
-    assemblyTab: HTMLElement | null;
-    outputContent: HTMLElement | null;
-    assemblyContent: HTMLElement | null;
-    actionButtons: HTMLElement[];
-  }
-
-  // Window interface extension for global access (would be eliminated in React)
-  declare global {
-    interface Window {
-      editor: any;
-      assemblyView: any;
-      fitAddon: any;
-      terminal: any;
-      CinCoutSocket: {
-        isProcessRunning: () => boolean;
-        isConnected: () => boolean;
-        disconnect: () => void;
-      };
-    }
-  }
-
-  // === State ===
-
-  // Initial state (would be React's useState initial value)
-  const initialState: PanelState = {
+// Component structure designed from React perspective
+class LayoutManager {
+  // State (will be converted to React's useState)
+  state: PanelState = {
     isOutputVisible: false,
     activeTab: "output",
   };
 
-  // Current state (would be React state)
-  let panelState: PanelState = { ...initialState };
-
-  // === Component Implementation ===
-
-  // Main initialization function (would be React's useEffect)
-  const initialize = (): void => {
-    const elements = getUIElements();
-    setupEventListeners(elements);
-    renderUI(elements);
+  // DOM element references (will be converted to React's useRef)
+  elements = {
+    outputPanel: null as HTMLElement | null,
+    editorPanel: null as HTMLElement | null,
+    closeOutputBtn: null as HTMLElement | null,
+    outputTab: null as HTMLElement | null,
+    assemblyTab: null as HTMLElement | null,
+    outputContent: null as HTMLElement | null,
+    assemblyContent: null as HTMLElement | null,
+    actionButtons: [] as HTMLElement[],
   };
 
-  // Get all required DOM elements (would be React refs)
-  const getUIElements = (): UIElements => {
-    // Get action buttons with one query instead of multiple getElementById calls
-    const actionButtons = Array.from(
-      document.querySelectorAll(
-        "#compile, #viewAssembly, #styleCheck, #memcheck"
-      )
-    ) as HTMLElement[];
+  // Initialization method (will be converted to React's useEffect)
+  initialize(): void {
+    this.getUIElements();
+    this.setupEventListeners();
+    this.render();
+  }
 
-    return {
+  // Get DOM elements (will be converted to React's useRef initialization)
+  getUIElements(): void {
+    this.elements = {
       outputPanel: document.getElementById("outputPanel"),
       editorPanel: document.querySelector(".editor-panel"),
       closeOutputBtn: document.getElementById("closeOutput"),
@@ -72,61 +41,61 @@
       assemblyTab: document.getElementById("assemblyTab"),
       outputContent: document.getElementById("output"),
       assemblyContent: document.getElementById("assembly"),
-      actionButtons,
+      actionButtons: Array.from(
+        document.querySelectorAll(
+          "#compile, #viewAssembly, #styleCheck, #memcheck"
+        )
+      ) as HTMLElement[],
     };
-  };
+  }
 
-  // Setup all event listeners (would be React useEffect hooks)
-  const setupEventListeners = (elements: UIElements): void => {
+  // Set up event listeners (will be converted to React's event handlers)
+  setupEventListeners(): void {
     // Close button
-    elements.closeOutputBtn?.addEventListener("click", () => {
-      setState({ isOutputVisible: false });
-      renderUI(elements);
+    this.elements.closeOutputBtn?.addEventListener("click", () => {
+      this.setState({ isOutputVisible: false });
     });
 
     // Action buttons
-    elements.actionButtons.forEach((button) => {
+    this.elements.actionButtons.forEach((button) => {
       button?.addEventListener(
         "click",
         () => {
-          handleRunningProcess();
-
-          setState({
+          this.handleRunningProcess();
+          this.setState({
             isOutputVisible: true,
             activeTab: button.id === "viewAssembly" ? "assembly" : "output",
           });
-
-          renderUI(elements);
         },
         true
       );
     });
 
     // Tab switching
-    elements.outputTab?.addEventListener("click", () => {
-      if (panelState.activeTab === "assembly") handleRunningProcess();
-      setState({ activeTab: "output" });
-      renderUI(elements);
+    this.elements.outputTab?.addEventListener("click", () => {
+      if (this.state.activeTab === "assembly") this.handleRunningProcess();
+      this.setState({ activeTab: "output" });
     });
 
-    elements.assemblyTab?.addEventListener("click", () => {
-      if (panelState.activeTab === "output") handleRunningProcess();
-      setState({ activeTab: "assembly" });
-      renderUI(elements);
+    this.elements.assemblyTab?.addEventListener("click", () => {
+      if (this.state.activeTab === "output") this.handleRunningProcess();
+      this.setState({ activeTab: "assembly" });
     });
 
-    // Window resize handler (using debounce for performance)
-    window.addEventListener("resize", refreshEditors);
-  };
+    // Window resize handler
+    window.addEventListener("resize", this.refreshEditors);
+  }
 
-  // Update state (would be React's setState)
-  const setState = (newState: Partial<PanelState>): void => {
-    panelState = { ...panelState, ...newState };
-  };
+  // Update state (will be converted to React's setState)
+  setState(newState: Partial<PanelState>): void {
+    this.state = { ...this.state, ...newState };
+    this.render(); // Re-render UI after state update
+  }
 
-  // Render UI based on state (would be React's render method)
-  const renderUI = (elements: UIElements): void => {
-    const { isOutputVisible, activeTab } = panelState;
+  // Render UI (will be converted to React's render method)
+  render(): void {
+    const { isOutputVisible, activeTab } = this.state;
+    const elements = this.elements;
 
     // Output panel visibility
     if (elements.outputPanel && elements.editorPanel) {
@@ -140,7 +109,7 @@
       elements.outputTab.classList.toggle("active", isOutputActive);
       elements.assemblyTab.classList.toggle("active", !isOutputActive);
 
-      // Clear output when switching to output tab
+      // Clear output content when switching to output tab
       if (isOutputActive && elements.outputContent) {
         elements.outputContent.innerHTML = "";
       }
@@ -155,18 +124,18 @@
     }
 
     // Refresh editors after UI changes
-    refreshEditors();
-  };
+    this.refreshEditors();
+  }
 
-  // Handle editors refresh
-  const refreshEditors = (): void => {
+  // Refresh editors
+  refreshEditors = (): void => {
     // Main editor refresh
     if (window.editor) {
       window.editor.refresh();
     }
 
-    // Assembly view refresh (only if visible)
-    if (panelState.activeTab === "assembly" && window.assemblyView) {
+    // Assembly view refresh (only when visible)
+    if (this.state.activeTab === "assembly" && window.assemblyView) {
       window.assemblyView.refresh();
     }
 
@@ -180,16 +149,17 @@
     }
   };
 
-  // Handle running process (disconnect WebSocket if needed)
-  const handleRunningProcess = (): void => {
-    if (
-      window.CinCoutSocket?.isConnected?.() &&
-      typeof window.CinCoutSocket.disconnect === "function"
-    ) {
-      window.CinCoutSocket.disconnect();
+  handleRunningProcess(): void {
+    if (window.CinCoutSocket?.isConnected?.()) {
+      if (typeof window.CinCoutSocket.disconnect === "function") {
+        window.CinCoutSocket.disconnect();
+      }
     }
-  };
+  }
+}
 
-  // Initialize on DOM content loaded
-  document.addEventListener("DOMContentLoaded", initialize);
-})();
+// Create and initialize layout manager instance
+document.addEventListener("DOMContentLoaded", () => {
+  const layoutManager = new LayoutManager();
+  layoutManager.initialize();
+});

@@ -41,7 +41,7 @@ async function loadTemplateList(language: string): Promise<string[]> {
     const templateNames = await response.json();
     cache.lists[language] = templateNames;
     return templateNames;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Failed to load template list for ${language}:`, error);
     return [];
   }
@@ -64,12 +64,12 @@ async function loadTemplateContent(
     const { content } = await response.json();
     cache.contents[cacheKey] = content;
     return content;
-  } catch (error) {
+  } catch (error: any) {
     console.error(
       `Failed to load template ${templateName} for ${language}:`,
       error
     );
-    return `// Error loading template: ${error.message}`;
+    return `// Error loading template: ${error.message || "Unknown error"}`;
   }
 }
 
@@ -121,7 +121,7 @@ async function updateTemplateList(): Promise<void> {
         await loadSelectedTemplate();
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating template list:", error);
     templateSelect.innerHTML = "<option>Failed to load templates</option>";
     templateSelect.disabled = false;
@@ -153,9 +153,11 @@ async function loadSelectedTemplate(): Promise<void> {
     editor.setValue("// Loading template...");
     const content = await loadTemplateContent(language, templateName);
     editor.setValue(content);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error setting template:", error);
-    editor.setValue(`// Error loading template: ${error.message}`);
+    editor.setValue(
+      `// Error loading template: ${error.message || "Unknown error"}`
+    );
   }
 }
 

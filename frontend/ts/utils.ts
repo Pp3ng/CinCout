@@ -331,21 +331,3 @@ export const takeCodeSnap = async (): Promise<void> => {
     showNotification("error", "Failed to create code snapshot");
   }
 };
-
-// Add these declarations to make them globally available
-declare global {
-  interface Window {
-    html2canvas: any;
-    CodeMirror: any;
-    editor: any;
-    assemblyView: any;
-    fitAddon: any;
-    terminal: any;
-    templates: any;
-    templateLists: Record<string, string[]>;
-    loadedTemplates: Set<string>;
-    updateTemplates: () => Promise<void>;
-    setTemplate: () => Promise<void>;
-    CinCoutSocket: any;
-  }
-}

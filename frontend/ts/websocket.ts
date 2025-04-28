@@ -2,14 +2,19 @@
 let socket: WebSocket | null = null;
 let sessionId: string | null = null;
 let messageHandler: ((event: MessageEvent) => void) | null = null;
-let compilationState: string = "idle"; // idle, compiling, or running
-let isProcessRunning: boolean = false;
+
+export enum CompilationState {
+  IDLE = "idle",
+  COMPILING = "compiling",
+  RUNNING = "running",
+}
+
+let compilationState: CompilationState = CompilationState.IDLE;
 
 export const resetState = () => {
   socket = null;
   sessionId = null;
-  compilationState = "idle";
-  isProcessRunning = false;
+  compilationState = CompilationState.IDLE;
 };
 
 export const CinCoutSocket = {
@@ -52,12 +57,11 @@ export const CinCoutSocket = {
     }
 
     await initWebSocket();
-    isProcessRunning = true;
+    compilationState = CompilationState.RUNNING;
   },
 
   disconnect(): void {
-    isProcessRunning = false;
-    compilationState = "idle";
+    compilationState = CompilationState.IDLE;
 
     if (socket) {
       try {
@@ -72,27 +76,26 @@ export const CinCoutSocket = {
   },
 
   setProcessRunning(running: boolean): void {
-    isProcessRunning = running;
+    compilationState = running
+      ? CompilationState.RUNNING
+      : CompilationState.IDLE;
   },
 
   isProcessRunning(): boolean {
-    return isProcessRunning;
+    return compilationState !== CompilationState.IDLE;
   },
 
   updateStateFromMessage(type: string): void {
     switch (type) {
       case "compiling":
-        compilationState = "compiling";
-        isProcessRunning = true;
+        compilationState = CompilationState.COMPILING;
         break;
       case "compile-success":
-        compilationState = "running";
-        isProcessRunning = true;
+        compilationState = CompilationState.RUNNING;
         break;
       case "compile-error":
       case "exit":
-        compilationState = "idle";
-        isProcessRunning = false;
+        compilationState = CompilationState.IDLE;
         break;
     }
   },

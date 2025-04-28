@@ -113,12 +113,8 @@ class TerminalManager {
       convertEol: true, // Ensure line ending conversion
     };
 
-    // Create terminal instance
-    this.terminal = new Terminal({
-      ...terminalOptions,
-      // Add custom key handling to prevent terminal from capturing Escape key
-      customKeyEventHandler: this.handleTerminalKeyEvents,
-    });
+    // Create terminal instance with options
+    this.terminal = new Terminal(terminalOptions);
 
     // Create our safer fit addon that enforces integer dimensions
     this.fitAddon = new SafeFitAddon();
@@ -134,6 +130,9 @@ class TerminalManager {
     }
 
     this.terminal.open(terminalContainer);
+
+    // Add custom key event handler after opening
+    this.terminal.attachCustomKeyEventHandler(this.handleTerminalKeyEvents);
 
     // Setup effects after render (would be React useEffect)
     this.setupAfterRender();
@@ -356,13 +355,3 @@ export const terminalManager = new TerminalManager();
 
 // Export the Terminal type for use in other modules
 export type { Terminal };
-
-// Extend Window interface (would be eliminated in React with proper TypeScript)
-declare global {
-  interface Window {
-    fitAddon: SafeFitAddon | null;
-    terminal: Terminal | null;
-    CinCoutSocket: any;
-    getTerminalTheme: () => any;
-  }
-}

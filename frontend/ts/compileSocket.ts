@@ -1,9 +1,9 @@
 /**
  * CompileSocket - Module handling compilation-related WebSocket communication
- * Extracted from handlers.ts to separate compilation concerns
  */
 
 import { terminalManager } from "./terminal";
+import { CompilationState } from "./websocket";
 
 // Interface for compile options
 export interface CompileOptions {
@@ -31,13 +31,12 @@ export interface CinCoutSocket {
   setProcessRunning: (running: boolean) => void;
   isProcessRunning: () => boolean;
   updateStateFromMessage: (type: string) => void;
-  getCompilationState: () => string;
+  getCompilationState: () => CompilationState | string;
 }
 
 // Interface for UI state updates
 export interface CompileStateUpdater {
-  updateCompilationState: (state: string) => void;
-  updateProcessRunning: (running: boolean) => void;
+  updateCompilationState: (state: CompilationState | string) => void;
   showOutput: () => void;
   activateOutputTab: () => void;
   refreshEditor: () => void;
@@ -143,9 +142,7 @@ export class CompileSocketManager {
     const data = JSON.parse(event.data) as WebSocketMessage;
     this.socket.updateStateFromMessage(data.type);
 
-    // Update app state based on socket state
     this.stateUpdater.updateCompilationState(this.socket.getCompilationState());
-    this.stateUpdater.updateProcessRunning(this.socket.isProcessRunning());
 
     switch (data.type) {
       case "connected":
@@ -157,6 +154,16 @@ export class CompileSocketManager {
         this.stateUpdater.activateOutputTab();
         this.showOutputMessage('<div class="loading">Compiling</div>');
         this.stateUpdater.refreshEditor();
+        break;
+
+      case "compile-error":
+        // Handle compilation error
+        this.stateUpdater.showOutput();
+        this.stateUpdater.activateOutputTab();
+        this.showOutputMessage(
+          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
+        );
+        this.socket.disconnect();
         break;
 
       case "compile-success":

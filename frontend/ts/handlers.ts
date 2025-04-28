@@ -5,6 +5,7 @@ import CompileSocketManager, {
   CompileOptions,
   CompileStateUpdater,
 } from "./compileSocket";
+import { CompilationState } from "./websocket";
 
 // ------------------------------------------------------------
 // Types - Move to separate types.ts file for React migration
@@ -31,8 +32,8 @@ export interface UIState {
   activeTab: "output" | "assembly";
   isLoading: boolean;
   loadingMessage: string;
-  isProcessRunning: boolean;
-  compilationState: "idle" | "compiling" | "running";
+  compilationState: CompilationState;
+  isProcessRunning?: boolean;
   theme: string;
   vimMode: boolean;
 }
@@ -282,8 +283,7 @@ export class AppState {
       activeTab: "output",
       isLoading: false,
       loadingMessage: "",
-      isProcessRunning: false,
-      compilationState: "idle",
+      compilationState: CompilationState.IDLE,
       theme: localStorage.getItem("cincout-theme") || "default",
       vimMode: localStorage.getItem("cincout-vim-mode") === "true",
     };
@@ -320,9 +320,23 @@ class CompileStateAdapter implements CompileStateUpdater {
   }
 
   updateCompilationState(state: string): void {
-    this.appState.setState({
-      compilationState: state as "idle" | "compiling" | "running",
-    });
+    switch (state) {
+      case "idle":
+        this.appState.setState({
+          compilationState: CompilationState.IDLE,
+        });
+        break;
+      case "compiling":
+        this.appState.setState({
+          compilationState: CompilationState.COMPILING,
+        });
+        break;
+      case "running":
+        this.appState.setState({
+          compilationState: CompilationState.RUNNING,
+        });
+        break;
+    }
   }
 
   updateProcessRunning(running: boolean): void {
@@ -648,7 +662,9 @@ export class CinCoutApp {
     // Theme selection
     if (elements.themeSelect) {
       elements.themeSelect.addEventListener("change", () => {
-        this.editorSettings.setTheme(elements.themeSelect.value);
+        if (elements.themeSelect) {
+          this.editorSettings.setTheme(elements.themeSelect.value);
+        }
       });
 
       // Initialize with saved theme
@@ -661,7 +677,9 @@ export class CinCoutApp {
     // Vim mode toggle
     if (elements.vimMode) {
       elements.vimMode.addEventListener("change", () => {
-        this.editorSettings.setVimMode(elements.vimMode.checked);
+        if (elements.vimMode) {
+          this.editorSettings.setVimMode(elements.vimMode.checked);
+        }
       });
 
       // Initialize with saved vim mode

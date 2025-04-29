@@ -62,44 +62,6 @@
   --z-modal: 1000;
 }
 
-/* Dark theme (default) */
-:root {
-  --bg-primary: #282a36;
-  --bg-secondary: #343746;
-  --bg-hover: #44475a;
-  --text-primary: #f8f8f2;
-  --text-secondary: #bd93f9;
-  --border: #44475a;
-  --accent: #8be9fd;
-  --accent-hover: #50c8e6;
-  --accent-rgb: 139, 233, 253;
-  --error: #ff5555;
-  --error-rgb: 255, 85, 85;
-  --warning: #f1fa8c;
-  --warning-rgb: 241, 250, 140;
-  --note: #8be9fd;
-  --note-rgb: 139, 233, 253;
-}
-
-/* Light theme variables - will be applied via JS */
-.light-theme {
-  --bg-primary: #f8f8f2;
-  --bg-secondary: #f1f1eb;
-  --bg-hover: #e5e5e0;
-  --text-primary: #282a36;
-  --text-secondary: #6272a4;
-  --border: #ccc;
-  --accent: #0e639c;
-  --accent-hover: #1177bb;
-  --accent-rgb: 14, 99, 156;
-  --error: #c33;
-  --error-rgb: 204, 51, 51;
-  --warning: #f1fa8c;
-  --warning-rgb: 241, 250, 140;
-  --note: #0e639c;
-  --note-rgb: 14, 99, 156;
-}
-
 /* Theme transition helpers */
 .theme-transitioning {
   transition: background-color 0.3s ease, color 0.3s ease;

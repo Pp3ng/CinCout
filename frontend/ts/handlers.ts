@@ -140,10 +140,7 @@ export class DOMService {
       template: document.getElementById("template"),
       vimMode: document.getElementById("vimMode") as HTMLInputElement,
       language: document.getElementById("language") as HTMLSelectElement,
-      outputTab: document.getElementById("outputTab"),
-      assemblyTab: document.getElementById("assemblyTab"),
       output: document.getElementById("output"),
-      assembly: document.getElementById("assembly"),
       compile: document.getElementById("compile"),
       memcheck: document.getElementById("memcheck"),
       format: document.getElementById("format"),
@@ -183,24 +180,33 @@ export class DOMService {
 
   static showOutputPanel(): void {
     const outputPanel = document.getElementById("outputPanel");
-    if (outputPanel) {
-      outputPanel.style.display = "flex";
-      document.querySelector(".editor-panel")?.classList.add("with-output");
+    if (!outputPanel) return;
+
+    const isZenMode = document.body.classList.contains("zen-mode-active");
+
+    // Display the panel
+    outputPanel.style.display = "flex";
+    document.querySelector(".editor-panel")?.classList.add("with-output");
+
+    // If in Zen Mode, we need special positioning
+    if (isZenMode) {
+      // Make sure editor refreshes to adjust for new layout
+      EditorService.refresh();
     }
   }
 
   static hideOutputPanel(): void {
     const outputPanel = document.getElementById("outputPanel");
-    if (outputPanel) {
-      outputPanel.style.display = "none";
-      document.querySelector(".editor-panel")?.classList.remove("with-output");
-    }
-  }
+    if (!outputPanel) return;
 
-  static activateTab(tabId: string): void {
-    const tab = document.getElementById(tabId);
-    if (tab) {
-      tab.click();
+    outputPanel.style.display = "none";
+    document.querySelector(".editor-panel")?.classList.remove("with-output");
+
+    // If in Zen Mode, make sure we reset any inline styles
+    const isZenMode = document.body.classList.contains("zen-mode-active");
+    if (isZenMode) {
+      // Make sure editor refreshes to adjust for new layout
+      EditorService.refresh();
     }
   }
 
@@ -230,7 +236,6 @@ export class AppState {
   constructor() {
     this.state = {
       isOutputVisible: false,
-      activeTab: "output",
       isLoading: false,
       loadingMessage: "",
       compilationState: CompilationState.IDLE,
@@ -298,11 +303,6 @@ class CompileStateAdapter implements CompileStateUpdater {
     this.appState.setState({ isOutputVisible: true });
   }
 
-  activateOutputTab(): void {
-    DOMService.activateTab("outputTab");
-    this.appState.setState({ activeTab: "output" });
-  }
-
   refreshEditor(): void {
     setTimeout(() => EditorService.refresh(), 10);
   }
@@ -329,49 +329,42 @@ export class CodeActionsController {
   }
 
   async viewAssembly(options: CompileOptions): Promise<void> {
-    // Update UI state
-    this.appState.setState({ activeTab: "assembly" });
-    DOMService.activateTab("assemblyTab");
-
-    // Get assembly div and prepare loading state
-    const assemblyDiv = document.getElementById("assembly") as HTMLElement;
-    const loadingDiv = DOMService.createLoadingElement(
-      "Generating assembly code"
-    );
-    const cmContainer = assemblyDiv.querySelector(".CodeMirror");
-
-    // Show loading state
-    if (cmContainer) {
-      assemblyDiv.insertBefore(loadingDiv, cmContainer);
-    } else {
-      assemblyDiv.appendChild(loadingDiv);
-    }
-
-    EditorService.setAssemblyValue("");
+    // Show output panel
+    DOMService.showOutputPanel();
+    DOMService.showLoadingInOutput("Generating assembly code...");
 
     try {
       const data = await ApiService.fetchAssembly(options);
 
-      // Remove loading div and update view
-      if (loadingDiv.parentNode) {
-        loadingDiv.parentNode.removeChild(loadingDiv);
-      }
+      // Create a container for assembly display
+      const output = document.getElementById("output");
+      if (output) {
+        output.innerHTML = '<div id="assembly-view-container"></div>';
+        const container = document.getElementById("assembly-view-container");
 
-      EditorService.setAssemblyValue(data.trim());
+        // Use the assemblyView to display the assembly code
+        const assemblyView = (window as any).assemblyView;
+        if (assemblyView && container) {
+          assemblyView.setValue(data.trim());
+          // Append the CodeMirror instance to our container
+          container.appendChild(assemblyView.getWrapperElement());
+          setTimeout(() => assemblyView.refresh(), 10);
+        } else {
+          // Fallback if the CodeMirror instance is not available
+          output.innerHTML = `<pre class="assembly-output">${data.trim()}</pre>`;
+        }
+      }
     } catch (error) {
-      // Remove loading div and show error
-      if (loadingDiv.parentNode) {
-        loadingDiv.parentNode.removeChild(loadingDiv);
-      }
-
-      EditorService.setAssemblyValue("Error: " + error);
+      console.error("Assembly view error:", error);
+      DOMService.setOutput(
+        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`
+      );
     }
   }
 
   async runMemCheck(options: CompileOptions): Promise<void> {
-    // Update UI state
-    this.appState.setState({ activeTab: "output" });
-    DOMService.activateTab("outputTab");
+    // Show output panel
+    DOMService.showOutputPanel();
     DOMService.showLoadingInOutput("Running memory check...");
 
     try {
@@ -417,9 +410,8 @@ export class CodeActionsController {
   }
 
   async runStyleCheck(code: string, lang: string): Promise<void> {
-    // Update UI state
-    this.appState.setState({ activeTab: "output" });
-    DOMService.activateTab("outputTab");
+    // Show output panel
+    DOMService.showOutputPanel();
     DOMService.showLoadingInOutput("Running style check...");
 
     try {
@@ -558,6 +550,47 @@ export class CinCoutApp {
           this.codeActions.runStyleCheck(code, lang);
         }, 300)
       );
+    }
+
+    // Zen Mode button
+    const zenModeButton = document.getElementById("zenMode");
+    if (zenModeButton) {
+      zenModeButton.addEventListener("click", () => {
+        if (typeof Actions !== "undefined" && Actions.toggleZenMode) {
+          Actions.toggleZenMode();
+        } else {
+          // Fallback implementation if Actions is not available
+          const editor = (window as any).editor;
+          if (!editor) return;
+
+          const editorWrapper = editor.getWrapperElement();
+          editorWrapper.classList.toggle("zen-mode");
+          document.body.classList.toggle("zen-mode-active");
+          document
+            .querySelector(".container")
+            ?.classList.toggle("zen-container");
+          document.querySelector(".header")?.classList.toggle("hidden-zen");
+          document
+            .querySelector(".main-container")
+            ?.classList.toggle("zen-mode-container");
+          document
+            .querySelector(".editor-panel")
+            ?.classList.toggle("zen-mode-panel");
+          document
+            .querySelector(".panel-header")
+            ?.classList.toggle("zen-mode-minimized");
+
+          // Toggle icon
+          const icon = zenModeButton.querySelector("i");
+          if (icon) {
+            icon.classList.toggle("fa-expand");
+            icon.classList.toggle("fa-compress");
+          }
+
+          // Force editor refresh
+          setTimeout(() => editor.refresh(), 100);
+        }
+      });
     }
   }
 

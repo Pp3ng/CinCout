@@ -108,8 +108,7 @@
   }
 
   .terminal,
-  #output,
-  #assembly {
+  #output {
     font-size: 11px;
   }
 }

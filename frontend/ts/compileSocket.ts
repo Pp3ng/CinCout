@@ -27,7 +27,6 @@ export class CompileSocketManager {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {
       this.stateUpdater.showOutput();
-      this.stateUpdater.activateOutputTab();
       this.showOutputMessage('<div class="loading">Compiling</div>');
       this.stateUpdater.refreshEditor();
       this.updateCompilationState();
@@ -38,13 +37,11 @@ export class CompileSocketManager {
       terminalManager.dispose();
 
       this.stateUpdater.showOutput();
-      this.stateUpdater.activateOutputTab();
 
       // Set up the terminal with the correct DOM elements
       terminalManager.setDomElements({
         output: document.getElementById("output"),
         outputPanel: document.getElementById("outputPanel"),
-        outputTab: document.getElementById("outputTab"),
       });
 
       // Initialize terminal
@@ -55,7 +52,6 @@ export class CompileSocketManager {
 
     socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
       this.stateUpdater.showOutput();
-      this.stateUpdater.activateOutputTab();
       this.showOutputMessage(
         `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
       );
@@ -99,10 +95,6 @@ export class CompileSocketManager {
     try {
       const sessionId = socketManager.getSessionId();
       if (sessionId && socketManager.isConnected()) {
-        console.log(
-          `Sending cleanup request for session ${sessionId} and disconnecting...`
-        );
-
         socketManager
           .emit(SocketEvents.CLEANUP)
           .catch((e) => console.error("Error sending cleanup message:", e));
@@ -120,7 +112,6 @@ export class CompileSocketManager {
    */
   async compile(options: CompileOptions): Promise<void> {
     if (socketManager.isProcessRunning()) {
-      console.log("A process is already running, ignoring compile request");
       return;
     }
 

@@ -7,10 +7,7 @@ import "@xterm/xterm/css/xterm.css";
 // 2. Import main CSS
 import "../styles/main.css";
 
-// 3. Import external libraries and resources
-import "@fortawesome/fontawesome-free/css/all.min.css";
-
-// 4. Import CodeMirror core functionality and plugins
+// 3. Import CodeMirror core functionality and plugins
 import CodeMirror from "codemirror";
 window.CodeMirror = CodeMirror;
 

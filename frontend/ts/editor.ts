@@ -3,15 +3,16 @@ import { EditorInstances } from "./types";
 
 const setupEditors = (): EditorInstances => {
   const codeElement = document.getElementById("code") as HTMLTextAreaElement;
-  const asmElement = document.getElementById("assembly") as HTMLDivElement;
+  const outputElement = document.getElementById("output") as HTMLDivElement;
 
-  if (!codeElement || !asmElement) {
+  if (!codeElement || !outputElement) {
     throw new Error("Required DOM elements not found");
   }
 
   // Get saved theme if any
   const savedTheme = localStorage.getItem("preferred-theme") || "default";
-  // Use the default export as a function
+
+  // Main code editor
   const editor = CodeMirror.fromTextArea(codeElement, {
     lineNumbers: true,
     mode: "text/x-c++src",
@@ -33,19 +34,22 @@ const setupEditors = (): EditorInstances => {
     theme: savedTheme !== "default" ? savedTheme : "default",
   });
 
-  const assemblyView = CodeMirror(asmElement, {
+  // Assembly view - will create this but won't attach to DOM until needed
+  const assemblyView = CodeMirror(document.createElement("div"), {
     lineNumbers: true,
     mode: "gas",
     readOnly: true,
     lineWrapping: true,
     theme: savedTheme !== "default" ? savedTheme : "default",
   });
-  assemblyView.setSize(null, "100%");
 
   return { editor, assemblyView };
 };
 
-const setupFontZoomHandler = (editor: Editor, assemblyView: Editor) => {
+const setupFontZoomHandler = (
+  editor: CodeMirror.Editor,
+  assemblyView: CodeMirror.Editor
+) => {
   let fontSize = 14;
 
   const applyFontSize = () => {

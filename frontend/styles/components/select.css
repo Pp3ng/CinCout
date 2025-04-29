@@ -14,7 +14,6 @@ select {
   font-size: var(--font-xs);
   cursor: pointer;
   min-width: 0;
-  width: 117px;
   height: 28px;
   background-image: none; /* Remove default arrow */
   transition: all var(--transition-normal);
@@ -28,19 +27,19 @@ select {
 
 /* Specific widths for different select types */
 select#language {
-  width: 60px;
+  width: 55px;
 }
 
 select#compiler {
-  width: 75px;
+  width: 65px;
 }
 
 select#template {
-  width: 140px;
+  width: 135px;
 }
 
 select#optimization {
-  width: 115px;
+  width: 113px;
 }
 
 /* Select states */

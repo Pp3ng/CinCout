@@ -1,4 +1,3 @@
-// Import required modules
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { TerminalDomElements, TerminalOptions } from "./types";

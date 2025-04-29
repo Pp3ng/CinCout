@@ -92,13 +92,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.3s ease;
   cursor: pointer;
-  transform: translateY(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .dropdown-content a:hover {
-  background-color: var(--bg-hover);
   transform: translateY(-3px);
   box-shadow: var(--shadow-accent-sm);
 }
@@ -108,8 +106,11 @@
   transition: transform 0.1s ease;
 }
 
+.dropdown-content a:has(.resource-icon):hover {
+  background-color: transparent;
+}
+
 .dropdown-content a:hover .resource-icon {
-  transform: rotate(10deg) scale(1.2);
   color: var(--accent);
   animation: float 1s ease-in-out infinite alternate;
 }
@@ -136,8 +137,8 @@
   top: 100%;
   left: 0;
   background-color: var(--bg-secondary);
-  min-width: 220px;
-  max-width: 300px;
+  min-width: 250px;
+  max-width: 350px;
   box-shadow: var(--shadow-md);
   padding: 6px;
   z-index: var(--z-dropdown);
@@ -184,5 +185,4 @@
 .shortcuts-content kbd:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
-  background-color: var(--glass-bg);
 }

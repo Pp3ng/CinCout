@@ -1,11 +1,15 @@
 @startuml Architecture
 
-!define LAYOUT_TOP_DOWN
-skinparam nodesep 30
-skinparam ranksep 35
+!define LAYOUT_LEFT_RIGHT
+skinparam nodesep 20
+skinparam ranksep 25
 skinparam padding 2
 skinparam defaultFontName Arial
-skinparam defaultFontSize 12
+skinparam defaultFontSize 11
+skinparam componentStyle uml2
+skinparam linetype ortho
+skinparam maxMessageSize 150
+skinparam wrapWidth 200
 
 ' Define main actors and components
 actor "User" as User
@@ -13,26 +17,47 @@ component "Browser" as Browser
 
 ' Define Frontend UI layer
 rectangle "Frontend (UI)" {
-  component "Code Editor (CodeMirror)" as Editor
-  component "Terminal (Xterm.js)" as Terminal
-  component "Result Display" as Display
+  ' Core UI components
+  package "UI Components" {
+    component "Code Editor\n(CodeMirror)" as Editor
+    component "Terminal\n(Xterm.js)" as Terminal
+    component "Result Display" as Display
+    component "Layout Manager" as LayoutMgr
+    component "Themes Manager" as ThemesMgr
+    component "Templates Selector" as TemplateSelector
+    component "Shortcut Manager" as ShortcutMgr
+  }
   
-  ' User action buttons
-  component "Actions" {
+  ' User action buttons and controls
+  package "Actions" {
     component "Compile & Run" as CompileAction
     component "Memory Check" as MemcheckAction
     component "Format" as FormatAction
     component "Style Check" as StyleCheckAction
     component "View Assembly" as AssemblyAction
+    component "Zen Mode" as ZenModeAction
+    component "Code Snapshot" as SnapshotAction
   }
   
+  ' Client-side controllers
+  package "Controllers" {
+    component "App Controller" as AppController
+    component "Code Actions Controller" as CodeActionsController
+    component "Editor Settings Controller" as SettingsController
+    component "State Manager" as StateManager
+  }
+  
+  ' Communication
   component "WebSocket Client" as WSClient
+  component "Compile Socket Manager" as CompileSocketMgr
+  component "HTTP Client" as HTTPClient
 }
 
 ' Define Backend layer
 rectangle "Backend (Server)" {
   component "Express Server" as Express
   component "WebSocket Server" as WSServer
+  component "Socket.IO" as SocketIO
   
   ' API Routes layer
   package "API Routes" {
@@ -40,6 +65,7 @@ rectangle "Backend (Server)" {
     component "Memory Check API" as MemcheckAPI
     component "Format API" as FormatAPI
     component "Style Check API" as StyleAPI
+    component "Assembly API" as AssemblyAPI
     component "Templates API" as TemplatesAPI
   }
   
@@ -49,7 +75,9 @@ rectangle "Backend (Server)" {
     component "Memory Check Service" as MemcheckService
     component "Format Service" as FormatService
     component "Style Check Service" as StyleService
+    component "Assembly Service" as AssemblyService
     component "PTY Service" as PTYService
+    component "Route Handler" as RouteHandler
   }
   
   component "Session Manager" as SessionMgr
@@ -83,33 +111,65 @@ User --> MemcheckAction : Clicks
 User --> FormatAction : Clicks
 User --> StyleCheckAction : Clicks
 User --> AssemblyAction : Clicks
+User --> ZenModeAction : Clicks
+User --> SnapshotAction : Clicks
 
-' Frontend actions to backend communication - CORRECTED
-CompileAction --> WSClient : Sends code via WebSocket
-AssemblyAction --> WSClient : Sends code via WebSocket
-MemcheckAction --> Express : HTTP Request
-FormatAction --> Express : HTTP Request
-StyleCheckAction --> Express : HTTP Request
+' Frontend components interaction
+AppController --> StateManager : Manages state
+AppController --> CodeActionsController : Uses
+AppController --> SettingsController : Uses
+CodeActionsController --> CompileSocketMgr : Uses
+CodeActionsController --> HTTPClient : Uses for API calls
+Editor --> ShortcutMgr : Processes keyboard shortcuts
+ShortcutMgr --> ZenModeAction : Triggers
+ShortcutMgr --> CompileAction : Triggers
+ShortcutMgr --> SnapshotAction : Triggers
+LayoutMgr --> Editor : Controls layout
+LayoutMgr --> Terminal : Controls layout
+ThemesMgr --> Editor : Applies themes
+TemplateSelector --> Editor : Loads templates
+
+' Frontend actions to communication layer
+CompileAction --> CompileSocketMgr : Triggers
+AssemblyAction --> CompileSocketMgr : Triggers
+ZenModeAction --> LayoutMgr : Triggers layout change
+CompileSocketMgr --> WSClient : Uses
+MemcheckAction --> HTTPClient : HTTP Request
+FormatAction --> HTTPClient : HTTP Request
+StyleCheckAction --> HTTPClient : HTTP Request
+SnapshotAction --> Display : Generates image
 
 ' Frontend to Backend communication
-WSClient <--> WSServer : WebSocket connection for compilation & execution
-Browser <--> Express : HTTP/RESTful API for other operations
-Browser --> TemplatesAPI : Requests templates
+WSClient <--> SocketIO : WebSocket connection
+HTTPClient <--> Express : HTTP/RESTful API
+SocketIO --> WSServer : Integrated with
 
-' WebSocket handler to compilation service
-WSServer --> WSHandler : Routes messages
+' Backend routing
+Express --> RouteHandler : Processes HTTP requests
+Express --> MemcheckAPI : Routes to
+Express --> FormatAPI : Routes to
+Express --> StyleAPI : Routes to
+Express --> AssemblyAPI : Routes to
+Express --> TemplatesAPI : Routes to
+WSServer --> WSHandler : Routes WebSocket messages
+
+' WebSocket handler to services
 WSHandler --> CompileService : Invokes for compilation
 WSHandler --> PTYService : For interactive execution
+WSHandler --> SessionMgr : Manages sessions
 
 ' Express API routes to Services calls
 MemcheckAPI --> MemcheckService : Invokes
 FormatAPI --> FormatService : Invokes
 StyleAPI --> StyleService : Invokes
+AssemblyAPI --> AssemblyService : Invokes
 TemplatesAPI --> Templates : Retrieves
 
 ' Services to External Tools calls
 CompileService --> GCC : Executes
 CompileService --> Clang : Executes
+AssemblyService --> GCC : Generates assembly
+AssemblyService --> Clang : Generates assembly
 MemcheckService --> Valgrind : Executes
 FormatService --> ClangFormat : Executes
 StyleService --> Cppcheck : Executes
@@ -120,19 +180,23 @@ CompileService --> TempMgr : Creates temp files
 MemcheckService --> TempMgr : Creates temp files
 FormatService --> TempMgr : Creates temp files
 StyleService --> TempMgr : Creates temp files
+AssemblyService --> TempMgr : Creates temp files
 TempMgr --> TempFiles : Manages
 SessionMgr --> Sessions : Tracks
 PTYService --> SessionMgr : Uses
 
-' Results return to frontend - CORRECTED
+' Results flow back to frontend
 WSHandler --> WSServer : Sends compilation results
 WSServer --> WSClient : Streams compilation results
-WSClient --> Display : Updates UI for compilation
-WSClient --> Terminal : Streams program output
+WSClient --> CompileSocketMgr : Processes events
+CompileSocketMgr --> Display : Updates UI
+CompileSocketMgr --> Terminal : Updates terminal
+CompileSocketMgr --> StateManager : Updates state
 
-MemcheckAPI --> Display : Returns HTTP response with results
-FormatAPI --> Editor : Returns HTTP response with formatted code
-StyleAPI --> Display : Returns HTTP response with style check results
+MemcheckAPI --> HTTPClient : Returns HTTP response
+FormatAPI --> HTTPClient : Returns HTTP response
+StyleAPI --> HTTPClient : Returns HTTP response
+AssemblyAPI --> HTTPClient : Returns HTTP response
 
 ' Interactive terminal
 Terminal --> WSClient : Sends input

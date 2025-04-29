@@ -28,7 +28,7 @@
     "@types/morgan": "^1.9.9",
     "@types/tmp": "^0.2.3",
     "@types/uuid": "^9.0.1",
-    "esbuild": "^0.20.0",
+    "esbuild": "^0.25.3",
     "ts-node": "^10.9.1"
   }
 }

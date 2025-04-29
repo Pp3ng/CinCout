@@ -194,3 +194,44 @@
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-normal);
 }
+
+.hidden {
+  display: none !important;
+}
+
+.hidden-zen {
+  display: none !important;
+}
+
+.zen-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.zen-mode-active {
+  overflow: hidden;
+}
+
+/* Zen mode styles */
+.CodeMirror.zen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9000;
+  border-radius: 0;
+}
+
+/* Specific styling for zen mode panel header */
+.zen-mode-minimized {
+  opacity: 0.8;
+  background: var(--bg-secondary);
+  transition: opacity 0.3s ease;
+}
+
+.zen-mode-minimized:hover {
+  opacity: 1;
+}

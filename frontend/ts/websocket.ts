@@ -58,7 +58,6 @@ class SocketManager {
 
       // Setup core event handlers
       this.socket.once(SocketEvents.CONNECT, () => {
-        console.log("Socket connected");
         this.compilationState = CompilationState.RUNNING;
         resolve(this.socket as Socket);
       });
@@ -69,7 +68,6 @@ class SocketManager {
       });
 
       this.socket.on(SocketEvents.DISCONNECT, (reason) => {
-        console.log("Socket disconnected:", reason);
         if (reason === "io server disconnect") {
           this.socket?.connect();
         }
@@ -78,7 +76,6 @@ class SocketManager {
       // Handle session creation
       this.socket.on(SocketEvents.SESSION_CREATED, (data) => {
         this.sessionId = data.sessionId;
-        console.log(`Session created: ${this.sessionId}`);
         this.notifyListeners(SocketEvents.SESSION_CREATED, data);
       });
 

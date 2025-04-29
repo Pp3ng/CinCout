@@ -2,9 +2,6 @@
 // Common Types
 // ==========================================
 
-// Active tab selection
-export type ActiveTab = "output" | "assembly";
-
 // Platform detection
 export type PlatformType = "MacOS" | "Other";
 
@@ -15,13 +12,11 @@ export type PlatformType = "MacOS" | "Other";
 // Layout panel state
 export interface PanelState {
   isOutputVisible: boolean;
-  activeTab: ActiveTab;
 }
 
 // UI global state
 export interface UIState {
   isOutputVisible: boolean;
-  activeTab: ActiveTab;
   isLoading: boolean;
   loadingMessage: string;
   compilationState: CompilationState;
@@ -35,10 +30,7 @@ export interface DOMElements {
   template: HTMLElement | null;
   vimMode: HTMLInputElement | null;
   language: HTMLSelectElement | null;
-  outputTab: HTMLElement | null;
-  assemblyTab: HTMLElement | null;
   output: HTMLElement | null;
-  assembly: HTMLElement | null;
   compile: HTMLElement | null;
   memcheck: HTMLElement | null;
   format: HTMLElement | null;
@@ -128,7 +120,6 @@ export interface CompileStateUpdater {
   updateCompilationState: (state: CompilationState | string) => void;
   updateProcessRunning?: (running: boolean) => void;
   showOutput: () => void;
-  activateOutputTab: () => void;
   refreshEditor: () => void;
 }
 
@@ -220,6 +211,7 @@ export enum DomElementId {
   LANGUAGE = "language",
   SHORTCUTS_CONTENT = "shortcuts-content",
   CODESNAP = "codeSnap",
+  ZEN_MODE = "zenMode",
 }
 
 // Shortcut definition
@@ -246,6 +238,3 @@ export interface ShortcutState {
   isMac: boolean;
   shortcuts: ShortcutCategories;
 }
-
-// Keyboard event handler type
-export type KeyHandler = (e: KeyboardEvent) => boolean;

@@ -9,6 +9,12 @@
       rel="stylesheet"
     />
 
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="./assets/cincout.png" />
 
@@ -120,7 +126,7 @@
           <div class="panel-header">
             <div class="button-container">
               <button id="styleCheck" class="action-btn">
-                <i class="fas fa-check"></i> Style Check
+                <i class="fas fa-check"></i> Lint Code
               </button>
               <button id="format" class="action-btn">
                 <i class="fas fa-align-left"></i> Format
@@ -132,10 +138,13 @@
                 <i class="fas fa-cogs"></i> View Assembly
               </button>
               <button id="memcheck" class="action-btn">
-                <i class="fas fa-memory"></i> Memory Check
+                <i class="fas fa-memory"></i> Leak Detector
               </button>
             </div>
             <div class="button-container right-aligned">
+              <button id="zenMode" class="action-btn">
+                <i class="fas fa-expand"></i> Zen Mode
+              </button>
               <button id="codeSnap" class="action-btn">
                 <i class="fas fa-camera"></i> Code Snap
               </button>
@@ -148,21 +157,12 @@
         <div class="panel output-panel" id="outputPanel" style="display: none">
           <div class="panel-header">
             <div class="button-container">
-              <button id="outputTab" class="tab-btn active">
-                <i class="fas fa-terminal"></i> Output
-              </button>
-              <button id="assemblyTab" class="tab-btn">
-                <i class="fas fa-cogs"></i> Assembly
-              </button>
-            </div>
-            <div class="button-container">
               <button id="closeOutput" class="action-btn">
                 <i class="fas fa-times"></i> Close
               </button>
             </div>
           </div>
-          <div id="output" style="display: block"></div>
-          <div id="assembly" style="display: none"></div>
+          <div id="output"></div>
         </div>
       </div>
     </div>

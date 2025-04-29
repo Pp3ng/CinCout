@@ -6,76 +6,75 @@
 /* Button container styles */
 .button-container {
   display: flex;
-  gap: calc(var(--spacing-sm) - 2px);
+  gap: calc(var(--spacing-sm) - 3px);
   align-items: center;
   flex-wrap: wrap;
-  padding: calc(var(--spacing-xs) - 1px) 0;
+  padding: calc(var(--spacing-xs) - 2px) 0;
 }
 
 .button-container.right-aligned {
   margin-left: auto;
 }
 
+.output-panel .panel-header .button-container {
+  width: 100%;
+  justify-content: flex-end;
+}
+
 /* Base button styles */
 button {
-  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+  --btn-bg: linear-gradient(45deg, var(--accent), var(--accent-hover));
+  --btn-shadow: var(--shadow-accent-sm);
+  --btn-shadow-hover: var(--shadow-accent-md);
+
+  background: var(--btn-bg);
   color: var(--text-primary);
   font-family: var(--font-mono);
   border: none;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: calc(var(--spacing-xs) - 1px) calc(var(--spacing-sm) - 1px);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: var(--font-sm);
-  transition: all var(--transition-normal);
+  font-size: calc(var(--font-sm) - 1px);
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  height: 26px;
+  height: 24px;
   white-space: nowrap;
   position: relative;
   overflow: hidden;
   min-width: 0;
-  box-shadow: var(--shadow-accent-sm);
+  box-shadow: var(--btn-shadow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
 
 /* Button variants */
 .primary-btn {
-  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
+  --btn-bg: linear-gradient(45deg, var(--accent), var(--accent-hover));
 }
 
 .secondary-btn {
-  background: var(--bg-secondary);
+  --btn-bg: var(--bg-secondary);
   border: 1px solid var(--border);
-}
-
-.tab-btn {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-}
-
-.tab-btn.active {
-  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
-  border-color: var(--accent);
 }
 
 /* Hover effects */
 button:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-accent-md);
+  box-shadow: var(--btn-shadow-hover);
   filter: brightness(1.1);
 }
 
 button:active {
   transform: translateY(1px);
-  box-shadow: var(--shadow-accent-sm);
+  box-shadow: var(--btn-shadow);
   filter: brightness(0.95);
+  transition: transform 0.1s ease;
 }
 
 /* Icon animations */
 button i,
 button svg {
-  transition: transform var(--transition-normal);
+  transition: transform 0.25s ease;
   font-size: 1.1em;
 }
 
@@ -86,23 +85,37 @@ button:hover svg {
 
 /* Special button styles */
 button#compile {
-  background: linear-gradient(45deg, #4caf50, #66bb6a);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.5);
+  --btn-bg: linear-gradient(45deg, #4caf50, #66bb6a);
+  --btn-shadow: 0 2px 8px rgba(76, 175, 80, 0.5);
+  --btn-shadow-hover: 0 4px 12px rgba(76, 175, 80, 0.7);
 }
 
 button#compile:hover {
   background: linear-gradient(45deg, #66bb6a, #81c784);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.7);
+  box-shadow: var(--btn-shadow-hover);
 }
 
 button#closeOutput {
-  background: linear-gradient(45deg, #993333, #cc4d4d);
-  box-shadow: 0 2px 8px rgba(153, 51, 51, 0.5);
+  --btn-bg: linear-gradient(45deg, #993333, #cc4d4d);
+  --btn-shadow: 0 2px 8px rgba(153, 51, 51, 0.5);
+  --btn-shadow-hover: 0 4px 12px rgba(153, 51, 51, 0.7);
 }
 
 button#closeOutput:hover {
   background: linear-gradient(45deg, #b33c3c, #e65c5c);
-  box-shadow: 0 4px 12px rgba(153, 51, 51, 0.7);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+/* Zen Mode button styles */
+button#zenMode {
+  --btn-bg: linear-gradient(45deg, #3949ab, #5c6bc0);
+  --btn-shadow: 0 2px 8px rgba(57, 73, 171, 0.5);
+  --btn-shadow-hover: 0 4px 12px rgba(57, 73, 171, 0.7);
+}
+
+button#zenMode:hover {
+  background: linear-gradient(45deg, #5c6bc0, #7986cb);
+  box-shadow: var(--btn-shadow-hover);
 }
 
 /* Loading animation for buttons */
@@ -172,9 +185,9 @@ button:disabled {
   right: 0;
   bottom: 0;
   background-color: var(--bg-primary);
-  transition: 0.3s;
   border-radius: var(--radius-lg);
   border: 2px solid var(--border);
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .slider:before {
@@ -185,8 +198,8 @@ button:disabled {
   left: 3px;
   bottom: 1.5px;
   background-color: var(--text-primary);
-  transition: 0.3s;
   border-radius: 50%;
+  transition: transform 0.3s, background-color 0.3s, box-shadow 0.3s;
 }
 
 input:checked + .slider {
@@ -203,6 +216,9 @@ input:checked + .slider:before {
 #toggle-shortcuts,
 #learn-btn,
 .dropdown-btn {
+  --special-btn-shadow: var(--shadow-sm);
+  --special-btn-shadow-hover: var(--shadow-accent-md);
+
   background: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border);
@@ -210,14 +226,15 @@ input:checked + .slider:before {
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--font-sm);
-  transition: all var(--transition-normal);
   display: flex;
   align-items: center;
   gap: 6px;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--special-btn-shadow);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.25s ease, border-color 0.25s ease,
+    background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 #toggle-shortcuts:hover,
@@ -226,7 +243,7 @@ input:checked + .slider:before {
   border-color: var(--accent);
   background-color: rgba(var(--accent-rgb), 0.1);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-accent-md);
+  box-shadow: var(--special-btn-shadow-hover);
 }
 
 #toggle-shortcuts::before,
@@ -234,10 +251,7 @@ input:checked + .slider:before {
 .dropdown-btn::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0.1),
@@ -247,16 +261,4 @@ input:checked + .slider:before {
   );
   pointer-events: none;
   border-radius: inherit;
-}
-
-/* Animation for fade-in effects */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }

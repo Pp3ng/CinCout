@@ -6,7 +6,6 @@ class LayoutManager {
   // State (will be converted to React's useState)
   state: PanelState = {
     isOutputVisible: false,
-    activeTab: "output",
   };
 
   // DOM element references (will be converted to React's useRef)
@@ -14,10 +13,7 @@ class LayoutManager {
     outputPanel: null as HTMLElement | null,
     editorPanel: null as HTMLElement | null,
     closeOutputBtn: null as HTMLElement | null,
-    outputTab: null as HTMLElement | null,
-    assemblyTab: null as HTMLElement | null,
     outputContent: null as HTMLElement | null,
-    assemblyContent: null as HTMLElement | null,
     actionButtons: [] as HTMLElement[],
   };
 
@@ -34,10 +30,7 @@ class LayoutManager {
       outputPanel: document.getElementById("outputPanel"),
       editorPanel: document.querySelector(".editor-panel"),
       closeOutputBtn: document.getElementById("closeOutput"),
-      outputTab: document.getElementById("outputTab"),
-      assemblyTab: document.getElementById("assemblyTab"),
       outputContent: document.getElementById("output"),
-      assemblyContent: document.getElementById("assembly"),
       actionButtons: Array.from(
         document.querySelectorAll(
           "#compile, #viewAssembly, #styleCheck, #memcheck"
@@ -59,24 +52,10 @@ class LayoutManager {
         "click",
         () => {
           this.handleRunningProcess();
-          this.setState({
-            isOutputVisible: true,
-            activeTab: button.id === "viewAssembly" ? "assembly" : "output",
-          });
+          this.setState({ isOutputVisible: true });
         },
         true
       );
-    });
-
-    // Tab switching
-    this.elements.outputTab?.addEventListener("click", () => {
-      if (this.state.activeTab === "assembly") this.handleRunningProcess();
-      this.setState({ activeTab: "output" });
-    });
-
-    this.elements.assemblyTab?.addEventListener("click", () => {
-      if (this.state.activeTab === "output") this.handleRunningProcess();
-      this.setState({ activeTab: "assembly" });
     });
   }
 
@@ -88,33 +67,13 @@ class LayoutManager {
 
   // Render UI (will be converted to React's render method)
   render(): void {
-    const { isOutputVisible, activeTab } = this.state;
+    const { isOutputVisible } = this.state;
     const elements = this.elements;
 
     // Output panel visibility
     if (elements.outputPanel && elements.editorPanel) {
       elements.outputPanel.style.display = isOutputVisible ? "flex" : "none";
       elements.editorPanel.classList.toggle("with-output", isOutputVisible);
-    }
-
-    // Active tab
-    if (elements.outputTab && elements.assemblyTab) {
-      const isOutputActive = activeTab === "output";
-      elements.outputTab.classList.toggle("active", isOutputActive);
-      elements.assemblyTab.classList.toggle("active", !isOutputActive);
-
-      // Clear output content when switching to output tab
-      if (isOutputActive && elements.outputContent) {
-        elements.outputContent.innerHTML = "";
-      }
-    }
-
-    // Content visibility
-    if (elements.outputContent && elements.assemblyContent) {
-      elements.outputContent.style.display =
-        activeTab === "output" ? "block" : "none";
-      elements.assemblyContent.style.display =
-        activeTab === "assembly" ? "block" : "none";
     }
 
     // Refresh editors after UI changes
@@ -126,11 +85,6 @@ class LayoutManager {
     // Main editor refresh
     if (window.editor) {
       window.editor.refresh();
-    }
-
-    // Assembly view refresh (only when visible)
-    if (this.state.activeTab === "assembly" && window.assemblyView) {
-      window.assemblyView.refresh();
     }
   };
 

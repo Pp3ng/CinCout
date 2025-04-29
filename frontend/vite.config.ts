@@ -5,7 +5,6 @@ export default defineConfig({
   // Base public path
   base: "./",
 
-
   // Build options
   build: {
     outDir: "dist",
@@ -22,7 +21,6 @@ export default defineConfig({
             "@xterm/xterm",
             "@xterm/addon-fit",
             "html2canvas",
-            "@fortawesome/fontawesome-free",
           ],
           editor: ["./ts/editor.ts", "./ts/themes.ts"],
           handlers: ["./ts/handlers.ts", "./ts/websocket.ts"],

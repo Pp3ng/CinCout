@@ -107,12 +107,22 @@ class TerminalManager {
       const rows = this.terminal.rows;
 
       // Send resize event to server if connected and running
+      // Use a more robust check with additional debouncing for disconnection scenarios
       if (socketManager.isConnected() && socketManager.isProcessRunning()) {
-        socketManager
-          .emit(SocketEvents.RESIZE, { cols, rows })
-          .catch((error) => {
-            console.error("Error sending resize event:", error);
-          });
+        // Add a small delay to avoid resize events during connection transitions
+        setTimeout(() => {
+          // Double-check connection is still active before sending
+          if (socketManager.isConnected() && socketManager.isProcessRunning()) {
+            socketManager
+              .emit(SocketEvents.RESIZE, { cols, rows })
+              .catch((error) => {
+                // Only log serious errors, not disconnection-related ones
+                if (error.message && !error.message.includes("disconnect")) {
+                  console.error("Error sending resize event:", error);
+                }
+              });
+          }
+        }, 50);
       }
     } catch (e) {
       console.error("Error fitting terminal:", e);
@@ -273,15 +283,16 @@ class TerminalManager {
     // Add styled message based on exit code
     if (isSuccess) {
       // Success message with exact green color
-      exitMessage += `\x1b[38;2;85;219;190m[Program completed successfully with code: ${code}]\x1b[0m`;
+      exitMessage += `\x1b[38;2;85;219;190m[Program successfully exited with code: ${code}]\x1b[0m`;
     } else {
-      // For non-zero exit codes, use exact yellow color
       if (code > 128) {
         // For signals/crashes (codes > 128), use red
-        exitMessage += `\x1b[31m[Program exited with code: ${code}]\x1b[0m`;
+        exitMessage += `\x1b[31m[Program exited with code: ${code}`;
+        exitMessage += `, may have crashed (signal ${code - 128})]\x1b[0m`;
       } else {
         // For other non-zero exit codes, use exact yellow color #e6cd69
-        exitMessage += `\x1b[38;2;230;205;105m[Program exited with code: ${code}]\x1b[0m`;
+        exitMessage += `\x1b[38;2;230;205;105m[Program exited with code: ${code}`;
+        exitMessage += `, may have errors]\x1b[0m`;
       }
     }
 

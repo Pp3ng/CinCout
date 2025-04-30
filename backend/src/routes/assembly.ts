@@ -1,23 +1,27 @@
 /**
  * Assembly code generation route
  */
-import express, { Request, Response } from "express";
-import { asyncRouteHandler } from "../utils/routeHandler";
+import Router from "koa-router";
+import { Context } from "koa";
+import { koaHandler } from "../utils/routeHandler";
 import { AssemblyRequest } from "../types";
 import {
   createCompilationEnvironment,
   generateAssembly,
 } from "../utils/compilationService";
 
-const router = express.Router();
+const router = new Router();
 
 router.post(
   "/",
-  asyncRouteHandler(async (req: Request, res: Response) => {
-    const { code, lang, compiler, optimization } = req.body as AssemblyRequest;
+  koaHandler(async (ctx: Context) => {
+    const { code, lang, compiler, optimization } = ctx.request
+      .body as AssemblyRequest;
 
     if (!code) {
-      return res.status(400).send("No code provided");
+      ctx.status = 400;
+      ctx.body = "No code provided";
+      return;
     }
 
     // Create environment and generate assembly
@@ -33,9 +37,10 @@ router.post(
 
     // Return assembly or error
     if (result.success && result.assembly) {
-      res.send(result.assembly);
+      ctx.body = result.assembly;
     } else {
-      res.status(500).send(result.error || "Unknown error generating assembly");
+      ctx.status = 500;
+      ctx.body = result.error || "Unknown error generating assembly";
     }
   })
 );

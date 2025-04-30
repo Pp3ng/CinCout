@@ -218,22 +218,36 @@ export const resizeTerminal = (
   rows: number
 ): boolean => {
   const session = activeSessions.get(sessionId);
-  if (session && session.pty) {
-    try {
-      // Update terminal dimensions
-      session.pty.resize(cols, rows);
-
-      // Update session dimensions
-      session.dimensions = { cols, rows };
-
-      // Update session activity
-      updateSessionActivity(sessionId);
-      return true;
-    } catch (e) {
-      console.error(`Error resizing terminal for session ${sessionId}:`, e);
-    }
+  if (!session) {
+    // Session not found - likely already terminated
+    console.debug(
+      `Cannot resize terminal for session ${sessionId}: session not found`
+    );
+    return false;
   }
-  return false;
+
+  if (!session.pty) {
+    // Session exists but no PTY attached
+    console.debug(
+      `Cannot resize terminal for session ${sessionId}: no PTY instance`
+    );
+    return false;
+  }
+
+  try {
+    // Update terminal dimensions
+    session.pty.resize(cols, rows);
+
+    // Update session dimensions
+    session.dimensions = { cols, rows };
+
+    // Update session activity
+    updateSessionActivity(sessionId);
+    return true;
+  } catch (e) {
+    console.error(`Error resizing terminal for session ${sessionId}:`, e);
+    return false;
+  }
 };
 
 /**

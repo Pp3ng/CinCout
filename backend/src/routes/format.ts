@@ -1,25 +1,27 @@
 /**
  * Code formatting router
  */
-import express, { Request, Response } from "express";
+import Router from "koa-router";
+import { Context } from "koa";
 import { formatCode } from "../utils/compilationService";
-import { asyncRouteHandler } from "../utils/routeHandler";
+import { koaHandler } from "../utils/routeHandler";
 import { FormatRequest } from "../types";
 
-const router = express.Router();
+const router = new Router();
 
 router.post(
   "/",
-  asyncRouteHandler(async (req: Request, res: Response) => {
-    const { code } = req.body as FormatRequest;
+  koaHandler(async (ctx: Context) => {
+    const { code } = ctx.request.body as FormatRequest;
 
     // Format code using the centralized service
     const result = await formatCode(code, "WebKit");
 
     if (result.success) {
-      res.send(result.formattedCode);
+      ctx.body = result.formattedCode;
     } else {
-      res.status(500).send(`Formatting Error: ${result.error}`);
+      ctx.status = 500;
+      ctx.body = `Formatting Error: ${result.error}`;
     }
   })
 );

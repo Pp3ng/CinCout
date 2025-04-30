@@ -1,14 +1,18 @@
 import cluster from "cluster";
 import os from "os";
-import express, { Request, Response } from "express";
-import bodyParser from "body-parser";
-import cors from "cors";
+import Koa from "koa";
+import Router from "koa-router";
+import bodyParser from "koa-bodyparser";
+import cors from "@koa/cors";
 import path from "path";
 import http from "http";
-import rateLimit from "express-rate-limit";
-import compression from "compression";
-import morgan from "morgan";
-import helmet from "helmet";
+import ratelimit from "koa-ratelimit";
+import compress from "koa-compress";
+import logger from "koa-logger";
+import helmet from "koa-helmet";
+import serve from "koa-static";
+import zlib from "zlib";
+import { Context } from "koa";
 
 // Routes & WebSockets
 import { setupCompileSocketHandlers } from "./ws/compile";
@@ -32,48 +36,43 @@ if (cluster.isPrimary) {
     cluster.fork();
   }
   cluster.on("exit", (worker, _code, _signal) => {
-    // resart worker if it dies
+    // restart worker if it dies
     console.warn(`Worker ${worker.process.pid} died, forking a new one`);
     cluster.fork();
   });
 } else {
   // Worker processes start here
-  const app = express();
+  const app = new Koa();
 
-  // Custom log format
+  app.use(logger());
+
+  // Compression middleware
   app.use(
-    morgan(
-      ':remote-addr - [:date[clf]] ":method :url HTTP/:http-version" ' +
-        ':status :res[content-length] ":referrer" ":user-agent"'
-    )
+    compress({
+      filter: (content_type: string) => {
+        return /text|javascript|json/i.test(content_type);
+      },
+      threshold: 1024, // Only compress if above threshold
+      br: {
+        params: {
+          [zlib.constants.BROTLI_PARAM_QUALITY]: 5,
+        },
+      },
+      gzip: {
+        level: 6,
+      },
+    })
   );
 
-  app.use(
-    compression({
-      filter: (req, res) => {
-        if (
-          res.getHeader("Content-Length") &&
-          parseInt(res.getHeader("Content-Length") as string) < 1024
-        ) {
-          return false;
-        }
-        return compression.filter(req, res);
-      },
-      brotli: {
-        enabled: true,
-        params: { [require("zlib").constants.BROTLI_PARAM_QUALITY]: 5 },
-      },
-      level: 6,
-    })
-  ); // Response compression
-
+  // CORS middleware
   app.use(cors());
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
 
+  // Body parser
+  app.use(bodyParser());
+
+  // Security middleware
   app.use(
     helmet({
-      // Disable content security policy (i don't know why it doesn't allow loading my own scripts)
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: false,
@@ -81,41 +80,39 @@ if (cluster.isPrimary) {
     })
   );
 
-  // Global rate limiting
-  const apiLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 30, // limit each IP to 30 requests per windowMs
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    message: "Too many requests, please try again later.",
-    handler: (req: Request, res: Response) => {
-      morgan(`Rate limit exceeded for IP: ${req.ip}`)(req, res, () => {});
-      res.status(429).json({ error: "Rate limit exceeded" });
-    },
-  });
-  app.use("/api/", apiLimiter);
-
-  // Static files
+  // Rate limiter using Redis or Memory
+  const db = new Map();
   app.use(
-    express.static(path.join(__dirname, "../../frontend/dist"), {
-      etag: true, // enable ETag
-      lastModified: true, // verify last modified
-      maxAge: "1d", // 1 day
-      index: "index.html", // default file
-      setHeaders: (res, path) => {
-        // Set custom headers for specific file types
-        if (
-          path.endsWith(".js") ||
-          path.endsWith(".css") ||
-          path.endsWith(".woff2")
-        ) {
-          res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day
+    ratelimit({
+      driver: "memory",
+      db: db,
+      duration: 60 * 1000, // 1 minute
+      max: 30, // limit each IP to 30 requests per duration
+      errorMessage: "Rate limit exceeded", // Changed from object to string
+      id: (ctx: Context) => ctx.ip,
+      whitelist: (_ctx: Context) => {
+        // Optional whitelist function
+        return false;
+      },
+      disableHeader: false,
+    })
+  );
+
+  // Static files - koa-static middleware
+  app.use(
+    serve(path.join(__dirname, "../../frontend/dist"), {
+      maxage: 86400000, // 1 day in milliseconds
+      index: "index.html",
+      setHeaders: (res: any, filepath: string) => {
+        if (filepath.endsWith(".js") || filepath.endsWith(".css")) {
+          res.setHeader("Cache-Control", "public, max-age=86400");
         }
       },
     })
   );
 
-  const server = http.createServer(app);
+  // Create HTTP server
+  const server = http.createServer(app.callback());
 
   // Enhance HTTP Server
   server.keepAliveTimeout = 61 * 1000; // Client Keep-Alive timeout
@@ -124,18 +121,45 @@ if (cluster.isPrimary) {
   // Initialize session service
   initSessionService();
 
-  // Setup Socket.IO handlers (passing the HTTP server instead of creating a WebSocketServer)
+  // Setup Socket.IO handlers
   setupCompileSocketHandlers(server);
 
-  // Mount routes
-  app.use("/api/format", formatRouter);
-  app.use("/api/styleCheck", styleCheckRouter);
-  app.use("/api/templates", templatesRouter);
-  app.use("/api/assembly", assemblyRouter);
-  app.use("/api/memcheck", memcheckRouter);
+  // Set up main router
+  const router = new Router({ prefix: "/api" });
+
+  // Mount sub-routers
+  router.use("/format", formatRouter.routes(), formatRouter.allowedMethods());
+  router.use(
+    "/styleCheck",
+    styleCheckRouter.routes(),
+    styleCheckRouter.allowedMethods()
+  );
+  router.use(
+    "/templates",
+    templatesRouter.routes(),
+    templatesRouter.allowedMethods()
+  );
+  router.use(
+    "/assembly",
+    assemblyRouter.routes(),
+    assemblyRouter.allowedMethods()
+  );
+  router.use(
+    "/memcheck",
+    memcheckRouter.routes(),
+    memcheckRouter.allowedMethods()
+  );
+
+  // Use the router middleware
+  app.use(router.routes()).use(router.allowedMethods());
+
+  // Error handler
+  app.on("error", (err, ctx) => {
+    console.error("Server error", err, ctx);
+  });
 
   // Start server
-  server.listen(port, /* backlog */ 1024, () => {
+  server.listen(port, 1024, () => {
     console.log(`Worker ${process.pid} listening on port ${port}`);
   });
 }

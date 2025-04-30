@@ -1,26 +1,30 @@
 /**
- * Route handler utilities for common patterns in route implementations
+ * Koa Route Handlers
+ * Provides utility functions for route handling in Koa
  */
-import { Request, Response, NextFunction } from "express";
+import { Context, Next } from "koa";
 
 /**
- * Generic async route handler to reduce boilerplate and standardize error handling
- * @param fn - The route handler function to wrap
- * @returns A middleware function that handles errors
+ * Creates a middleware function that handles errors in async routes
+ * @param {Function} handler - Async function to wrap
+ * @returns {Function} Koa middleware function
  */
-export const asyncRouteHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const koaHandler = (handler: (ctx: Context) => Promise<void>) => {
+  return async (ctx: Context, _next: Next) => {
     try {
-      await fn(req, res, next);
-    } catch (error) {
-      console.error(`Route error:`, error);
-      const errorMessage = (error as Error).message || String(error);
-      res.status(500).json({
+      await handler(ctx);
+    } catch (error: any) {
+      ctx.status = error.status || 500;
+      ctx.body = {
         success: false,
-        error: `An error occurred: ${errorMessage}`,
-      });
+        error: error.message || "An unexpected error occurred",
+      };
+
+      // Log the error
+      console.error("Route error:", error);
+
+      // Emit the error to app-level error handler
+      ctx.app.emit("error", error, ctx);
     }
   };
 };

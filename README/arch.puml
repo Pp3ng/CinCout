@@ -55,7 +55,7 @@ rectangle "Frontend (UI)" {
 
 ' Define Backend layer
 rectangle "Backend (Server)" {
-  component "Express Server" as Express
+  component "Koa Server" as Koa
   component "WebSocket Server" as WSServer
   component "Socket.IO" as SocketIO
   
@@ -141,16 +141,16 @@ SnapshotAction --> Display : Generates image
 
 ' Frontend to Backend communication
 WSClient <--> SocketIO : WebSocket connection
-HTTPClient <--> Express : HTTP/RESTful API
+HTTPClient <--> Koa : HTTP/RESTful API
 SocketIO --> WSServer : Integrated with
 
 ' Backend routing
-Express --> RouteHandler : Processes HTTP requests
-Express --> MemcheckAPI : Routes to
-Express --> FormatAPI : Routes to
-Express --> StyleAPI : Routes to
-Express --> AssemblyAPI : Routes to
-Express --> TemplatesAPI : Routes to
+Koa --> RouteHandler : Processes HTTP requests
+Koa --> MemcheckAPI : Routes to
+Koa --> FormatAPI : Routes to
+Koa --> StyleAPI : Routes to
+Koa --> AssemblyAPI : Routes to
+Koa --> TemplatesAPI : Routes to
 WSServer --> WSHandler : Routes WebSocket messages
 
 ' WebSocket handler to services
@@ -158,7 +158,7 @@ WSHandler --> CompileService : Invokes for compilation
 WSHandler --> PTYService : For interactive execution
 WSHandler --> SessionMgr : Manages sessions
 
-' Express API routes to Services calls
+' KOA API routes to Services calls
 MemcheckAPI --> MemcheckService : Invokes
 FormatAPI --> FormatService : Invokes
 StyleAPI --> StyleService : Invokes

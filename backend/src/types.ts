@@ -1,10 +1,12 @@
 /**
  * Centralized Type Definitions for the CinCout Backend
  * This file contains all common types used across the backend
+ * Updated for Koa compatibility
  */
 import * as pty from "node-pty";
 import { DirResult } from "tmp";
 import { Socket } from "socket.io";
+import { Context } from "koa";
 
 // ==========================================
 // Server & API Types
@@ -27,6 +29,15 @@ export interface CodeRequest {
   lang: string;
   compiler?: string;
   optimization?: string;
+}
+
+/**
+ * Koa extended context with typed request body
+ */
+export interface KoaRequestContext<T = any> extends Context {
+  request: Context["request"] & {
+    body: T;
+  };
 }
 
 // ==========================================

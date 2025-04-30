@@ -1,21 +1,25 @@
 /**
  * Memory check router
  */
-import express, { Request, Response } from "express";
+import Router from "koa-router";
+import { Context } from "koa";
 import { runMemoryCheck } from "../utils/compilationService";
-import { asyncRouteHandler } from "../utils/routeHandler";
+import { koaHandler } from "../utils/routeHandler";
 import { createCompilationEnvironment } from "../utils/compilationService";
 import { MemcheckRequest } from "../types";
 
-const router = express.Router();
+const router = new Router();
 
 router.post(
   "/",
-  asyncRouteHandler(async (req: Request, res: Response) => {
-    const { code, lang, compiler, optimization } = req.body as MemcheckRequest;
+  koaHandler(async (ctx: Context) => {
+    const { code, lang, compiler, optimization } = ctx.request
+      .body as MemcheckRequest;
 
     if (!code) {
-      return res.status(400).send("No code provided");
+      ctx.status = 400;
+      ctx.body = "No code provided";
+      return;
     }
 
     // Create environment for memory check
@@ -33,9 +37,10 @@ router.post(
       env.tmpDir.removeCallback();
 
       if (result.success) {
-        res.send(result.report);
+        ctx.body = result.report;
       } else {
-        res.status(500).send(`Memory check error: ${result.error}`);
+        ctx.status = 500;
+        ctx.body = `Memory check error: ${result.error}`;
       }
     } catch (error) {
       // Ensure cleanup on error

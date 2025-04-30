@@ -1,9 +1,10 @@
-import express from "express";
+import Router from "koa-router";
+import { Context } from "koa";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { asyncRouteHandler } from "../utils/routeHandler";
+import { koaHandler } from "../utils/routeHandler";
 
-const router = express.Router();
+const router = new Router();
 
 const TEMPLATES_DIR = path.join(__dirname, "../templates");
 const templateCache: Record<string, string> = {};
@@ -12,12 +13,13 @@ const templateListsCache: Record<string, string[]> = {};
 // Get all templates for a specific language
 router.get(
   "/:language/list",
-  asyncRouteHandler(async (req, res) => {
-    const language = req.params.language;
+  koaHandler(async (ctx: Context) => {
+    const language = ctx.params.language;
 
     // Return from cache if available
     if (templateListsCache[language]) {
-      return res.json(templateListsCache[language]);
+      ctx.body = templateListsCache[language];
+      return;
     }
 
     try {
@@ -30,18 +32,19 @@ router.get(
       );
 
       if (templateNames.length === 0) {
-        return res
-          .status(404)
-          .json({ error: `No templates found for language: ${language}` });
+        ctx.status = 404;
+        ctx.body = { error: `No templates found for language: ${language}` };
+        return;
       }
 
       // Update cache and return
       templateListsCache[language] = templateNames;
-      return res.json(templateNames);
+      ctx.body = templateNames;
     } catch (error) {
-      return res.status(404).json({
+      ctx.status = 404;
+      ctx.body = {
         error: `Language '${language}' not supported or has no templates`,
-      });
+      };
     }
   })
 );
@@ -49,13 +52,14 @@ router.get(
 // Get template content for a specific language and template name
 router.get(
   "/:language/:templateName",
-  asyncRouteHandler(async (req, res) => {
-    const { language, templateName } = req.params;
+  koaHandler(async (ctx: Context) => {
+    const { language, templateName } = ctx.params;
     const cacheKey = `${language}:${templateName}`;
 
     // Return from cache if available
     if (templateCache[cacheKey]) {
-      return res.json({ content: templateCache[cacheKey] });
+      ctx.body = { content: templateCache[cacheKey] };
+      return;
     }
 
     try {
@@ -68,9 +72,11 @@ router.get(
       );
 
       if (!templateFile) {
-        return res.status(404).json({
+        ctx.status = 404;
+        ctx.body = {
           error: `Template '${templateName}' not found for language '${language}'`,
-        });
+        };
+        return;
       }
 
       // Read template content
@@ -81,11 +87,12 @@ router.get(
 
       // Update cache and return
       templateCache[cacheKey] = content;
-      return res.json({ content });
+      ctx.body = { content };
     } catch (error) {
-      return res.status(404).json({
+      ctx.status = 404;
+      ctx.body = {
         error: `Template not found or language '${language}' not supported`,
-      });
+      };
     }
   })
 );

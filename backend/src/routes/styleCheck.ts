@@ -1,29 +1,33 @@
 /**
  * Style check router
  */
-import express, { Request, Response } from "express";
+import Router from "koa-router";
+import { Context } from "koa";
 import { runStyleCheck } from "../utils/compilationService";
-import { asyncRouteHandler } from "../utils/routeHandler";
+import { koaHandler } from "../utils/routeHandler";
 import { StyleCheckRequest } from "../types";
 
-const router = express.Router();
+const router = new Router();
 
 router.post(
   "/",
-  asyncRouteHandler(async (req: Request, res: Response) => {
-    const { code } = req.body as StyleCheckRequest;
+  koaHandler(async (ctx: Context) => {
+    const { code } = ctx.request.body as StyleCheckRequest;
 
     if (!code) {
-      return res.status(400).send("No code provided");
+      ctx.status = 400;
+      ctx.body = "No code provided";
+      return;
     }
 
     // Run style check
     const result = await runStyleCheck(code);
 
     if (result.success) {
-      res.send(result.report);
+      ctx.body = result.report;
     } else {
-      res.status(500).send(`Style check error: ${result.error}`);
+      ctx.status = 500;
+      ctx.body = `Style check error: ${result.error}`;
     }
   })
 );

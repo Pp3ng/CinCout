@@ -29,8 +29,11 @@ export enum SocketEvents {
   ERROR = "error",
 }
 
-// Socket manager class
-class SocketManager {
+/**
+ * WebSocketManager class for frontend
+ * Mirrors the backend WebSocketManager structure
+ */
+export class WebSocketManager {
   private socket: Socket | null = null;
   private sessionId: string | null = null;
   private eventHandlers: Map<string, Set<(data: any) => void>> = new Map();
@@ -197,6 +200,14 @@ class SocketManager {
   getSessionId(): string | null {
     return this.sessionId;
   }
+  
+  /**
+   * Set session ID
+   * @param {string} id - Session ID
+   */
+  setSessionId(id: string): void {
+    this.sessionId = id;
+  }
 
   /**
    * Get compilation state
@@ -213,10 +224,37 @@ class SocketManager {
   isProcessRunning(): boolean {
     return this.compilationState !== CompilationState.IDLE;
   }
+  
+  /**
+   * Set process running state - updates compilation state
+   * @param {boolean} running - Whether a process is running
+   */
+  setProcessRunning(running: boolean): void {
+    this.compilationState = running ? CompilationState.RUNNING : CompilationState.IDLE;
+  }
+  
+  /**
+   * Send input to the running program
+   * @param {string} input - Input to send
+   * @returns {Promise<void>}
+   */
+  sendInput(input: string): Promise<void> {
+    return this.emit(SocketEvents.INPUT, { input });
+  }
+  
+  /**
+   * Resize the terminal
+   * @param {number} cols - Number of columns
+   * @param {number} rows - Number of rows
+   * @returns {Promise<void>}
+   */
+  resizeTerminal(cols: number, rows: number): Promise<void> {
+    return this.emit(SocketEvents.RESIZE, { cols, rows });
+  }
 }
 
 // Create singleton instance
-export const socketManager = new SocketManager();
+export const socketManager = new WebSocketManager();
 
 // Export as window global for legacy support
 (window as any).CinCoutSocket = socketManager;

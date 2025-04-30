@@ -7,6 +7,7 @@ import { socketManager, SocketEvents } from "./websocket";
 
 /**
  * CompileSocketManager handles the Socket.IO communication for code compilation
+ * Mirrors the backend CompileWebSocketHandler structure
  */
 export class CompileSocketManager {
   private stateUpdater: CompileStateUpdater;
@@ -148,6 +149,31 @@ export class CompileSocketManager {
       } catch (e) {
         console.error("Error disconnecting after failure:", e);
       }
+    }
+  }
+
+  /**
+   * Send input to the running program
+   * @param input Input to send
+   */
+  async sendInput(input: string): Promise<void> {
+    try {
+      await socketManager.sendInput(input);
+    } catch (error) {
+      console.error("Failed to send input:", error);
+    }
+  }
+
+  /**
+   * Resize the terminal
+   * @param cols Number of columns
+   * @param rows Number of rows
+   */
+  async resizeTerminal(cols: number, rows: number): Promise<void> {
+    try {
+      await socketManager.resizeTerminal(cols, rows);
+    } catch (error) {
+      console.error("Failed to resize terminal:", error);
     }
   }
 

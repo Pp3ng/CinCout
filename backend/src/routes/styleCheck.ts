@@ -1,33 +1,39 @@
 /**
  * Style check router
+ * Handles static code analysis using cppcheck
  */
 import Router from "koa-router";
-import { Context } from "koa";
-import { runStyleCheck } from "../utils/compilationService";
 import { koaHandler } from "../utils/routeHandler";
-import { StyleCheckRequest } from "../types";
+import { compilationService } from "../utils/compilationService";
+import { 
+  AppError,
+  StyleCheckRequest
+} from "../types";
 
 const router = new Router();
 
+/**
+ * POST /api/styleCheck
+ * Runs static code analysis on provided code
+ */
 router.post(
   "/",
-  koaHandler(async (ctx: Context) => {
-    const { code } = ctx.request.body as StyleCheckRequest;
+  koaHandler<StyleCheckRequest>(async (ctx) => {
+    const { code } = ctx.request.body;
 
+    // Validate request
     if (!code) {
-      ctx.status = 400;
-      ctx.body = "No code provided";
-      return;
+      throw new AppError("No code provided", 400);
     }
 
     // Run style check
-    const result = await runStyleCheck(code);
+    const result = await compilationService.runStyleCheck(code);
 
     if (result.success) {
+      // Return formatted report
       ctx.body = result.report;
     } else {
-      ctx.status = 500;
-      ctx.body = `Style check error: ${result.error}`;
+      throw new AppError(`Style check error: ${result.error}`, 500);
     }
   })
 );

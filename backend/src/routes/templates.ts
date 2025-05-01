@@ -1,98 +1,128 @@
+/**
+ * Templates router
+ * Handles code templates access
+ */
 import Router from "koa-router";
-import { Context } from "koa";
-import * as fs from "fs/promises";
-import * as path from "path";
+import fs from "fs-extra";
+import path from "path";
 import { koaHandler } from "../utils/routeHandler";
+import { AppError } from "../types";
 
 const router = new Router();
+const templatesDir = path.join(__dirname, "../templates");
+const templateCache: Record<string, { list: string[]; templates: Record<string, string> }> = {};
 
-const TEMPLATES_DIR = path.join(__dirname, "../templates");
-const templateCache: Record<string, string> = {};
-const templateListsCache: Record<string, string[]> = {};
+/**
+ * Load template list for a specific language
+ */
+async function loadTemplateList(lang: string): Promise<string[]> {
+  // Check if templates are already cached
+  if (lang in templateCache && templateCache[lang]) {
+    return templateCache[lang].list;
+  }
 
-// Get all templates for a specific language
-router.get(
-  "/:language/list",
-  koaHandler(async (ctx: Context) => {
-    const language = ctx.params.language;
-
-    // Return from cache if available
-    if (templateListsCache[language]) {
-      ctx.body = templateListsCache[language];
-      return;
+  const langDir = path.join(templatesDir, lang);
+  try {
+    // Check if directory exists
+    if (!fs.existsSync(langDir)) {
+      throw new Error(`Template directory for ${lang} not found`);
     }
 
+    // Read all template files and extract names
+    const files = await fs.readdir(langDir);
+    const templateNames = files
+      .filter(file => file.endsWith(".c") || file.endsWith(".cpp"))
+      .map(file => file.replace(/\.[^.]+$/, ""));
+    
+    // Initialize cache entry if needed
+    if (!templateCache[lang]) {
+      templateCache[lang] = { list: templateNames, templates: {} };
+    } else {
+      templateCache[lang].list = templateNames;
+    }
+    
+    return templateNames;
+  } catch (error) {
+    console.error(`Error loading template list for ${lang}:`, error);
+    throw new AppError(`Failed to load template list for ${lang}`, 500);
+  }
+}
+
+/**
+ * Load a specific template content
+ */
+async function loadTemplateContent(lang: string, templateName: string): Promise<string> {
+  // Check if template is already cached
+  if (templateCache[lang]?.templates[templateName]) {
+    return templateCache[lang].templates[templateName];
+  }
+  
+  // Ensure template list is loaded
+  if (!templateCache[lang]) {
+    await loadTemplateList(lang);
+  }
+
+  const langDir = path.join(templatesDir, lang);
+  let fileName = `${templateName}.${lang === 'cpp' ? 'cpp' : 'c'}`;
+  let filePath = path.join(langDir, fileName);
+  
+  try {
+    // Read template content
+    const content = await fs.readFile(filePath, "utf8");
+    
+    // Cache the content
+    templateCache[lang].templates[templateName] = content;
+    
+    return content;
+  } catch (error) {
+    console.error(`Error loading template content for ${templateName} (${lang}):`, error);
+    throw new AppError(`Failed to load template '${templateName}' for ${lang}`, 500);
+  }
+}
+
+/**
+ * Returns list of templates for a specified language
+ */
+router.get(
+  "/:lang",
+  koaHandler<any>(async (ctx) => {
+    const { lang } = ctx.params;
+    
+    // Validate language
+    if (lang !== "c" && lang !== "cpp") {
+      throw new AppError(`Unsupported language: ${lang}`, 400);
+    }
+    
     try {
-      const langPath = path.join(TEMPLATES_DIR, language);
-      await fs.access(langPath); // Check if language directory exists
-
-      const files = await fs.readdir(langPath);
-      const templateNames = files.map((file) =>
-        path.basename(file, path.extname(file))
-      );
-
-      if (templateNames.length === 0) {
-        ctx.status = 404;
-        ctx.body = { error: `No templates found for language: ${language}` };
-        return;
-      }
-
-      // Update cache and return
-      templateListsCache[language] = templateNames;
-      ctx.body = templateNames;
+      // Load template list
+      const templateNames = await loadTemplateList(lang);
+      ctx.body = { list: templateNames };
     } catch (error) {
-      ctx.status = 404;
-      ctx.body = {
-        error: `Language '${language}' not supported or has no templates`,
-      };
+      throw error; // Will be handled by koaHandler
     }
   })
 );
 
-// Get template content for a specific language and template name
+/**
+ * GET /api/templates/:lang/:template
+ * Returns content of a specific template
+ */
 router.get(
-  "/:language/:templateName",
-  koaHandler(async (ctx: Context) => {
-    const { language, templateName } = ctx.params;
-    const cacheKey = `${language}:${templateName}`;
-
-    // Return from cache if available
-    if (templateCache[cacheKey]) {
-      ctx.body = { content: templateCache[cacheKey] };
-      return;
+  "/:lang/:template",
+  koaHandler<any>(async (ctx) => {
+    const { lang, template } = ctx.params;
+    
+    // Validate language
+    if (lang !== "c" && lang !== "cpp") {
+      throw new AppError(`Unsupported language: ${lang}`, 400);
     }
-
+    
     try {
-      const langPath = path.join(TEMPLATES_DIR, language);
-      await fs.access(langPath); // Check if language directory exists
-
-      const files = await fs.readdir(langPath);
-      const templateFile = files.find(
-        (file) => path.basename(file, path.extname(file)) === templateName
-      );
-
-      if (!templateFile) {
-        ctx.status = 404;
-        ctx.body = {
-          error: `Template '${templateName}' not found for language '${language}'`,
-        };
-        return;
-      }
-
-      // Read template content
-      const content = await fs.readFile(
-        path.join(langPath, templateFile),
-        "utf8"
-      );
-
-      // Update cache and return
-      templateCache[cacheKey] = content;
-      ctx.body = { content };
+      // Load template content
+      const content = await loadTemplateContent(lang, template);
+      ctx.body = content;
     } catch (error) {
-      ctx.status = 404;
-      ctx.body = {
-        error: `Template not found or language '${language}' not supported`,
-      };
+      throw error; // Will be handled by koaHandler
     }
   })
 );

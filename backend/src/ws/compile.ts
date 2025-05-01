@@ -2,35 +2,54 @@
  * Socket.IO handler for code compilation and execution
  */
 import http from "http";
-import {
-  compileCode,
-  createCompilationEnvironment,
-  writeCodeToFile,
-} from "../utils/compilationService";
-import {
-  webSocketManager,
-  emitToClient,
-  SessionSocket,
-  socketEvents,
-  SocketEvents,
-} from "../utils/webSocketHandler";
-import {
-  startCompilationSession,
-  sendInputToSession,
-  terminateSession,
-  initSessionService,
-  createSession,
-  resizeTerminal,
-} from "../utils/sessionService";
-
-// Initialize session service
-initSessionService();
+import { Socket } from "socket.io";
+import { 
+  ICompilationService, 
+  ISessionService,
+  IWebSocketManager,
+  SessionSocket, 
+  SocketEvents
+} from "../types";
+import { compilationService } from "../utils/compilationService";
+import { sessionService } from "../utils/sessionService";
+import { webSocketManager, socketEvents } from "../utils/webSocketHandler";
 
 /**
  * CompileWebSocketHandler handles compilation-related Socket.IO communication
  * This class mirrors the frontend's CompileSocketManager structure
  */
 export class CompileWebSocketHandler {
+  private compilationService: ICompilationService;
+  private sessionService: ISessionService;
+  private webSocketManager: IWebSocketManager;
+  private readonly debug: boolean;
+
+  /**
+   * Create a new CompileWebSocketHandler
+   * @param compilationService - Compilation service
+   * @param sessionService - Session service
+   * @param webSocketManager - WebSocket manager
+   * @param debug - Enable debug mode
+   */
+  constructor(
+    compilationService: ICompilationService,
+    sessionService: ISessionService,
+    webSocketManager: IWebSocketManager,
+    debug: boolean = false
+  ) {
+    this.compilationService = compilationService;
+    this.sessionService = sessionService;
+    this.webSocketManager = webSocketManager;
+    this.debug = debug;
+
+    // Initialize session service
+    this.sessionService.initSessionService();
+    
+    if (this.debug) {
+      console.log("CompileWebSocketHandler initialized");
+    }
+  }
+
   /**
    * Handle compilation requests
    * @param {SessionSocket} socket - Socket.IO connection
@@ -47,25 +66,30 @@ export class CompileWebSocketHandler {
   ): void {
     const { code, lang, compiler, optimization } = data;
 
+    if (this.debug) {
+      console.log(`Received compile request from session ${socket.sessionId}`);
+    }
+
     // Create compilation environment
-    const env = createCompilationEnvironment(lang);
+    const env = this.compilationService.createCompilationEnvironment(lang);
 
     try {
       // Write code to temporary file
-      writeCodeToFile(env.sourceFile, code);
+      this.compilationService.writeCodeToFile(env.sourceFile, code);
 
       // Notify client that compilation has started
-      emitToClient(socket, SocketEvents.COMPILING, {});
+      this.emitToClient(socket, SocketEvents.COMPILING, {});
 
       // Compile the code
-      compileCode(env, code, { lang, compiler, optimization })
+      this.compilationService
+        .compileCode(env, code, { lang, compiler, optimization })
         .then((result) => {
           if (result.success) {
             // Compilation successful, notify client
-            emitToClient(socket, SocketEvents.COMPILE_SUCCESS, {});
+            this.emitToClient(socket, SocketEvents.COMPILE_SUCCESS, {});
 
             // Start compilation session with PTY
-            const success = startCompilationSession(
+            const success = this.sessionService.startCompilationSession(
               socket,
               socket.sessionId,
               env.tmpDir,
@@ -78,7 +102,7 @@ export class CompileWebSocketHandler {
             }
           } else {
             // Compilation error
-            emitToClient(socket, SocketEvents.COMPILE_ERROR, {
+            this.emitToClient(socket, SocketEvents.COMPILE_ERROR, {
               output: result.error,
             });
 
@@ -92,7 +116,7 @@ export class CompileWebSocketHandler {
             `Unexpected error for session ${socket.sessionId}:`,
             error
           );
-          emitToClient(socket, SocketEvents.ERROR, {
+          this.emitToClient(socket, SocketEvents.ERROR, {
             message: "Unexpected error: " + (error as Error).message,
           });
 
@@ -104,7 +128,7 @@ export class CompileWebSocketHandler {
         `Error setting up compilation for session ${socket.sessionId}:`,
         error
       );
-      emitToClient(socket, SocketEvents.ERROR, {
+      this.emitToClient(socket, SocketEvents.ERROR, {
         message: "Error setting up compilation: " + (error as Error).message,
       });
 
@@ -119,10 +143,16 @@ export class CompileWebSocketHandler {
    * @param {any} data - Input data
    */
   handleInput(socket: SessionSocket, data: { input: string }): void {
-    if (!sendInputToSession(socket.sessionId, data.input)) {
-      emitToClient(socket, SocketEvents.ERROR, {
+    if (!this.sessionService.sendInputToSession(socket.sessionId, data.input)) {
+      this.emitToClient(socket, SocketEvents.ERROR, {
         message: "No active compilation session to receive input",
       });
+      
+      if (this.debug) {
+        console.log(`Failed to send input to session ${socket.sessionId}: No active session`);
+      }
+    } else if (this.debug) {
+      console.log(`Sent input to session ${socket.sessionId}`);
     }
   }
 
@@ -133,10 +163,12 @@ export class CompileWebSocketHandler {
    */
   handleResize(socket: SessionSocket, data: { cols: number; rows: number }): void {
     const { cols, rows } = data;
-    if (!resizeTerminal(socket.sessionId, cols, rows)) {
+    if (!this.sessionService.resizeTerminal(socket.sessionId, cols, rows)) {
       console.warn(
         `Failed to resize terminal for session ${socket.sessionId}: cols=${cols}, rows=${rows}`
       );
+    } else if (this.debug) {
+      console.log(`Resized terminal for session ${socket.sessionId}: cols=${cols}, rows=${rows}`);
     }
   }
 
@@ -145,8 +177,12 @@ export class CompileWebSocketHandler {
    * @param {SessionSocket} socket - Socket.IO connection
    */
   handleCleanup(socket: SessionSocket): void {
-    terminateSession(socket.sessionId);
-    emitToClient(socket, SocketEvents.CLEANUP_COMPLETE, {});
+    if (this.debug) {
+      console.log(`Cleaning up session ${socket.sessionId}`);
+    }
+    
+    this.sessionService.terminateSession(socket.sessionId);
+    this.emitToClient(socket, SocketEvents.CLEANUP_COMPLETE, {});
   }
 
   /**
@@ -155,7 +191,11 @@ export class CompileWebSocketHandler {
    */
   setupSocketHandlers(socket: SessionSocket): void {
     // Generate and assign a session ID
-    createSession(socket);
+    this.sessionService.createSession(socket);
+
+    if (this.debug) {
+      console.log(`Setting up handlers for session ${socket.sessionId}`);
+    }
 
     // Set up event handlers for compilation-related messages
     socket.on(
@@ -184,11 +224,36 @@ export class CompileWebSocketHandler {
     socket.on(SocketEvents.CLEANUP, () => {
       this.handleCleanup(socket);
     });
+
+    // Handle disconnect
+    socket.on(SocketEvents.DISCONNECT, () => {
+      if (this.debug) {
+        console.log(`Socket ${socket.id} disconnected, cleaning up session ${socket.sessionId}`);
+      }
+      
+      this.sessionService.terminateSession(socket.sessionId);
+    });
+  }
+
+  /**
+   * Send a message to a client
+   * @param {Socket} socket - Socket.IO socket
+   * @param {string} event - Event name
+   * @param {any} data - Data to send
+   * @private
+   */
+  private emitToClient(socket: Socket, event: string, data: any): void {
+    this.webSocketManager.emitToClient(socket, event, data);
   }
 }
 
-// Create singleton instance
-export const compileHandler = new CompileWebSocketHandler();
+// Create singleton instance with dependencies
+export const compileHandler = new CompileWebSocketHandler(
+  compilationService,
+  sessionService,
+  webSocketManager,
+  process.env.NODE_ENV !== "production"
+);
 
 /**
  * Setup Socket.IO handlers for compilation

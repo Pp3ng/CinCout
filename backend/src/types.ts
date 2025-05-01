@@ -1,7 +1,7 @@
 /**
  * Centralized Type Definitions for the CinCout Backend
  * This file contains all common types used across the backend
- * Updated for Koa compatibility
+ * Updated for Koa compatibility and dependency injection
  */
 import * as pty from "node-pty";
 import { DirResult } from "tmp";
@@ -40,6 +40,20 @@ export interface KoaRequestContext<T = any> extends Context {
   };
 }
 
+/**
+ * Application Error with status code
+ */
+export class AppError extends Error {
+  status: number;
+  
+  constructor(message: string, status: number = 500) {
+    super(message);
+    this.status = status;
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
 // ==========================================
 // Compilation Types
 // ==========================================
@@ -73,6 +87,51 @@ export interface ExecutionResult {
   exitCode: number;
 }
 
+/**
+ * Compilation result
+ */
+export interface CompilationResult {
+  success: boolean;
+  output?: string;
+  error?: string;
+}
+
+/**
+ * Assembly generation result
+ */
+export interface AssemblyResult {
+  success: boolean;
+  assembly?: string;
+  error?: string;
+}
+
+/**
+ * Memory check result
+ */
+export interface MemoryCheckResult {
+  success: boolean;
+  report?: string;
+  error?: string;
+}
+
+/**
+ * Style check result
+ */
+export interface StyleCheckResult {
+  success: boolean;
+  report?: string;
+  error?: string;
+}
+
+/**
+ * Format code result
+ */
+export interface FormatResult {
+  success: boolean;
+  formattedCode?: string;
+  error?: string;
+}
+
 // ==========================================
 // Session Types
 // ==========================================
@@ -94,7 +153,7 @@ export interface Session {
 // ==========================================
 
 /**
- * Socket.IO message structure (previously WebSocketMessage)
+ * Socket.IO message structure
  */
 export interface WebSocketMessage {
   type: string;
@@ -104,9 +163,79 @@ export interface WebSocketMessage {
 /**
  * Extended Socket.IO socket with session information
  */
-export interface ExtendedSocket extends Socket {
+export interface SessionSocket extends Socket {
   sessionId: string;
-  isAlive?: boolean; // For backwards compatibility
+  isAlive?: boolean; // For heartbeat checking
+}
+
+/**
+ * Socket event types enum
+ */
+export enum SocketEvents {
+  // Connection lifecycle events
+  CONNECT = "connect",
+  DISCONNECT = "disconnect",
+
+  // Compilation events
+  COMPILE = "compile",
+  COMPILING = "compiling",
+  COMPILE_SUCCESS = "compile_success",
+  COMPILE_ERROR = "compile_error",
+
+  // Execution events
+  OUTPUT = "output",
+  INPUT = "input",
+  EXIT = "exit",
+  RESIZE = "resize",
+
+  // Session management
+  SESSION_CREATED = "session_created",
+  CLEANUP = "cleanup",
+  CLEANUP_COMPLETE = "cleanup_complete",
+
+  // Error handling
+  ERROR = "error",
+}
+
+// ==========================================
+// Service Interfaces - For Dependency Injection
+// ==========================================
+
+/**
+ * Compilation service interface
+ */
+export interface ICompilationService {
+  createCompilationEnvironment(lang: string): CompilationEnvironment;
+  writeCodeToFile(filePath: string, code: string): void;
+  compileCode(env: CompilationEnvironment, code: string, options: CompilationOptions): Promise<CompilationResult>;
+  generateAssembly(env: CompilationEnvironment, code: string, options: CompilationOptions): Promise<AssemblyResult>;
+  runMemoryCheck(env: CompilationEnvironment, code: string, options: CompilationOptions): Promise<MemoryCheckResult>;
+  formatCode(code: string, style?: string): Promise<FormatResult>;
+  runStyleCheck(code: string): Promise<StyleCheckResult>;
+}
+
+/**
+ * Session service interface
+ */
+export interface ISessionService {
+  initSessionService(): void;
+  createSession(socket: Socket): string;
+  startCompilationSession(socket: Socket, sessionId: string, tmpDir: DirResult, outputFile: string): boolean;
+  sendInputToSession(sessionId: string, input: string): boolean;
+  resizeTerminal(sessionId: string, cols: number, rows: number): boolean;
+  terminateSession(sessionId: string): void;
+  getActiveSessions(): Map<string, Session>;
+  getSession(sessionId: string): Session | undefined;
+}
+
+/**
+ * WebSocket management interface
+ */
+export interface IWebSocketManager {
+  initialize(server: any): any;
+  emitToClient(socket: Socket, event: string, data: any): void;
+  broadcast(event: string, data: any, room?: string): void;
+  getIO(): any | null;
 }
 
 // ==========================================

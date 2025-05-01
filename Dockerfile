@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install PM2 globally
+RUN npm install pm2 -g
+
 # Create app directory
 WORKDIR /app
 
@@ -31,8 +34,22 @@ COPY --from=builder /app/backend/dist/server.bundle.js ./backend/dist/server.bun
 COPY --from=builder /app/backend/templates ./backend/templates
 COPY --from=builder /app/backend/node_modules/node-pty ./backend/node_modules/node-pty
 
+# Create a PM2 ecosystem file
+RUN echo '{\
+  "apps": [{\
+    "name": "cincout",\
+    "script": "./backend/dist/server.bundle.js",\
+    "instances": 1,\
+    "exec_mode": "fork",\
+    "env": {\
+      "NODE_ENV": "production"\
+    },\
+    "max_memory_restart": "500M"\
+  }]\
+}' > ecosystem.config.json
+
 # Expose the port
 EXPOSE 9527
 
-# Start the server with the bundled file
-CMD ["node", "backend/dist/server.bundle.js"]
+# Start the server with PM2
+CMD ["pm2-runtime", "start", "ecosystem.config.json"]

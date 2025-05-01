@@ -202,6 +202,12 @@ export class DOMService {
     outputPanel.style.display = "none";
     document.querySelector(".editor-panel")?.classList.remove("with-output");
 
+    // Clear output content when hiding the panel
+    const output = document.getElementById("output");
+    if (output) {
+      output.innerHTML = '';
+    }
+
     // If in Zen Mode, make sure we reset any inline styles
     const isZenMode = document.body.classList.contains("zen-mode-active");
     if (isZenMode) {

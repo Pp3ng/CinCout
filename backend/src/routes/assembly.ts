@@ -1,46 +1,57 @@
 /**
- * Assembly code generation route
+ * Assembly view router
+ * Handles assembly code generation
  */
 import Router from "koa-router";
-import { Context } from "koa";
 import { koaHandler } from "../utils/routeHandler";
-import { AssemblyRequest } from "../types";
-import {
-  createCompilationEnvironment,
-  generateAssembly,
-} from "../utils/compilationService";
+import { compilationService } from "../utils/compilationService";
+import { 
+  AppError,
+  AssemblyRequest
+} from "../types";
 
 const router = new Router();
 
+/**
+ * POST /api/assembly
+ * Generates assembly code from provided source code
+ */
 router.post(
   "/",
-  koaHandler(async (ctx: Context) => {
-    const { code, lang, compiler, optimization } = ctx.request
-      .body as AssemblyRequest;
+  koaHandler<AssemblyRequest>(async (ctx) => {
+    const { code, lang, compiler, optimization } = ctx.request.body;
 
+    // Validate request
     if (!code) {
-      ctx.status = 400;
-      ctx.body = "No code provided";
-      return;
+      throw new AppError("No code provided", 400);
     }
 
-    // Create environment and generate assembly
-    const env = createCompilationEnvironment(lang || "c");
-    const result = await generateAssembly(env, code, {
-      lang: lang || "c",
-      compiler,
-      optimization,
-    });
+    // Create environment for assembly generation
+    const env = compilationService.createCompilationEnvironment(lang || "c");
 
-    // Clean up temporary files
-    env.tmpDir.removeCallback();
+    try {
+      // Generate assembly
+      const result = await compilationService.generateAssembly(env, code, {
+        lang: lang || "c",
+        compiler,
+        optimization,
+      });
 
-    // Return assembly or error
-    if (result.success && result.assembly) {
-      ctx.body = result.assembly;
-    } else {
-      ctx.status = 500;
-      ctx.body = result.error || "Unknown error generating assembly";
+      // Clean up temporary files
+      env.tmpDir.removeCallback();
+
+      if (result.success) {
+        // Return assembly code
+        ctx.body = result.assembly;
+      } else {
+        throw new AppError(`Assembly generation error: ${result.error}`, 500);
+      }
+    } catch (error) {
+      // Ensure cleanup on error
+      env.tmpDir.removeCallback();
+      
+      // Rethrow to be handled by koaHandler
+      throw error;
     }
   })
 );

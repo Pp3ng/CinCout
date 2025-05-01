@@ -34,10 +34,10 @@ async function loadTemplateList(language: string): Promise<string[]> {
   if (cache.lists[language]) return cache.lists[language];
 
   try {
-    const response = await fetchWithTimeout(`/api/templates/${language}/list`);
-    const templateNames = await response.json();
-    cache.lists[language] = templateNames;
-    return templateNames;
+    const response = await fetchWithTimeout(`/api/templates/${language}`);
+    const data = await response.json();
+    cache.lists[language] = data.list;
+    return data.list;
   } catch (error: any) {
     console.error(`Failed to load template list for ${language}:`, error);
     return [];
@@ -58,7 +58,7 @@ async function loadTemplateContent(
     const response = await fetchWithTimeout(
       `/api/templates/${language}/${encodeURIComponent(templateName)}`
     );
-    const { content } = await response.json();
+    const content = await response.text();
     cache.contents[cacheKey] = content;
     return content;
   } catch (error: any) {
@@ -181,6 +181,3 @@ document.addEventListener("DOMContentLoaded", () => {
 // Export for global access
 (window as any).updateTemplates = updateTemplateList;
 (window as any).setTemplate = loadSelectedTemplate;
-(window as any).templates = {}; // Maintain for backward compatibility
-(window as any).templateLists = cache.lists;
-(window as any).loadedTemplates = new Set();

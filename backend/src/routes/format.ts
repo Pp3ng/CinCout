@@ -1,27 +1,39 @@
 /**
- * Code formatting router
+ * Format router
+ * Handles code formatting using clang-format
  */
 import Router from "koa-router";
-import { Context } from "koa";
-import { formatCode } from "../utils/compilationService";
 import { koaHandler } from "../utils/routeHandler";
-import { FormatRequest } from "../types";
+import { compilationService } from "../utils/compilationService";
+import { 
+  AppError,
+  FormatRequest
+} from "../types";
 
 const router = new Router();
 
+/**
+ * POST /api/format
+ * Formats code using clang-format
+ */
 router.post(
   "/",
-  koaHandler(async (ctx: Context) => {
-    const { code } = ctx.request.body as FormatRequest;
+  koaHandler<FormatRequest>(async (ctx) => {
+    const { code } = ctx.request.body;
 
-    // Format code using the centralized service
-    const result = await formatCode(code, "WebKit");
+    // Validate request
+    if (!code) {
+      throw new AppError("No code provided", 400);
+    }
+
+    // Format the code
+    const result = await compilationService.formatCode(code);
 
     if (result.success) {
+      // Return formatted code
       ctx.body = result.formattedCode;
     } else {
-      ctx.status = 500;
-      ctx.body = `Formatting Error: ${result.error}`;
+      throw new AppError(`Format error: ${result.error}`, 500);
     }
   })
 );

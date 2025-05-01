@@ -1,33 +1,37 @@
 /**
  * Memory check router
+ * Handles memory leak detection using valgrind
  */
 import Router from "koa-router";
-import { Context } from "koa";
-import { runMemoryCheck } from "../utils/compilationService";
 import { koaHandler } from "../utils/routeHandler";
-import { createCompilationEnvironment } from "../utils/compilationService";
-import { MemcheckRequest } from "../types";
+import { compilationService } from "../utils/compilationService";
+import { 
+  AppError,
+  MemcheckRequest 
+} from "../types";
 
 const router = new Router();
 
+/**
+ * POST /api/memcheck
+ * Runs memory leak detection on provided code
+ */
 router.post(
   "/",
-  koaHandler(async (ctx: Context) => {
-    const { code, lang, compiler, optimization } = ctx.request
-      .body as MemcheckRequest;
+  koaHandler<MemcheckRequest>(async (ctx) => {
+    const { code, lang, compiler, optimization } = ctx.request.body;
 
+    // Validate request
     if (!code) {
-      ctx.status = 400;
-      ctx.body = "No code provided";
-      return;
+      throw new AppError("No code provided", 400);
     }
 
     // Create environment for memory check
-    const env = createCompilationEnvironment(lang || "c");
+    const env = compilationService.createCompilationEnvironment(lang || "c");
 
     try {
       // Run memory check
-      const result = await runMemoryCheck(env, code, {
+      const result = await compilationService.runMemoryCheck(env, code, {
         lang: lang || "c",
         compiler,
         optimization,
@@ -37,14 +41,16 @@ router.post(
       env.tmpDir.removeCallback();
 
       if (result.success) {
+        // Return formatted report
         ctx.body = result.report;
       } else {
-        ctx.status = 500;
-        ctx.body = `Memory check error: ${result.error}`;
+        throw new AppError(`Memory check error: ${result.error}`, 500);
       }
     } catch (error) {
       // Ensure cleanup on error
       env.tmpDir.removeCallback();
+      
+      // Rethrow to be handled by koaHandler
       throw error;
     }
   })

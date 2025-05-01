@@ -44,6 +44,8 @@ class LayoutManager {
     // Close button
     this.elements.closeOutputBtn?.addEventListener("click", () => {
       this.setState({ isOutputVisible: false });
+      // Clear output content when closing the panel
+      this.clearOutputContent();
     });
 
     // Action buttons
@@ -74,10 +76,22 @@ class LayoutManager {
     if (elements.outputPanel && elements.editorPanel) {
       elements.outputPanel.style.display = isOutputVisible ? "flex" : "none";
       elements.editorPanel.classList.toggle("with-output", isOutputVisible);
+      
+      // Clear output content when panel is hidden
+      if (!isOutputVisible) {
+        this.clearOutputContent();
+      }
     }
 
     // Refresh editors after UI changes
     this.refreshEditors();
+  }
+
+  // Clear output content
+  clearOutputContent(): void {
+    if (this.elements.outputContent) {
+      this.elements.outputContent.innerHTML = '';
+    }
   }
 
   // Refresh editors

@@ -15,7 +15,8 @@ import {
   AssemblyResult,
   MemoryCheckResult,
   StyleCheckResult,
-  FormatResult
+  FormatResult,
+  DebugSessionResult
 } from "../types";
 
 /**
@@ -527,6 +528,52 @@ export class CompilationService implements ICompilationService {
       tmpDir.removeCallback();
     }
   }
+
+  /**
+   * Start a GDB debug session for a program
+   * @param {CompilationEnvironment} env - Compilation environment
+   * @param {CompilationOptions} options - Compilation options 
+   * @returns {Promise<{success: boolean, message?: string, error?: string}>} Debug session result
+   */
+  async startDebugSession(
+    env: CompilationEnvironment,
+    options: CompilationOptions
+  ): Promise<DebugSessionResult> {
+    try {
+      // Determine compiler options for debug build
+      const compilerCmd = this.getCompilerCommand(options.lang, options.compiler);
+      const standardOption = options.standard || this.getStandardOption(options.lang);
+      
+      // Always compile with debug info and optimize for debugging
+      const compileCmd = `${compilerCmd} -g -O0 ${standardOption} "${env.sourceFile}" -o "${env.outputFile}"`;
+
+      try {
+        await this.executeCommand(compileCmd);
+      } catch (error) {
+        // Convert error to string safely
+        const errorStr =
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+            ? error.message
+            : String(error);
+        const formattedError = this.formatOutput(errorStr, "default");
+        return { success: false, error: formattedError };
+      }
+
+      return { 
+        success: true, 
+        message: "Program compiled successfully for debugging." 
+      };
+    } catch (error) {
+      const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
+        error: `Error setting up debug session: ${errorMsg}`
+      };
+    }
+  }
+
 }
 
 // Create singleton instance with debug mode in non-production

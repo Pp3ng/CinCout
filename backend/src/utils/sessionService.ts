@@ -178,6 +178,114 @@ export class SessionService implements ISessionService {
   }
 
   /**
+   * Start a new debug session with GDB
+   * @param {Socket} socket - Socket.IO connection
+   * @param {string} sessionId - Session ID
+   * @param {DirResult} tmpDir - Temporary directory
+   * @param {string} outputFile - Path to compiled executable
+   * @returns {boolean} Success status
+   */
+  startDebugSession(
+    socket: Socket,
+    sessionId: string,
+    tmpDir: DirResult,
+    outputFile: string
+  ): boolean {
+    try {
+      // Set standard terminal size
+      const cols = 80;
+      const rows = 24;
+
+      // Create PTY instance with GDB - use quiet mode for cleaner output
+      const ptyProcess = this.createPtyProcess(`gdb -q "${outputFile}"`, {
+        name: "xterm-256color",
+        cols: cols,
+        rows: rows,
+        cwd: tmpDir.name,
+        env: {
+          ...(process.env as { [key: string]: string }),
+          TERM: "xterm-256color",
+        },
+      });
+
+      // Store session with debug flag
+      this.sessions.set(sessionId, {
+        pty: ptyProcess,
+        tmpDir: tmpDir,
+        lastActivity: Date.now(),
+        dimensions: { cols, rows },
+        sessionType: "debug",
+        socketId: socket.id,
+        isDebugSession: true
+      });
+
+      // Handle PTY output
+      ptyProcess.onData((data: string) => {
+        try {
+          // Update last activity timestamp
+          this.updateSessionActivity(sessionId);
+
+          const filteredData = data
+            // remove reading symbols messages
+            .replace(/Reading symbols from .*\.\.\.([\r\n]|\s)*/g, "")
+            // replace temporary path with a simplified version
+            .replace(/\/tmp\/CinCout-[^\/]*\/([^.:]+)/g, "$1");
+          
+          // Send filtered output to client
+          webSocketManager.emitToClient(socket, SocketEvents.DEBUG_RESPONSE, {
+            output: filteredData,
+          });
+        } catch (e) {
+          console.error(`Error sending debug output for session ${sessionId}:`, e);
+        }
+      });
+
+      // Handle PTY exit
+      ptyProcess.onExit(({ exitCode }) => {
+        try {
+          // Send exit notification with enhanced information
+          webSocketManager.emitToClient(socket, SocketEvents.DEBUG_EXIT, {
+            code: exitCode,
+            success: exitCode === 0,
+          });
+
+          // Clean up
+          this.cleanupSession(sessionId);
+        } catch (e) {
+          console.error(`Error processing exit for debug session ${sessionId}:`, e);
+          // Always clean up
+          this.cleanupSession(sessionId);
+        }
+      });
+
+      // Send some initial commands to GDB to make it more user-friendly
+      setTimeout(() => {
+        try {
+          // Enable pretty printing of structures
+          ptyProcess.write("set print pretty on\n");
+          // Set pagination off to avoid pauses
+          ptyProcess.write("set pagination off\n");
+          // Show source code
+          ptyProcess.write("list\n");
+          // Set a breakpoint at main
+          ptyProcess.write("break main\n");
+        } catch (e) {
+          console.error(`Error sending initial GDB commands for session ${sessionId}:`, e);
+        }
+      }, 500);
+
+      return true;
+    } catch (ptyError) {
+      console.error(`Error creating GDB session ${sessionId}:`, ptyError);
+      webSocketManager.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
+        message: `Error starting GDB debugger: ${(ptyError as Error).message}`,
+      });
+
+      return false;
+    }
+  }
+
+  /**
    * Create a new session for a socket
    * @param {Socket} socket - Socket.IO socket
    * @returns {string} Generated session ID

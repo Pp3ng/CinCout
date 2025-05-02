@@ -57,6 +57,7 @@ The project follows a clean separation between frontend and backend:
 |                   | Optimization Levels     | Various optimization flags (-O0 to -O3, -Os) |
 |                   | Assembly Generation     | View generated assembly code                 |
 | **Execution**     | Real-time Program       | PTY-based terminal for interactive programs  |
+|                   | Interactive Debugging   | GDB integration for debugging programs       |
 |                   | WebSocket Communication | Bidirectional real-time communication        |
 | **Code Analysis** | Style Checking          | Static code analysis with cppcheck           |
 |                   | Memory Analysis         | Memory leak detection with Valgrind          |
@@ -81,15 +82,16 @@ The project follows a clean separation between frontend and backend:
 | Format Code      | Alt + 2          | ^ + 2      |
 | Style Check      | Alt + 3          | ^ + 3      |
 | Memory Check     | Alt + 4          | ^ + 4      |
+| Debug with GDB   | Alt + 5          | ^ + 5      |
 | Close Output     | ESC              | ESC        |
 
 ## Future Improvements 🚀
 
 - [x] Leverage `node-pty` and `xterm.js` for terminal emulation
+- [x] Integrate `gdb` for debugging capabilities
 - [ ] Use `React` for the frontend instead of `Vanilla TypeScript`
 - [ ] Implement `clang-tidy` for code analysis
 - [ ] Add more themes and customization options
-- [ ] Integrate `gdb` and `lldb` for debugging capabilities
 - [ ] More modern `UI/UX` design
 - [ ] Add cloud storage for saving code snippets
 

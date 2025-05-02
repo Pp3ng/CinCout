@@ -27,6 +27,14 @@ export enum SocketEvents {
 
   // Error handling
   ERROR = "error",
+  
+  // GDB Debugging events
+  DEBUG_START = "debug_start",
+  DEBUG_COMMAND = "debug_command",
+  DEBUG_RESPONSE = "debug_response",
+  DEBUG_BREAKPOINT = "debug_breakpoint",
+  DEBUG_ERROR = "debug_error",
+  DEBUG_EXIT = "debug_exit"
 }
 
 /**
@@ -102,12 +110,26 @@ export class WebSocketManager {
         this.compilationState = CompilationState.IDLE;
         this.notifyListeners(SocketEvents.EXIT, data);
       });
+      
+      // Handle debug session events
+      this.socket.on(SocketEvents.DEBUG_START, (data) => {
+        this.compilationState = CompilationState.RUNNING;
+        this.notifyListeners(SocketEvents.DEBUG_START, data);
+      });
+      
+      this.socket.on(SocketEvents.DEBUG_EXIT, (data) => {
+        this.compilationState = CompilationState.IDLE;
+        this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
+      });
 
       // Forward all other events to listeners
       [
         SocketEvents.OUTPUT,
         SocketEvents.ERROR,
         SocketEvents.CLEANUP_COMPLETE,
+        SocketEvents.DEBUG_RESPONSE,
+        SocketEvents.DEBUG_BREAKPOINT,
+        SocketEvents.DEBUG_ERROR,
       ].forEach((event) => {
         this.socket?.on(event, (data) => {
           this.notifyListeners(event, data);

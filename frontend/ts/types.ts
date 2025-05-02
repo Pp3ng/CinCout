@@ -21,6 +21,7 @@ export interface UIState {
   loadingMessage: string;
   compilationState: CompilationState;
   isProcessRunning?: boolean;
+  isDebuggingActive?: boolean;  // Add debugging active state
   theme: string;
   vimMode: boolean;
 }
@@ -36,6 +37,7 @@ export interface DOMElements {
   format: HTMLElement | null;
   viewAssembly: HTMLElement | null;
   styleCheck: HTMLElement | null;
+  debug: HTMLElement | null;  // Added debug button
   themeSelect: HTMLSelectElement | null;
   outputPanel: HTMLElement | null;
   closeOutput: HTMLElement | null;
@@ -123,6 +125,21 @@ export interface CompileStateUpdater {
   refreshEditor: () => void;
 }
 
+// Interface for debug state updates
+export interface DebugStateUpdater {
+  updateDebugState: (state: CompilationState | string) => void;
+  setDebuggingActive: (active: boolean) => void;
+  showOutput: () => void;
+  refreshEditor: () => void;
+}
+
+// Debug session status
+export enum DebugState {
+  IDLE = "idle",
+  COMPILING = "compiling",
+  DEBUGGING = "debugging",
+}
+
 // ==========================================
 // Terminal
 // ==========================================
@@ -207,6 +224,7 @@ export enum DomElementId {
   FORMAT = "format",
   STYLE_CHECK = "styleCheck",
   MEMORY_CHECK = "memcheck",
+  DEBUG = "debug",  // Added debug element ID
   OUTPUT_PANEL = "outputPanel",
   LANGUAGE = "language",
   SHORTCUTS_CONTENT = "shortcuts-content",

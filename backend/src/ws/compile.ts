@@ -138,6 +138,119 @@ export class CompileWebSocketHandler {
   }
 
   /**
+   * Handle debug session requests
+   * @param {SessionSocket} socket - Socket.IO connection
+   * @param {any} data - Debug request data
+   */
+  handleDebugRequest(
+    socket: SessionSocket,
+    data: {
+      code: string;
+      lang: string;
+      compiler?: string;
+    }
+  ): void {
+    const { code, lang, compiler } = data;
+
+    if (this.debug) {
+      console.log(`Received debug request from session ${socket.sessionId}`);
+    }
+
+    // Create compilation environment
+    const env = this.compilationService.createCompilationEnvironment(lang);
+
+    try {
+      // Write code to temporary file
+      this.compilationService.writeCodeToFile(env.sourceFile, code);
+
+      // Notify client that compilation has started
+      this.emitToClient(socket, SocketEvents.COMPILING, {});
+
+      // Compile the code with debug flags
+      this.compilationService
+        .startDebugSession(env, { lang, compiler, optimization: "-O0" })
+        .then((result) => {
+          if (result.success) {
+            // Start debug session with GDB
+            const success = this.sessionService.startDebugSession(
+              socket,
+              socket.sessionId,
+              env.tmpDir,
+              env.outputFile
+            );
+
+            if (!success) {
+              this.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
+                message: "Failed to start GDB debug session",
+              });
+              // Clean up on error
+              env.tmpDir.removeCallback();
+            } else {
+              this.emitToClient(socket, SocketEvents.DEBUG_START, {});
+            }
+          } else {
+            // Compilation error
+            this.emitToClient(socket, SocketEvents.COMPILE_ERROR, {
+              output: result.error,
+            });
+
+            // Clean up temporary directory
+            env.tmpDir.removeCallback();
+          }
+        })
+        .catch((error) => {
+          // Unexpected error
+          console.error(
+            `Unexpected error for debug session ${socket.sessionId}:`,
+            error
+          );
+          this.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
+            message: "Unexpected error: " + (error as Error).message,
+          });
+
+          // Clean up temporary directory
+          env.tmpDir.removeCallback();
+        });
+    } catch (error) {
+      console.error(
+        `Error setting up debug session for session ${socket.sessionId}:`,
+        error
+      );
+      this.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
+        message: "Error setting up debug session: " + (error as Error).message,
+      });
+
+      // Clean up temporary directory
+      env.tmpDir.removeCallback();
+    }
+  }
+
+  /**
+   * Handle debug command requests
+   * @param {SessionSocket} socket - Socket.IO connection
+   * @param {any} data - Debug command data
+   */
+  handleDebugCommand(socket: SessionSocket, data: { command: string }): void {
+    const { command } = data;
+
+    if (this.debug) {
+      console.log(`Received debug command from session ${socket.sessionId}: ${command}`);
+    }
+
+    if (!this.sessionService.sendInputToSession(socket.sessionId, command + '\n')) {
+      this.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
+        message: "No active debug session to receive commands",
+      });
+      
+      if (this.debug) {
+        console.log(`Failed to send debug command to session ${socket.sessionId}: No active session`);
+      }
+    } else if (this.debug) {
+      console.log(`Sent debug command to session ${socket.sessionId}: ${command}`);
+    }
+  }
+
+  /**
    * Handle sending input to a running program
    * @param {SessionSocket} socket - Socket.IO connection
    * @param {any} data - Input data
@@ -209,6 +322,22 @@ export class CompileWebSocketHandler {
         this.handleCompileRequest(socket, data);
       }
     );
+
+    // Set up event handlers for debugging
+    socket.on(
+      SocketEvents.DEBUG_START,
+      (data: {
+        code: string;
+        lang: string;
+        compiler?: string;
+      }) => {
+        this.handleDebugRequest(socket, data);
+      }
+    );
+
+    socket.on(SocketEvents.DEBUG_COMMAND, (data: { command: string }) => {
+      this.handleDebugCommand(socket, data);
+    });
 
     // Handle input from client to program
     socket.on(SocketEvents.INPUT, (data: { input: string }) => {

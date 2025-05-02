@@ -2,9 +2,11 @@
 import { debounce, takeCodeSnap, showNotification } from "./utils";
 import { themeStoreInstance } from "./themes";
 import CompileSocketManager from "./compileSocket";
+import DebugSocketManager from "./debugSocket";
 import {
   CompileOptions,
   CompileStateUpdater,
+  DebugStateUpdater,
   UIState,
   DOMElements,
   CompilationState,
@@ -146,6 +148,7 @@ export class DOMService {
       format: document.getElementById("format"),
       viewAssembly: document.getElementById("viewAssembly"),
       styleCheck: document.getElementById("styleCheck"),
+      debug: document.getElementById("debug"),
       themeSelect: document.getElementById("theme-select") as HTMLSelectElement,
       outputPanel: document.getElementById("outputPanel"),
       closeOutput: document.getElementById("closeOutput"),
@@ -247,6 +250,7 @@ export class AppState {
       compilationState: CompilationState.IDLE,
       theme: localStorage.getItem("cincout-theme") || "default",
       vimMode: localStorage.getItem("cincout-vim-mode") === "true",
+      isDebuggingActive: false,
     };
     this.listeners = [];
   }
@@ -302,6 +306,48 @@ class CompileStateAdapter implements CompileStateUpdater {
 
   updateProcessRunning(running: boolean): void {
     this.appState.setState({ isProcessRunning: running });
+  }
+
+  showOutput(): void {
+    DOMService.showOutputPanel();
+    this.appState.setState({ isOutputVisible: true });
+  }
+
+  refreshEditor(): void {
+    setTimeout(() => EditorService.refresh(), 10);
+  }
+}
+
+// UI State adapter for DebugSocketManager
+class DebugStateAdapter implements DebugStateUpdater {
+  private appState: AppState;
+
+  constructor(appState: AppState) {
+    this.appState = appState;
+  }
+
+  updateDebugState(state: string): void {
+    switch (state) {
+      case "idle":
+        this.appState.setState({
+          compilationState: CompilationState.IDLE,
+        });
+        break;
+      case "compiling":
+        this.appState.setState({
+          compilationState: CompilationState.COMPILING,
+        });
+        break;
+      case "running":
+        this.appState.setState({
+          compilationState: CompilationState.RUNNING,
+        });
+        break;
+    }
+  }
+
+  setDebuggingActive(active: boolean): void {
+    this.appState.setState({ isDebuggingActive: active });
   }
 
   showOutput(): void {
@@ -448,6 +494,41 @@ export class CodeActionsController {
 }
 
 /**
+ * DebugController - Manages GDB debugging actions
+ * In React, this would become custom hooks (useDebugActions)
+ */
+export class DebugController {
+  private appState: AppState;
+  private debugSocketManager: DebugSocketManager | null = null;
+
+  constructor(appState: AppState) {
+    this.appState = appState;
+  }
+
+  setDebugSocketManager(manager: DebugSocketManager): void {
+    this.debugSocketManager = manager;
+  }
+
+  async startDebugSession(options: CompileOptions): Promise<void> {
+    if (!this.debugSocketManager) return;
+    
+    await this.debugSocketManager.startDebugSession(options);
+  }
+
+  async sendDebugCommand(command: string): Promise<void> {
+    if (!this.debugSocketManager) return;
+    
+    await this.debugSocketManager.sendDebugCommand(command);
+  }
+
+  cleanup(): void {
+    if (!this.debugSocketManager) return;
+    
+    this.debugSocketManager.cleanup();
+  }
+}
+
+/**
  * EditorSettingsController - Manages editor settings
  * In React, this would become a custom hook (useEditorSettings)
  */
@@ -482,21 +563,30 @@ export class EditorSettingsController {
 export class CinCoutApp {
   private appState: AppState;
   private compileSocketManager: CompileSocketManager;
+  private debugSocketManager: DebugSocketManager;
   private codeActions: CodeActionsController;
+  private debugController: DebugController;
   private editorSettings: EditorSettingsController;
 
   constructor() {
     // Initialize state
     this.appState = new AppState();
 
-    // Create state adapter for CompileSocketManager
-    const stateAdapter = new CompileStateAdapter(this.appState);
+    // Create state adapters
+    const compileStateAdapter = new CompileStateAdapter(this.appState);
+    const debugStateAdapter = new DebugStateAdapter(this.appState);
 
-    // Initialize controllers with new socketManager
-    this.compileSocketManager = new CompileSocketManager(stateAdapter);
+    // Initialize managers with adapters
+    this.compileSocketManager = new CompileSocketManager(compileStateAdapter);
+    this.debugSocketManager = new DebugSocketManager(debugStateAdapter);
 
+    // Initialize controllers with managers
     this.codeActions = new CodeActionsController(this.appState);
     this.codeActions.setCompileSocketManager(this.compileSocketManager);
+    
+    this.debugController = new DebugController(this.appState);
+    this.debugController.setDebugSocketManager(this.debugSocketManager);
+    
     this.editorSettings = new EditorSettingsController(this.appState);
   }
 
@@ -612,10 +702,23 @@ export class CinCoutApp {
       );
     }
 
+    // Debug button
+    if (elements.debug) {
+      elements.debug.addEventListener(
+        "click",
+        debounce(() => {
+          const options = DOMService.getCompileOptions();
+          this.debugController.startDebugSession(options);
+        }, 300)
+      );
+    }
+
     // Close output panel
     if (elements.closeOutput) {
       elements.closeOutput.addEventListener("click", () => {
+        // Clean up both socket managers
         this.compileSocketManager.cleanup();
+        this.debugController.cleanup();
         DOMService.hideOutputPanel();
         this.appState.setState({ isOutputVisible: false });
       });

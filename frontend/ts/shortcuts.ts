@@ -57,6 +57,7 @@ export const Actions = {
     formatCode: () => ShortcutUtils.triggerElement(DomElementId.FORMAT),
     styleCheck: () => ShortcutUtils.triggerElement(DomElementId.STYLE_CHECK),
     memoryCheck: () => ShortcutUtils.triggerElement(DomElementId.MEMORY_CHECK),
+    debug: () => ShortcutUtils.triggerElement(DomElementId.DEBUG),
     takeCodeSnapshot: () => ShortcutUtils.triggerElement(DomElementId.CODESNAP),
     closeOutputPanel: (): boolean => {
       const outputPanel = DOM.get(DomElementId.OUTPUT_PANEL);
@@ -189,6 +190,7 @@ const ActionDescriptions = {
   formatCode: "Format code",
   styleCheck: "Style check",
   memoryCheck: "Memory check",
+  debug: "Debug with GDB",
   closeOutput: "Close output panel",
 };
 
@@ -250,6 +252,10 @@ function createShortcuts(): ShortcutCategories {
     {
       action: Actions.ui.memoryCheck,
       description: ActionDescriptions.memoryCheck,
+    },
+    {
+      action: Actions.ui.debug,
+      description: ActionDescriptions.debug,
     },
   ];
 

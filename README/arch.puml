@@ -1,208 +1,192 @@
 @startuml Architecture
 
-!define LAYOUT_LEFT_RIGHT
-skinparam nodesep 20
-skinparam ranksep 25
+' Layout configuration
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam nodesep 12
+skinparam ranksep 18
 skinparam padding 2
 skinparam defaultFontName Arial
-skinparam defaultFontSize 11
-skinparam componentStyle uml2
+skinparam defaultFontSize 10
+skinparam componentStyle rectangle
 skinparam linetype ortho
-skinparam maxMessageSize 150
-skinparam wrapWidth 200
+skinparam arrowColor #666666
+skinparam maxMessageSize 100
+skinparam wrapWidth 150
+skinparam roundCorner 4
 
-' Define main actors and components
+' Component styling
+skinparam rectangle {
+  BackgroundColor #F8F8F8
+  BorderColor #CCCCCC
+}
+
+skinparam package {
+  BackgroundColor #FEFEFE
+  BorderColor #AAAAAA
+  FontColor #333333
+  FontStyle bold
+}
+
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #999999
+}
+
+skinparam database {
+  BackgroundColor #E8F4FF
+  BorderColor #4A8FCC
+}
+
+' Main actors and components
 actor "User" as User
 component "Browser" as Browser
 
-' Define Frontend UI layer
-rectangle "Frontend (UI)" {
-  ' Core UI components
+' Frontend UI layer - Enhanced to match project structure
+rectangle "Frontend (UI)" #E0F0FF {
+  ' Core UI components - Based on actual frontend/ts files
   package "UI Components" {
-    component "Code Editor\n(CodeMirror)" as Editor
-    component "Terminal\n(Xterm.js)" as Terminal
+    component "Editor (CodeMirror)" as Editor
+    component "Terminal (Xterm.js)" as Terminal
     component "Result Display" as Display
     component "Layout Manager" as LayoutMgr
-    component "Themes Manager" as ThemesMgr
-    component "Templates Selector" as TemplateSelector
+    component "Theme Manager" as ThemesMgr
+    component "Template Selector" as TemplateSelector
     component "Shortcut Manager" as ShortcutMgr
   }
   
-  ' User action buttons and controls
+  ' User actions - Based on handlers.ts
   package "Actions" {
     component "Compile & Run" as CompileAction
-    component "Memory Check" as MemcheckAction
+    component "Memcheck" as MemcheckAction
     component "Format" as FormatAction
     component "Style Check" as StyleCheckAction
-    component "View Assembly" as AssemblyAction
+    component "Assembly" as AssemblyAction
+    component "Debug" as DebugAction
     component "Zen Mode" as ZenModeAction
-    component "Code Snapshot" as SnapshotAction
+    component "Snapshot" as SnapshotAction
   }
   
   ' Client-side controllers
   package "Controllers" {
     component "App Controller" as AppController
-    component "Code Actions Controller" as CodeActionsController
-    component "Editor Settings Controller" as SettingsController
+    component "Code Actions" as CodeActionsController
+    component "Debug Controller" as DebugController
+    component "Settings" as SettingsController
     component "State Manager" as StateManager
   }
   
-  ' Communication
+  ' Communication layer - Based on actual socket files
   component "WebSocket Client" as WSClient
-  component "Compile Socket Manager" as CompileSocketMgr
+  component "Compile Socket" as CompileSocketMgr
+  component "Debug Socket" as DebugSocketMgr
   component "HTTP Client" as HTTPClient
 }
 
-' Define Backend layer
-rectangle "Backend (Server)" {
+' Backend layer - Enhanced to match project structure
+rectangle "Backend (Server)" #F0F0FF {
   component "Koa Server" as Koa
   component "WebSocket Server" as WSServer
   component "Socket.IO" as SocketIO
   
-  ' API Routes layer
-  package "API Routes" {
-    component "Compile API" as CompileAPI
-    component "Memory Check API" as MemcheckAPI
-    component "Format API" as FormatAPI
-    component "Style Check API" as StyleAPI
+  ' API Routes - Based on backend/src/routes
+  package "API Routes" as ApiRoutes {
     component "Assembly API" as AssemblyAPI
+    component "Format API" as FormatAPI
+    component "Memcheck API" as MemcheckAPI
+    component "Style Check API" as StyleAPI
     component "Templates API" as TemplatesAPI
   }
   
-  ' Services layer
+  ' Services - Based on backend/src/utils and backend/src/ws
   package "Services" {
     component "Compilation Service" as CompileService
-    component "Memory Check Service" as MemcheckService
-    component "Format Service" as FormatService
-    component "Style Check Service" as StyleService
-    component "Assembly Service" as AssemblyService
-    component "PTY Service" as PTYService
+    component "WebSocket Handler" as WSHandler
     component "Route Handler" as RouteHandler
+    component "Session Service" as SessionService
+    component "Debug Service" as DebugService
+    component "Memory Check" as MemcheckService
+    component "Format" as FormatService
+    component "Style Check" as StyleService
+    component "Assembly" as AssemblyService
+    component "PTY Service" as PTYService
   }
   
   component "Session Manager" as SessionMgr
-  component "Temp File Manager" as TempMgr
-  component "WebSocket Handler" as WSHandler
+  component "Temp Files Manager" as TempMgr
 }
 
-' Define External Tools layer
-rectangle "External Tools" {
+' External Tools - More accurately represented
+rectangle "External Tools" #FFF8E0 {
   component "GCC/G++" as GCC
   component "Clang/Clang++" as Clang
   component "Valgrind" as Valgrind
   component "clang-format" as ClangFormat
   component "cppcheck" as Cppcheck
+  component "GDB" as GDB
   component "Node-PTY" as NodePTY
 }
 
-database "Temporary Files" as TempFiles
-database "Active Sessions" as Sessions
+' Databases and storage
+database "Temp Files" as TempFiles
+database "Sessions" as Sessions
 database "Code Templates" as Templates
 
-' Define relationships
-
+' Key relationships - Enhanced to show more accurate flows
 ' User interaction
 User --> Browser : Interacts with
 Browser --> Editor : Writes code
 
-' User actions trigger frontend actions
-User --> CompileAction : Clicks
-User --> MemcheckAction : Clicks
-User --> FormatAction : Clicks
-User --> StyleCheckAction : Clicks
-User --> AssemblyAction : Clicks
-User --> ZenModeAction : Clicks
-User --> SnapshotAction : Clicks
+' Frontend key connections
+AppController --> StateManager : Manages app state
+CodeActionsController --> CompileSocketMgr : Handles compile requests
+DebugController --> DebugSocketMgr : Handles debug requests
+Editor --> ShortcutMgr : Registers keyboard shortcuts
+Editor --> TemplateSelector : Loads code templates
 
-' Frontend components interaction
-AppController --> StateManager : Manages state
-AppController --> CodeActionsController : Uses
-AppController --> SettingsController : Uses
-CodeActionsController --> CompileSocketMgr : Uses
-CodeActionsController --> HTTPClient : Uses for API calls
-Editor --> ShortcutMgr : Processes keyboard shortcuts
-ShortcutMgr --> ZenModeAction : Triggers
-ShortcutMgr --> CompileAction : Triggers
-ShortcutMgr --> SnapshotAction : Triggers
-LayoutMgr --> Editor : Controls layout
-LayoutMgr --> Terminal : Controls layout
-ThemesMgr --> Editor : Applies themes
-TemplateSelector --> Editor : Loads templates
+' Action flows
+CompileAction --> CodeActionsController : Triggers compilation
+DebugAction --> DebugController : Triggers debugging
+MemcheckAction --> HTTPClient : Makes HTTP request
+FormatAction --> HTTPClient : Makes HTTP request
+StyleCheckAction --> HTTPClient : Makes HTTP request
+AssemblyAction --> HTTPClient : Makes HTTP request
 
-' Frontend actions to communication layer
-CompileAction --> CompileSocketMgr : Triggers
-AssemblyAction --> CompileSocketMgr : Triggers
-ZenModeAction --> LayoutMgr : Triggers layout change
-CompileSocketMgr --> WSClient : Uses
-MemcheckAction --> HTTPClient : HTTP Request
-FormatAction --> HTTPClient : HTTP Request
-StyleCheckAction --> HTTPClient : HTTP Request
-SnapshotAction --> Display : Generates image
-
-' Frontend to Backend communication
-WSClient <--> SocketIO : WebSocket connection
-HTTPClient <--> Koa : HTTP/RESTful API
-SocketIO --> WSServer : Integrated with
+' Frontend to backend
+WSClient --> WSServer : WebSocket communication
+WSServer --> WSClient : Bidirectional data
+HTTPClient --> ApiRoutes : RESTful requests
+ApiRoutes --> HTTPClient : JSON responses
 
 ' Backend routing
-Koa --> RouteHandler : Processes HTTP requests
-Koa --> MemcheckAPI : Routes to
-Koa --> FormatAPI : Routes to
-Koa --> StyleAPI : Routes to
-Koa --> AssemblyAPI : Routes to
-Koa --> TemplatesAPI : Routes to
-WSServer --> WSHandler : Routes WebSocket messages
+Koa --> RouteHandler : HTTP request handling
+WSServer --> WSHandler : WebSocket handling
+ApiRoutes --> Services : Service invocation
+WSHandler --> CompileService : Compilation requests
+WSHandler --> DebugService : Debugging requests
+WSHandler --> SessionService : Session management
 
-' WebSocket handler to services
-WSHandler --> CompileService : Invokes for compilation
-WSHandler --> PTYService : For interactive execution
-WSHandler --> SessionMgr : Manages sessions
+' Services to external tools
+CompileService --> GCC : Code compilation
+CompileService --> Clang : Alternative compiler
+DebugService --> GDB : Interactive debugging
+MemcheckService --> Valgrind : Memory checking
+FormatService --> ClangFormat : Code formatting
+StyleService --> Cppcheck : Style analysis
+AssemblyService --> GCC : Assembly generation
+PTYService --> NodePTY : Terminal emulation
 
-' KOA API routes to Services calls
-MemcheckAPI --> MemcheckService : Invokes
-FormatAPI --> FormatService : Invokes
-StyleAPI --> StyleService : Invokes
-AssemblyAPI --> AssemblyService : Invokes
-TemplatesAPI --> Templates : Retrieves
-
-' Services to External Tools calls
-CompileService --> GCC : Executes
-CompileService --> Clang : Executes
-AssemblyService --> GCC : Generates assembly
-AssemblyService --> Clang : Generates assembly
-MemcheckService --> Valgrind : Executes
-FormatService --> ClangFormat : Executes
-StyleService --> Cppcheck : Executes
-PTYService --> NodePTY : Creates terminal
-
-' File and Session management
+' File and resource management
 CompileService --> TempMgr : Creates temp files
-MemcheckService --> TempMgr : Creates temp files
-FormatService --> TempMgr : Creates temp files
-StyleService --> TempMgr : Creates temp files
-AssemblyService --> TempMgr : Creates temp files
-TempMgr --> TempFiles : Manages
-SessionMgr --> Sessions : Tracks
-PTYService --> SessionMgr : Uses
+DebugService --> TempMgr : Debug files
+TempMgr --> TempFiles : File storage
+SessionMgr --> Sessions : Session storage
+TemplatesAPI --> Templates : Retrieves templates
 
 ' Results flow back to frontend
-WSHandler --> WSServer : Sends compilation results
-WSServer --> WSClient : Streams compilation results
-WSClient --> CompileSocketMgr : Processes events
-CompileSocketMgr --> Display : Updates UI
-CompileSocketMgr --> Terminal : Updates terminal
-CompileSocketMgr --> StateManager : Updates state
-
-MemcheckAPI --> HTTPClient : Returns HTTP response
-FormatAPI --> HTTPClient : Returns HTTP response
-StyleAPI --> HTTPClient : Returns HTTP response
-AssemblyAPI --> HTTPClient : Returns HTTP response
-
-' Interactive terminal
-Terminal --> WSClient : Sends input
-WSClient --> WSServer : Transmits input
-WSServer --> WSHandler : Routes input
-WSHandler --> PTYService : Processes input
-PTYService --> NodePTY : Sends to process
+WSClient --> CompileSocketMgr : Compilation results
+WSClient --> DebugSocketMgr : Debug data
+CompileSocketMgr --> Display : Updates UI with results
+DebugSocketMgr --> Terminal : Shows debug output
 
 @enduml

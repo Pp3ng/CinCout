@@ -132,6 +132,15 @@ export interface FormatResult {
   error?: string;
 }
 
+/**
+ * GDB debug session result
+ */
+export interface DebugSessionResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 // ==========================================
 // Session Types
 // ==========================================
@@ -146,6 +155,7 @@ export interface Session {
   dimensions: { cols: number; rows: number };
   sessionType: string;
   socketId?: string; // Optional Socket.IO socket ID for reference
+  isDebugSession?: boolean; // Whether this is a GDB debug session
 }
 
 // ==========================================
@@ -195,6 +205,14 @@ export enum SocketEvents {
 
   // Error handling
   ERROR = "error",
+  
+  // GDB Debugging events
+  DEBUG_START = "debug_start",
+  DEBUG_COMMAND = "debug_command",
+  DEBUG_RESPONSE = "debug_response",
+  DEBUG_BREAKPOINT = "debug_breakpoint",
+  DEBUG_ERROR = "debug_error",
+  DEBUG_EXIT = "debug_exit"
 }
 
 // ==========================================
@@ -212,6 +230,7 @@ export interface ICompilationService {
   runMemoryCheck(env: CompilationEnvironment, code: string, options: CompilationOptions): Promise<MemoryCheckResult>;
   formatCode(code: string, style?: string): Promise<FormatResult>;
   runStyleCheck(code: string): Promise<StyleCheckResult>;
+  startDebugSession(env: CompilationEnvironment, options: CompilationOptions): Promise<DebugSessionResult>;
 }
 
 /**
@@ -221,6 +240,7 @@ export interface ISessionService {
   initSessionService(): void;
   createSession(socket: Socket): string;
   startCompilationSession(socket: Socket, sessionId: string, tmpDir: DirResult, outputFile: string): boolean;
+  startDebugSession(socket: Socket, sessionId: string, tmpDir: DirResult, outputFile: string): boolean;
   sendInputToSession(sessionId: string, input: string): boolean;
   resizeTerminal(sessionId: string, cols: number, rows: number): boolean;
   terminateSession(sessionId: string): void;
@@ -261,3 +281,8 @@ export interface MemcheckRequest extends CodeRequest {}
  * Style check route request
  */
 export interface StyleCheckRequest extends CodeRequest {}
+
+/**
+ * Debug route request
+ */
+export interface DebugRequest extends CodeRequest {}

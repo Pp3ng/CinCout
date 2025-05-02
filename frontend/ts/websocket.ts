@@ -27,14 +27,13 @@ export enum SocketEvents {
 
   // Error handling
   ERROR = "error",
-  
+
   // GDB Debugging events
   DEBUG_START = "debug_start",
   DEBUG_COMMAND = "debug_command",
   DEBUG_RESPONSE = "debug_response",
-  DEBUG_BREAKPOINT = "debug_breakpoint",
   DEBUG_ERROR = "debug_error",
-  DEBUG_EXIT = "debug_exit"
+  DEBUG_EXIT = "debug_exit",
 }
 
 /**
@@ -110,13 +109,13 @@ export class WebSocketManager {
         this.compilationState = CompilationState.IDLE;
         this.notifyListeners(SocketEvents.EXIT, data);
       });
-      
+
       // Handle debug session events
       this.socket.on(SocketEvents.DEBUG_START, (data) => {
         this.compilationState = CompilationState.RUNNING;
         this.notifyListeners(SocketEvents.DEBUG_START, data);
       });
-      
+
       this.socket.on(SocketEvents.DEBUG_EXIT, (data) => {
         this.compilationState = CompilationState.IDLE;
         this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
@@ -128,7 +127,6 @@ export class WebSocketManager {
         SocketEvents.ERROR,
         SocketEvents.CLEANUP_COMPLETE,
         SocketEvents.DEBUG_RESPONSE,
-        SocketEvents.DEBUG_BREAKPOINT,
         SocketEvents.DEBUG_ERROR,
       ].forEach((event) => {
         this.socket?.on(event, (data) => {
@@ -222,7 +220,7 @@ export class WebSocketManager {
   getSessionId(): string | null {
     return this.sessionId;
   }
-  
+
   /**
    * Set session ID
    * @param {string} id - Session ID
@@ -246,15 +244,17 @@ export class WebSocketManager {
   isProcessRunning(): boolean {
     return this.compilationState !== CompilationState.IDLE;
   }
-  
+
   /**
    * Set process running state - updates compilation state
    * @param {boolean} running - Whether a process is running
    */
   setProcessRunning(running: boolean): void {
-    this.compilationState = running ? CompilationState.RUNNING : CompilationState.IDLE;
+    this.compilationState = running
+      ? CompilationState.RUNNING
+      : CompilationState.IDLE;
   }
-  
+
   /**
    * Send input to the running program
    * @param {string} input - Input to send
@@ -263,7 +263,7 @@ export class WebSocketManager {
   sendInput(input: string): Promise<void> {
     return this.emit(SocketEvents.INPUT, { input });
   }
-  
+
   /**
    * Resize the terminal
    * @param {number} cols - Number of columns

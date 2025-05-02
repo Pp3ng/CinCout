@@ -16,7 +16,7 @@ import {
   MemoryCheckResult,
   StyleCheckResult,
   FormatResult,
-  DebugSessionResult
+  DebugSessionResult,
 } from "../types";
 
 /**
@@ -24,16 +24,6 @@ import {
  * Handles all code compilation, assembly generation, memory checks, and code formatting
  */
 export class CompilationService implements ICompilationService {
-  private readonly debug: boolean;
-
-  /**
-   * Create a new CompilationService
-   * @param {boolean} debug - Enable debug logging
-   */
-  constructor(debug: boolean = false) {
-    this.debug = debug;
-  }
-
   /**
    * Creates a compilation environment with appropriate files
    * @param {string} lang - Programming language ('c' or 'cpp')
@@ -46,10 +36,6 @@ export class CompilationService implements ICompilationService {
       const sourceFile = path.join(tmpDir.name, `program.${sourceExtension}`);
       const outputFile = path.join(tmpDir.name, "program.out");
       const asmFile = path.join(tmpDir.name, "program.s");
-
-      if (this.debug) {
-        console.log(`Created compilation environment in ${tmpDir.name}`);
-      }
 
       return { tmpDir, sourceFile, outputFile, asmFile };
     } catch (error) {
@@ -66,10 +52,6 @@ export class CompilationService implements ICompilationService {
   writeCodeToFile(filePath: string, code: string): void {
     try {
       fs.writeFileSync(filePath, code, "utf8");
-      
-      if (this.debug) {
-        console.log(`Wrote code to file: ${filePath}`);
-      }
     } catch (error) {
       console.error(`Error writing code to file ${filePath}:`, error);
       throw new Error(`Failed to write code to file: ${error}`);
@@ -117,31 +99,19 @@ export class CompilationService implements ICompilationService {
       failOnError?: boolean;
     } = {}
   ): Promise<ExecutionResult> {
-    if (this.debug) {
-      console.log(`Executing command: ${command}`);
-    }
-    
     return new Promise((resolve, reject) => {
       exec(command, options, (error, stdout, stderr) => {
         if (error && options.failOnError !== false) {
-          if (this.debug) {
-            console.error(`Command execution error: ${error.message}`);
-            console.error(`Error details: ${stderr}`);
-          }
           reject(stderr || error.message);
           return;
         }
-        
+
         const result = {
           stdout,
           stderr,
           exitCode: error ? error.code || 1 : 0,
         };
-        
-        if (this.debug) {
-          console.log(`Command completed with exit code ${result.exitCode}`);
-        }
-        
+
         resolve(result);
       });
     });
@@ -266,8 +236,12 @@ export class CompilationService implements ICompilationService {
       this.writeCodeToFile(env.sourceFile, code);
 
       // Determine compiler options
-      const compilerCmd = this.getCompilerCommand(options.lang, options.compiler);
-      const standardOption = options.standard || this.getStandardOption(options.lang);
+      const compilerCmd = this.getCompilerCommand(
+        options.lang,
+        options.compiler
+      );
+      const standardOption =
+        options.standard || this.getStandardOption(options.lang);
       const optimizationOption = options.optimization || "-O0";
 
       // Compile command
@@ -307,8 +281,12 @@ export class CompilationService implements ICompilationService {
       this.writeCodeToFile(env.sourceFile, code);
 
       // Determine compiler options
-      const compilerCmd = this.getCompilerCommand(options.lang, options.compiler);
-      const standardOption = options.standard || this.getStandardOption(options.lang);
+      const compilerCmd = this.getCompilerCommand(
+        options.lang,
+        options.compiler
+      );
+      const standardOption =
+        options.standard || this.getStandardOption(options.lang);
       const optimizationOption = options.optimization || "-O0";
 
       // Generate assembly command
@@ -351,8 +329,12 @@ export class CompilationService implements ICompilationService {
       this.writeCodeToFile(env.sourceFile, code);
 
       // Determine compiler options
-      const compilerCmd = this.getCompilerCommand(options.lang, options.compiler);
-      const standardOption = options.standard || this.getStandardOption(options.lang);
+      const compilerCmd = this.getCompilerCommand(
+        options.lang,
+        options.compiler
+      );
+      const standardOption =
+        options.standard || this.getStandardOption(options.lang);
       const optimizationOption = options.optimization || "-O0";
 
       // Compile with debug info
@@ -460,7 +442,10 @@ export class CompilationService implements ICompilationService {
    */
   async runStyleCheck(code: string): Promise<StyleCheckResult> {
     // Create temporary directory
-    const tmpDir = tmp.dirSync({ prefix: "CinCout-Style-", unsafeCleanup: true });
+    const tmpDir = tmp.dirSync({
+      prefix: "CinCout-Style-",
+      unsafeCleanup: true,
+    });
     const inFile = path.join(tmpDir.name, "input.cpp");
 
     try {
@@ -532,7 +517,7 @@ export class CompilationService implements ICompilationService {
   /**
    * Start a GDB debug session for a program
    * @param {CompilationEnvironment} env - Compilation environment
-   * @param {CompilationOptions} options - Compilation options 
+   * @param {CompilationOptions} options - Compilation options
    * @returns {Promise<{success: boolean, message?: string, error?: string}>} Debug session result
    */
   async startDebugSession(
@@ -541,9 +526,13 @@ export class CompilationService implements ICompilationService {
   ): Promise<DebugSessionResult> {
     try {
       // Determine compiler options for debug build
-      const compilerCmd = this.getCompilerCommand(options.lang, options.compiler);
-      const standardOption = options.standard || this.getStandardOption(options.lang);
-      
+      const compilerCmd = this.getCompilerCommand(
+        options.lang,
+        options.compiler
+      );
+      const standardOption =
+        options.standard || this.getStandardOption(options.lang);
+
       // Always compile with debug info and optimize for debugging
       const compileCmd = `${compilerCmd} -g -O0 ${standardOption} "${env.sourceFile}" -o "${env.outputFile}"`;
 
@@ -561,22 +550,24 @@ export class CompilationService implements ICompilationService {
         return { success: false, error: formattedError };
       }
 
-      return { 
-        success: true, 
-        message: "Program compiled successfully for debugging." 
+      return {
+        success: true,
+        message: "Program compiled successfully for debugging.",
       };
     } catch (error) {
-      const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : String(error);
+      const errorMsg =
+        typeof error === "string"
+          ? error
+          : error instanceof Error
+          ? error.message
+          : String(error);
       return {
         success: false,
-        error: `Error setting up debug session: ${errorMsg}`
+        error: `Error setting up debug session: ${errorMsg}`,
       };
     }
   }
-
 }
 
-// Create singleton instance with debug mode in non-production
-export const compilationService = new CompilationService(
-  process.env.NODE_ENV !== "production"
-);
+// Create singleton instance
+export const compilationService = new CompilationService();

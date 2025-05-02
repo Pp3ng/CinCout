@@ -16,16 +16,7 @@ export const socketEvents = new EventEmitter();
  */
 export class WebSocketManager implements IWebSocketManager {
   private io: SocketIOServer | null = null;
-  private readonly debug: boolean;
-  
-  /**
-   * Create a new WebSocketManager
-   * @param {boolean} debug - Enable debug logging
-   */
-  constructor(debug: boolean = false) {
-    this.debug = debug;
-  }
-  
+
   /**
    * Initialize Socket.IO server
    * @param {http.Server} server - HTTP server to attach Socket.IO
@@ -48,10 +39,6 @@ export class WebSocketManager implements IWebSocketManager {
 
         // Handle disconnect
         socket.on(SocketEvents.DISCONNECT, () => {
-          if (this.debug) {
-            console.log(`Socket disconnected: ${socket.id}`);
-          }
-          
           socketEvents.emit("socket-disconnect", {
             socketId: socket.id,
             sessionId: sessionSocket.sessionId,
@@ -63,15 +50,7 @@ export class WebSocketManager implements IWebSocketManager {
           socketId: socket.id,
           socket: sessionSocket,
         });
-        
-        if (this.debug) {
-          console.log(`Socket connected: ${socket.id}`);
-        }
       });
-
-      if (this.debug) {
-        console.log("Socket.IO server initialized");
-      }
 
       return this.io;
     } catch (error) {
@@ -90,57 +69,12 @@ export class WebSocketManager implements IWebSocketManager {
     try {
       if (socket && socket.connected) {
         socket.emit(event, data);
-        
-        if (this.debug) {
-          console.log(`Emitted '${event}' to client ${socket.id}`);
-        }
-      } else if (this.debug) {
-        console.log(`Cannot emit to disconnected socket`);
       }
     } catch (error) {
       console.error(`Error emitting event ${event} to client:`, error);
     }
   }
-  
-  /**
-   * Broadcast a message to all connected clients
-   * @param {string} event - Event name
-   * @param {any} data - Data to send
-   * @param {string} [room] - Optional room to broadcast to
-   */
-  broadcast(event: string, data: any, room?: string): void {
-    try {
-      if (!this.io) {
-        if (this.debug) {
-          console.log(`Cannot broadcast '${event}': Socket.IO not initialized`);
-        }
-        return;
-      }
-      
-      if (room) {
-        this.io.to(room).emit(event, data);
-        if (this.debug) {
-          console.log(`Broadcasting '${event}' to room ${room}`);
-        }
-      } else {
-        this.io.emit(event, data);
-        if (this.debug) {
-          console.log(`Broadcasting '${event}' to all clients`);
-        }
-      }
-    } catch (error) {
-      console.error(`Error broadcasting event ${event}:`, error);
-    }
-  }
-  
-  /**
-   * Get the Socket.IO server instance
-   * @returns {SocketIOServer | null} Socket.IO server instance
-   */
-  getIO(): SocketIOServer | null {
-    return this.io;
-  }
 }
 
 // Create singleton instance
-export const webSocketManager = new WebSocketManager(process.env.NODE_ENV !== "production");
+export const webSocketManager = new WebSocketManager();

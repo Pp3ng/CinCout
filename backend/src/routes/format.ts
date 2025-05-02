@@ -5,10 +5,7 @@
 import Router from "koa-router";
 import { koaHandler } from "../utils/routeHandler";
 import { compilationService } from "../utils/compilationService";
-import { 
-  AppError,
-  FormatRequest
-} from "../types";
+import { AppError, FormatRequest } from "../types";
 
 const router = new Router();
 

@@ -12,7 +12,6 @@ import path from "path";
 import http from "http";
 import ratelimit from "koa-ratelimit";
 import compress from "koa-compress";
-import logger from "koa-logger";
 import helmet from "koa-helmet";
 import serve from "koa-static";
 import zlib from "zlib";
@@ -31,8 +30,6 @@ import memcheckRouter from "./routes/memcheck";
 const numCPUs = os.cpus().length;
 // Use environment variable for port or default to 9527
 const port = parseInt(process.env.PORT || "9527", 10);
-// Debug mode based on environment
-const isDebugMode = process.env.NODE_ENV !== "production";
 
 /**
  * Configure and start a worker process
@@ -41,28 +38,24 @@ function startWorker() {
   // Create Koa application
   const app = new Koa();
 
-  // Add logger middleware
-  if (isDebugMode) {
-    app.use(logger());
-  }
-
   // Add error handler
   app.use(async (ctx: Context, next: () => Promise<any>) => {
     try {
       await next();
     } catch (err) {
       const error = err as Error;
-      const status = error instanceof AppError ? (error as AppError).status : 500;
-      
+      const status =
+        error instanceof AppError ? (error as AppError).status : 500;
+
       // Set HTTP status
       ctx.status = status;
-      
+
       // Set error response
       ctx.body = {
         success: false,
         error: error.message || "Internal Server Error",
       };
-      
+
       // Emit error event for logging
       ctx.app.emit("error", error, ctx);
     }
@@ -147,11 +140,31 @@ function startWorker() {
   const apiRouter = new Router({ prefix: "/api" });
 
   // Mount sub-routers
-  apiRouter.use("/format", formatRouter.routes(), formatRouter.allowedMethods());
-  apiRouter.use("/styleCheck", styleCheckRouter.routes(), styleCheckRouter.allowedMethods());
-  apiRouter.use("/templates", templatesRouter.routes(), templatesRouter.allowedMethods());
-  apiRouter.use("/assembly", assemblyRouter.routes(), assemblyRouter.allowedMethods());
-  apiRouter.use("/memcheck", memcheckRouter.routes(), memcheckRouter.allowedMethods());
+  apiRouter.use(
+    "/format",
+    formatRouter.routes(),
+    formatRouter.allowedMethods()
+  );
+  apiRouter.use(
+    "/styleCheck",
+    styleCheckRouter.routes(),
+    styleCheckRouter.allowedMethods()
+  );
+  apiRouter.use(
+    "/templates",
+    templatesRouter.routes(),
+    templatesRouter.allowedMethods()
+  );
+  apiRouter.use(
+    "/assembly",
+    assemblyRouter.routes(),
+    assemblyRouter.allowedMethods()
+  );
+  apiRouter.use(
+    "/memcheck",
+    memcheckRouter.routes(),
+    memcheckRouter.allowedMethods()
+  );
 
   // Use the router middleware
   app.use(apiRouter.routes()).use(apiRouter.allowedMethods());
@@ -162,7 +175,7 @@ function startWorker() {
     ctx.body = {
       success: false,
       error: "Not Found",
-      path: ctx.path
+      path: ctx.path,
     };
   });
 
@@ -175,7 +188,7 @@ function startWorker() {
       method: ctx.method,
       ip: ctx.ip,
     };
-    
+
     console.error("Server error:", errorDetails, err.stack);
   });
 
@@ -198,18 +211,20 @@ function startWorker() {
 if (cluster.isPrimary) {
   // Master process
   console.log(`Master ${process.pid} is running`);
-  
+
   // Fork workers
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
-  
+
   // Restart workers if they die
   cluster.on("exit", (worker, code, signal) => {
-    console.warn(`Worker ${worker.process.pid} died (${signal || code}), forking a new one`);
+    console.warn(
+      `Worker ${worker.process.pid} died (${signal || code}), forking a new one`
+    );
     cluster.fork();
   });
-  
+
   // Log when a worker comes online
   cluster.on("online", (worker) => {
     console.log(`Worker ${worker.process.pid} is online`);

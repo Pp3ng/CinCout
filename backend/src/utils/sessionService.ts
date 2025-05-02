@@ -6,11 +6,11 @@ import * as pty from "node-pty";
 import { DirResult } from "tmp";
 import { v4 as uuidv4 } from "uuid";
 import { Socket } from "socket.io";
-import { 
-  ISessionService, 
-  Session, 
-  SessionSocket, 
-  SocketEvents
+import {
+  ISessionService,
+  Session,
+  SessionSocket,
+  SocketEvents,
 } from "../types";
 import { socketEvents, webSocketManager } from "./webSocketHandler";
 
@@ -20,18 +20,15 @@ import { socketEvents, webSocketManager } from "./webSocketHandler";
  */
 export class SessionService implements ISessionService {
   private sessions: Map<string, Session>;
-  private readonly debug: boolean;
   private cleanupInterval: NodeJS.Timeout | null = null;
   private readonly maxSessionAge: number; // in milliseconds
 
   /**
    * Create a new SessionService
-   * @param {boolean} debug - Enable debug mode
    * @param {number} maxSessionAgeMinutes - Maximum session age in minutes
    */
-  constructor(debug: boolean = false, maxSessionAgeMinutes: number = 30) {
+  constructor(maxSessionAgeMinutes: number = 30) {
     this.sessions = new Map<string, Session>();
-    this.debug = debug;
     this.maxSessionAge = maxSessionAgeMinutes * 60 * 1000;
   }
 
@@ -55,10 +52,6 @@ export class SessionService implements ISessionService {
     this.cleanupInterval = setInterval(() => {
       this.cleanupStaleSessions();
     }, 5 * 60 * 1000); // Check every 5 minutes
-
-    if (this.debug) {
-      console.log("Session service initialized");
-    }
   }
 
   /**
@@ -197,16 +190,19 @@ export class SessionService implements ISessionService {
       const rows = 24;
 
       // Create PTY instance with GDB - use quiet mode for cleaner output
-      const ptyProcess = this.createPtyProcess(`gdb -q "${outputFile}"`, {
-        name: "xterm-256color",
-        cols: cols,
-        rows: rows,
-        cwd: tmpDir.name,
-        env: {
-          ...(process.env as { [key: string]: string }),
-          TERM: "xterm-256color",
-        },
-      });
+      const ptyProcess = this.createPtyProcess(
+        `gdb -q -ex "set disable-randomization off" "${outputFile}"`,
+        {
+          name: "xterm-256color",
+          cols: cols,
+          rows: rows,
+          cwd: tmpDir.name,
+          env: {
+            ...(process.env as { [key: string]: string }),
+            TERM: "xterm-256color",
+          },
+        }
+      );
 
       // Store session with debug flag
       this.sessions.set(sessionId, {
@@ -216,7 +212,7 @@ export class SessionService implements ISessionService {
         dimensions: { cols, rows },
         sessionType: "debug",
         socketId: socket.id,
-        isDebugSession: true
+        isDebugSession: true,
       });
 
       // Handle PTY output
@@ -230,13 +226,16 @@ export class SessionService implements ISessionService {
             .replace(/Reading symbols from .*\.\.\.([\r\n]|\s)*/g, "")
             // replace temporary path with a simplified version
             .replace(/\/tmp\/CinCout-[^\/]*\/([^.:]+)/g, "$1");
-          
+
           // Send filtered output to client
           webSocketManager.emitToClient(socket, SocketEvents.DEBUG_RESPONSE, {
             output: filteredData,
           });
         } catch (e) {
-          console.error(`Error sending debug output for session ${sessionId}:`, e);
+          console.error(
+            `Error sending debug output for session ${sessionId}:`,
+            e
+          );
         }
       });
 
@@ -252,7 +251,10 @@ export class SessionService implements ISessionService {
           // Clean up
           this.cleanupSession(sessionId);
         } catch (e) {
-          console.error(`Error processing exit for debug session ${sessionId}:`, e);
+          console.error(
+            `Error processing exit for debug session ${sessionId}:`,
+            e
+          );
           // Always clean up
           this.cleanupSession(sessionId);
         }
@@ -270,7 +272,10 @@ export class SessionService implements ISessionService {
           // Set a breakpoint at main
           ptyProcess.write("break main\n");
         } catch (e) {
-          console.error(`Error sending initial GDB commands for session ${sessionId}:`, e);
+          console.error(
+            `Error sending initial GDB commands for session ${sessionId}:`,
+            e
+          );
         }
       }, 500);
 
@@ -295,11 +300,9 @@ export class SessionService implements ISessionService {
     (socket as SessionSocket).sessionId = sessionId;
 
     // Notify the client of the new session
-    webSocketManager.emitToClient(socket, SocketEvents.SESSION_CREATED, { sessionId });
-
-    if (this.debug) {
-      console.log(`Created new session: ${sessionId} for socket: ${socket.id}`);
-    }
+    webSocketManager.emitToClient(socket, SocketEvents.SESSION_CREATED, {
+      sessionId,
+    });
 
     return sessionId;
   }
@@ -346,17 +349,11 @@ export class SessionService implements ISessionService {
     const session = this.sessions.get(sessionId);
     if (!session) {
       // Session not found - likely already terminated
-      if (this.debug) {
-        console.log(`Cannot resize terminal for session ${sessionId}: session not found`);
-      }
       return false;
     }
 
     if (!session.pty) {
       // Session exists but no PTY attached
-      if (this.debug) {
-        console.log(`Cannot resize terminal for session ${sessionId}: no PTY instance`);
-      }
       return false;
     }
 
@@ -408,36 +405,21 @@ export class SessionService implements ISessionService {
     if (session) {
       if (session.tmpDir) {
         try {
-          // Force removal of temporary directory
           session.tmpDir.removeCallback();
         } catch (e) {
-          console.error(
-            `Error removing temporary directory for session ${sessionId}:`,
-            e
-          );
-          // Try a different approach if the callback method fails
           try {
             const { exec } = require("child_process");
-            exec(`rm -rf "${session.tmpDir.name}"`, (err: Error) => {
-              if (err) {
-                console.error(
-                  `Failed to forcefully remove temp dir ${session.tmpDir.name}:`,
-                  err
-                );
-              }
-            });
-          } catch (execErr) {
-            console.error(`Failed to execute rm command:`, execErr);
+            exec(`rm -rf "${session.tmpDir.name}"`);
+          } catch {
+            console.error(
+              `Failed to forcefully remove temp dir ${session.tmpDir.name}:`
+            );
           }
         }
       }
 
-      // Always remove the session from active sessions map
+      // Remove session from the map
       this.sessions.delete(sessionId);
-
-      if (this.debug) {
-        console.log(`Cleaned up session: ${sessionId}`);
-      }
     }
   }
 
@@ -447,7 +429,7 @@ export class SessionService implements ISessionService {
    */
   private cleanupStaleSessions(): void {
     const now = Date.now();
-    
+
     this.sessions.forEach((session, sessionId) => {
       if (now - session.lastActivity > this.maxSessionAge) {
         console.log(
@@ -476,7 +458,5 @@ export class SessionService implements ISessionService {
   }
 }
 
-// Create singleton instance with debug mode in non-production
-export const sessionService = new SessionService(
-  process.env.NODE_ENV !== "production"
-);
+// Create singleton instance
+export const sessionService = new SessionService();

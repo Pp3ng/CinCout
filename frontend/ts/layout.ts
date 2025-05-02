@@ -76,7 +76,7 @@ class LayoutManager {
     if (elements.outputPanel && elements.editorPanel) {
       elements.outputPanel.style.display = isOutputVisible ? "flex" : "none";
       elements.editorPanel.classList.toggle("with-output", isOutputVisible);
-      
+
       // Clear output content when panel is hidden
       if (!isOutputVisible) {
         this.clearOutputContent();
@@ -90,7 +90,7 @@ class LayoutManager {
   // Clear output content
   clearOutputContent(): void {
     if (this.elements.outputContent) {
-      this.elements.outputContent.innerHTML = '';
+      this.elements.outputContent.innerHTML = "";
     }
   }
 

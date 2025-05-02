@@ -45,7 +45,7 @@ export interface KoaRequestContext<T = any> extends Context {
  */
 export class AppError extends Error {
   status: number;
-  
+
   constructor(message: string, status: number = 500) {
     super(message);
     this.status = status;
@@ -205,14 +205,13 @@ export enum SocketEvents {
 
   // Error handling
   ERROR = "error",
-  
+
   // GDB Debugging events
   DEBUG_START = "debug_start",
   DEBUG_COMMAND = "debug_command",
   DEBUG_RESPONSE = "debug_response",
-  DEBUG_BREAKPOINT = "debug_breakpoint",
   DEBUG_ERROR = "debug_error",
-  DEBUG_EXIT = "debug_exit"
+  DEBUG_EXIT = "debug_exit",
 }
 
 // ==========================================
@@ -225,12 +224,27 @@ export enum SocketEvents {
 export interface ICompilationService {
   createCompilationEnvironment(lang: string): CompilationEnvironment;
   writeCodeToFile(filePath: string, code: string): void;
-  compileCode(env: CompilationEnvironment, code: string, options: CompilationOptions): Promise<CompilationResult>;
-  generateAssembly(env: CompilationEnvironment, code: string, options: CompilationOptions): Promise<AssemblyResult>;
-  runMemoryCheck(env: CompilationEnvironment, code: string, options: CompilationOptions): Promise<MemoryCheckResult>;
+  compileCode(
+    env: CompilationEnvironment,
+    code: string,
+    options: CompilationOptions
+  ): Promise<CompilationResult>;
+  generateAssembly(
+    env: CompilationEnvironment,
+    code: string,
+    options: CompilationOptions
+  ): Promise<AssemblyResult>;
+  runMemoryCheck(
+    env: CompilationEnvironment,
+    code: string,
+    options: CompilationOptions
+  ): Promise<MemoryCheckResult>;
   formatCode(code: string, style?: string): Promise<FormatResult>;
   runStyleCheck(code: string): Promise<StyleCheckResult>;
-  startDebugSession(env: CompilationEnvironment, options: CompilationOptions): Promise<DebugSessionResult>;
+  startDebugSession(
+    env: CompilationEnvironment,
+    options: CompilationOptions
+  ): Promise<DebugSessionResult>;
 }
 
 /**
@@ -239,8 +253,18 @@ export interface ICompilationService {
 export interface ISessionService {
   initSessionService(): void;
   createSession(socket: Socket): string;
-  startCompilationSession(socket: Socket, sessionId: string, tmpDir: DirResult, outputFile: string): boolean;
-  startDebugSession(socket: Socket, sessionId: string, tmpDir: DirResult, outputFile: string): boolean;
+  startCompilationSession(
+    socket: Socket,
+    sessionId: string,
+    tmpDir: DirResult,
+    outputFile: string
+  ): boolean;
+  startDebugSession(
+    socket: Socket,
+    sessionId: string,
+    tmpDir: DirResult,
+    outputFile: string
+  ): boolean;
   sendInputToSession(sessionId: string, input: string): boolean;
   resizeTerminal(sessionId: string, cols: number, rows: number): boolean;
   terminateSession(sessionId: string): void;
@@ -254,8 +278,6 @@ export interface ISessionService {
 export interface IWebSocketManager {
   initialize(server: any): any;
   emitToClient(socket: Socket, event: string, data: any): void;
-  broadcast(event: string, data: any, room?: string): void;
-  getIO(): any | null;
 }
 
 // ==========================================

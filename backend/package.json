@@ -17,7 +17,6 @@
     "koa-bodyparser": "^4.4.1",
     "koa-compress": "^5.1.1",
     "koa-helmet": "^8.0.1",
-    "koa-logger": "^3.2.1",
     "koa-ratelimit": "^5.1.0",
     "koa-router": "^13.0.1",
     "koa-static": "^5.0.0",

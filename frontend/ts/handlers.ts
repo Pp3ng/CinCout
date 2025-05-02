@@ -208,7 +208,7 @@ export class DOMService {
     // Clear output content when hiding the panel
     const output = document.getElementById("output");
     if (output) {
-      output.innerHTML = '';
+      output.innerHTML = "";
     }
 
     // If in Zen Mode, make sure we reset any inline styles
@@ -511,19 +511,19 @@ export class DebugController {
 
   async startDebugSession(options: CompileOptions): Promise<void> {
     if (!this.debugSocketManager) return;
-    
+
     await this.debugSocketManager.startDebugSession(options);
   }
 
   async sendDebugCommand(command: string): Promise<void> {
     if (!this.debugSocketManager) return;
-    
+
     await this.debugSocketManager.sendDebugCommand(command);
   }
 
   cleanup(): void {
     if (!this.debugSocketManager) return;
-    
+
     this.debugSocketManager.cleanup();
   }
 }
@@ -583,10 +583,10 @@ export class CinCoutApp {
     // Initialize controllers with managers
     this.codeActions = new CodeActionsController(this.appState);
     this.codeActions.setCompileSocketManager(this.compileSocketManager);
-    
+
     this.debugController = new DebugController(this.appState);
     this.debugController.setDebugSocketManager(this.debugSocketManager);
-    
+
     this.editorSettings = new EditorSettingsController(this.appState);
   }
 

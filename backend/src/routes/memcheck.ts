@@ -5,10 +5,7 @@
 import Router from "koa-router";
 import { koaHandler } from "../utils/routeHandler";
 import { compilationService } from "../utils/compilationService";
-import { 
-  AppError,
-  MemcheckRequest 
-} from "../types";
+import { AppError, MemcheckRequest } from "../types";
 
 const router = new Router();
 
@@ -49,7 +46,7 @@ router.post(
     } catch (error) {
       // Ensure cleanup on error
       env.tmpDir.removeCallback();
-      
+
       // Rethrow to be handled by koaHandler
       throw error;
     }

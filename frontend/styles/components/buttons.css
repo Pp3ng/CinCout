@@ -3,6 +3,17 @@
  * Styles for buttons, toggles, and other interactive controls
  */
 
+:root {
+  --btn-transition: transform 0.25s ease, box-shadow 0.25s ease,
+    filter 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+  --btn-hover-y: -1px;
+  --btn-active-y: 1px;
+  --btn-height: 24px;
+  --btn-padding-x: calc(var(--spacing-sm) - 1px);
+  --btn-padding-y: calc(var(--spacing-xs) - 1px);
+  --btn-gap: var(--spacing-xs);
+}
+
 /* Button container styles */
 .button-container {
   display: flex;
@@ -31,20 +42,20 @@ button {
   color: var(--text-primary);
   font-family: var(--font-mono);
   border: none;
-  padding: calc(var(--spacing-xs) - 1px) calc(var(--spacing-sm) - 1px);
+  padding: var(--btn-padding-y) var(--btn-padding-x);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: calc(var(--font-sm) - 1px);
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  height: 24px;
+  gap: var(--btn-gap);
+  height: var(--btn-height);
   white-space: nowrap;
   position: relative;
   overflow: hidden;
   min-width: 0;
   box-shadow: var(--btn-shadow);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  transition: var(--btn-transition);
 }
 
 /* Button variants */
@@ -59,13 +70,13 @@ button {
 
 /* Hover effects */
 button:hover {
-  transform: translateY(-1px);
+  transform: translateY(var(--btn-hover-y));
   box-shadow: var(--btn-shadow-hover);
   filter: brightness(1.1);
 }
 
 button:active {
-  transform: translateY(1px);
+  transform: translateY(var(--btn-active-y));
   box-shadow: var(--btn-shadow);
   filter: brightness(0.95);
   transition: transform 0.1s ease;
@@ -118,35 +129,6 @@ button#zenMode:hover {
   box-shadow: var(--btn-shadow-hover);
 }
 
-/* Loading animation for buttons */
-button.loading {
-  position: relative;
-  cursor: wait;
-}
-
-button.loading::after {
-  content: "";
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  top: 50%;
-  left: 50%;
-  margin: -8px 0 0 -8px;
-  border: 2px solid transparent;
-  border-top-color: var(--text-primary);
-  border-radius: 50%;
-  animation: button-loading-spinner 0.8s ease infinite;
-}
-
-@keyframes button-loading-spinner {
-  from {
-    transform: rotate(0turn);
-  }
-  to {
-    transform: rotate(1turn);
-  }
-}
-
 /* Disabled button state */
 button:disabled {
   opacity: 0.6;
@@ -160,14 +142,14 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 5px;
-  height: 26px;
+  height: var(--btn-height);
   flex-shrink: 0;
 }
 
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 36px;
+  width: 34px;
   height: 18px;
 }
 
@@ -186,8 +168,8 @@ button:disabled {
   bottom: 0;
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
-  border: 2px solid var(--border);
-  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  border: 1px solid var(--border);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .slider:before {
@@ -195,46 +177,47 @@ button:disabled {
   content: "";
   height: 12px;
   width: 12px;
-  left: 3px;
-  bottom: 1.5px;
+  left: 2px;
+  bottom: 2px;
   background-color: var(--text-primary);
   border-radius: 50%;
-  transition: transform 0.3s, background-color 0.3s, box-shadow 0.3s;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 input:checked + .slider {
   background-color: var(--accent);
-  box-shadow: var(--shadow-accent-sm);
+  box-shadow: var(--shadow-accent-sm), inset 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 input:checked + .slider:before {
   transform: translateX(16px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+  background-color: #fff;
 }
 
-/* Special buttons */
 #toggle-shortcuts,
 #learn-btn,
 .dropdown-btn {
-  --special-btn-shadow: var(--shadow-sm);
-  --special-btn-shadow-hover: var(--shadow-accent-md);
+  --btn-bg: var(--bg-secondary);
+  --btn-shadow: var(--shadow-sm);
+  --btn-shadow-hover: var(--shadow-accent-md);
 
-  background: var(--bg-secondary);
+  background: var(--btn-bg);
   color: var(--text-primary);
   border: 1px solid var(--border);
-  padding: 5px 12px;
+  padding: var(--btn-padding-y) var(--btn-padding-x);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--font-sm);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--btn-gap);
   position: relative;
   overflow: hidden;
-  box-shadow: var(--special-btn-shadow);
+  box-shadow: var(--btn-shadow);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-  transition: transform 0.25s ease, border-color 0.25s ease,
-    background-color 0.25s ease, box-shadow 0.25s ease;
+  transition: var(--btn-transition);
 }
 
 #toggle-shortcuts:hover,
@@ -242,8 +225,8 @@ input:checked + .slider:before {
 .dropdown-btn:hover {
   border-color: var(--accent);
   background-color: rgba(var(--accent-rgb), 0.1);
-  transform: translateY(-2px);
-  box-shadow: var(--special-btn-shadow-hover);
+  transform: translateY(var(--btn-hover-y));
+  box-shadow: var(--btn-shadow-hover);
 }
 
 #toggle-shortcuts::before,

@@ -28,9 +28,10 @@
   padding-top: 40px; /* Space for the minimized header */
 }
 
-/* Zen Mode with output panel visible */
+/* Zen Mode with output panel visible - ensure headers align */
 .zen-mode-active .editor-panel.with-output .CodeMirror.zen-mode {
-  right: 40%; /* Make room for output panel */
+  right: 50%; /* Make room for output panel */
+  border-right: 1px solid var(--border);
 }
 
 .zen-mode-active .output-panel {
@@ -38,6 +39,7 @@
   top: 0;
   right: 0;
   bottom: 0;
+
   width: 40%;
   height: 100vh !important;
   z-index: 9001;
@@ -46,15 +48,26 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+
+/* Ensure panel headers align at same height */
+.zen-mode-active .output-panel .panel-header,
+.zen-mode-active .zen-mode-minimized {
+  position: fixed;
+  top: 0;
+  height: 40px !important;
+  min-height: 40px !important;
+  z-index: 9100;
+  opacity: 0.9;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
 }
 
 .zen-mode-active .output-panel .panel-header {
-  position: fixed;
-  top: 0;
   right: 0;
   width: 40%;
-  opacity: 0.9;
-  z-index: 9100;
 }
 
 .zen-mode-active .output-panel #output {
@@ -175,8 +188,9 @@
 
 /* Text selection */
 .CodeMirror-selected {
-  background-color: rgba(100, 150, 200, 0.2) !important;
+  background-color: rgba(var(--accent-rgb), 0.2) !important;
   transition: background-color var(--transition-fast);
+  border-radius: 2px;
 }
 
 /* Code folding */
@@ -187,6 +201,14 @@
 .CodeMirror-foldgutter-open,
 .CodeMirror-foldgutter-folded {
   cursor: pointer;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.CodeMirror-foldgutter-open:hover,
+.CodeMirror-foldgutter-folded:hover {
+  color: var(--accent);
+  transform: scale(1.2);
 }
 
 .CodeMirror-foldgutter-open:after {
@@ -206,6 +228,14 @@
   border-radius: var(--radius-sm);
   background-color: rgba(var(--accent-rgb), 0.2);
   cursor: pointer;
+  box-shadow: var(--shadow-accent-sm);
+  transition: all var(--transition-fast);
+}
+
+.CodeMirror-foldmarker:hover {
+  background-color: rgba(var(--accent-rgb), 0.3);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-accent-md);
 }
 
 /* Bracket matching */

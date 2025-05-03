@@ -21,7 +21,7 @@ select {
   white-space: nowrap;
   overflow: hidden;
   position: relative;
-  font-family: var(--font-system);
+  font-family: var(--font-mono);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
@@ -31,15 +31,15 @@ select#language {
 }
 
 select#compiler {
-  width: 65px;
+  width: 70px;
 }
 
 select#template {
-  width: 135px;
+  width: 140px;
 }
 
 select#optimization {
-  width: 113px;
+  width: 130px;
 }
 
 /* Select states */
@@ -59,6 +59,7 @@ select option {
   background: var(--bg-secondary);
   color: var(--text-primary);
   padding: 12px;
+  font-family: var(--font-mono);
 }
 
 /* Custom select container for hover behavior */
@@ -98,8 +99,8 @@ select option {
   top: 100%;
   left: 0;
   width: 100%;
-  margin-top: 1px;
-  max-height: 180px;
+  margin-top: 4px;
+  max-height: 200px;
   overflow-y: auto;
   background: var(--bg-secondary);
   border: 2px solid var(--accent);
@@ -127,6 +128,7 @@ select option {
   cursor: pointer;
   border-left: 0px solid var(--accent);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  font-family: var(--font-mono);
 }
 
 .custom-option:hover {

@@ -81,7 +81,7 @@ export const showNotification = (
     positionCSS += "transform: translate(-50%, -50%); ";
   }
 
-  notification.style.cssText = `${positionCSS} background: ${bgColor}; color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease;`;
+  notification.style.cssText = `${positionCSS} background: ${bgColor}; color: white; padding: 10px; border-radius: 5px; z-index: 9999; transition: opacity 0.5s ease; font-family: 'Fira Code', 'JetBrains Mono', monospace;`;
 
   // For centered notifications, try to append to editor panel first
   if (isCentered) {
@@ -130,7 +130,7 @@ export const takeCodeSnap = async (): Promise<void> => {
     loadingIndicator.innerHTML =
       '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...';
     loadingIndicator.style.cssText =
-      "position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;";
+      "position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999; font-family: 'Fira Code', monospace;";
     document.body.appendChild(loadingIndicator);
 
     // Get the CodeMirror instance

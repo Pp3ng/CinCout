@@ -334,44 +334,8 @@ export const ShortcutManager = (() => {
     }
   }
 
-  // UI rendering
-  function renderShortcutsList(): void {
-    const container = DOM.get(DomElementId.SHORTCUTS_CONTENT);
-    if (!container) return;
-
-    const createListItem = ({
-      displayKeys,
-      description,
-    }: ShortcutDefinition): string =>
-      `${displayKeys
-        .map((key) => `<kbd>${key}</kbd>`)
-        .join(" + ")} - ${description}`;
-
-    const ul = document.createElement("ul");
-    const { common, special } = state.shortcuts;
-    const platformShortcuts = state.isMac
-      ? state.shortcuts.mac
-      : state.shortcuts.other;
-
-    // Render all shortcut definitions
-    [
-      ...Object.values(common),
-      ...Object.values(platformShortcuts),
-      ...Object.values(special),
-    ].forEach((shortcut) => {
-      const li = document.createElement("li");
-      li.innerHTML = createListItem(shortcut);
-      ul.appendChild(li);
-    });
-
-    container.innerHTML = "";
-    container.appendChild(ul);
-  }
-
   // Public API
   function initialize(): () => void {
-    renderShortcutsList();
-
     document.addEventListener("keydown", handleKeyboardEvent);
 
     return () => {

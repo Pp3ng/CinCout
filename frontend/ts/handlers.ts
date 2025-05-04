@@ -1,6 +1,6 @@
 // Import utility functions
 import { debounce, takeCodeSnap, showNotification } from "./utils";
-import { themeStoreInstance } from "./themes";
+import { ThemeService } from "./services/frontend-services";
 import CompileSocketManager from "./compileSocket";
 import DebugSocketManager from "./debugSocket";
 import {
@@ -128,6 +128,44 @@ export class EditorService {
   static setAssemblyValue(value: string): void {
     if ((window as any).assemblyView) {
       (window as any).assemblyView.setValue(value);
+    }
+  }
+
+  // Methods for React integration - direct control without events
+  static setLanguage(language: string): void {
+    const languageSelect = document.getElementById(
+      "language"
+    ) as HTMLSelectElement;
+    if (languageSelect && languageSelect.value !== language) {
+      languageSelect.value = language;
+      // Trigger native change event to ensure any vanilla JS listeners are triggered
+      languageSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  static setCompiler(compiler: string): void {
+    const compilerSelect = document.getElementById(
+      "compiler"
+    ) as HTMLSelectElement;
+    if (compilerSelect && compilerSelect.value !== compiler) {
+      compilerSelect.value = compiler;
+      compilerSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  static setOptimization(optimization: string): void {
+    const optimizationSelect = document.getElementById(
+      "optimization"
+    ) as HTMLSelectElement;
+    if (optimizationSelect && optimizationSelect.value !== optimization) {
+      optimizationSelect.value = optimization;
+      optimizationSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  static setVimMode(enabled: boolean): void {
+    if ((window as any).editor) {
+      (window as any).editor.setOption("keyMap", enabled ? "vim" : "default");
     }
   }
 }
@@ -542,13 +580,7 @@ export class EditorSettingsController {
   setTheme(theme: string): void {
     this.appState.setState({ theme });
     localStorage.setItem("cincout-theme", theme);
-    themeStoreInstance.setTheme(theme);
-  }
-
-  setVimMode(enabled: boolean): void {
-    this.appState.setState({ vimMode: enabled });
-    localStorage.setItem("cincout-vim-mode", enabled.toString());
-    EditorService.setOption("keyMap", enabled ? "vim" : "default");
+    ThemeService.setTheme(theme);
   }
 }
 
@@ -760,21 +792,6 @@ export class CinCoutApp {
       if (elements.themeSelect) {
         elements.themeSelect.value = this.appState.getState().theme;
         this.editorSettings.setTheme(elements.themeSelect.value);
-      }
-    }
-
-    // Vim mode toggle
-    if (elements.vimMode) {
-      elements.vimMode.addEventListener("change", () => {
-        if (elements.vimMode) {
-          this.editorSettings.setVimMode(elements.vimMode.checked);
-        }
-      });
-
-      // Initialize with saved vim mode
-      if (elements.vimMode) {
-        elements.vimMode.checked = this.appState.getState().vimMode;
-        this.editorSettings.setVimMode(elements.vimMode.checked);
       }
     }
   }

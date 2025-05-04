@@ -57,27 +57,6 @@ export interface EditorInstances {
 }
 
 // ==========================================
-// Templates
-// ==========================================
-
-// Template cache structure
-export interface TemplateCache {
-  lists: Record<string, string[]>;
-  contents: Record<string, string>;
-}
-
-// ==========================================
-// Selector & Custom UI
-// ==========================================
-
-// Select option representation
-export interface SelectOption {
-  readonly value: string;
-  readonly text: string;
-  readonly selected: boolean;
-}
-
-// ==========================================
 // WebSocket & Compilation
 // ==========================================
 

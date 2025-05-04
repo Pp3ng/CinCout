@@ -39,21 +39,4 @@ import "./editor"; // Main editor functionality (depends on most other modules)
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize React Header
   initializeReactHeader();
-
-  // Setup event listeners for React-to-vanilla communication
-  setupReactEventListeners();
 });
-
-// Setup event listeners for React component events
-function setupReactEventListeners() {
-  // Theme change event from React - we'll keep this one for now
-  document.addEventListener("react:themeChange", (event: any) => {
-    const themeSelect = document.getElementById(
-      "theme-select"
-    ) as HTMLSelectElement;
-    if (themeSelect && event.detail?.theme) {
-      themeSelect.value = event.detail.theme;
-      themeSelect.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-  });
-}

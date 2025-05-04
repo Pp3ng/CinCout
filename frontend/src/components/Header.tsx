@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useMemo,
   useEffect,
+  memo,
 } from "react";
 import styled, { keyframes } from "styled-components";
 import { showNotification } from "../utils";
@@ -277,7 +278,6 @@ const DropdownContent = styled.div`
 
     &:hover .resource-icon {
       color: var(--accent);
-      animation: ${float} 1s ease-in-out infinite alternate;
     }
   }
 `;
@@ -398,6 +398,11 @@ const Slider = styled.span`
   }
 `;
 
+// Constants for better maintenance
+const EASTER_EGG_TIMEOUT = 1500;
+const EASTER_EGG_CLICKS_REQUIRED = 3;
+const NOTIFICATION_DURATION = 4000;
+
 // Type for learning resources
 interface LearningResource {
   href: string;
@@ -450,210 +455,255 @@ const LEARNING_RESOURCES: LearningResource[] = [
   },
 ];
 
-const Header: React.FC<HeaderProps> = ({
-  onLanguageChange,
-  onCompilerChange,
-  onOptimizationChange,
-  onVimModeToggle,
-  initialLanguage = "c",
-  initialCompiler = "gcc",
-  initialOptimization = "-O0",
-  initialVimMode = false,
-  shortcuts = [],
-}) => {
-  // Use theme hook
-  const { theme, setTheme, getThemeOptions } = useTheme();
+// Pre-defined options arrays to avoid recreation
+const LANGUAGE_OPTIONS = [
+  { value: "c", label: "C" },
+  { value: "cpp", label: "C++" },
+];
 
-  // Use templates hook
-  const {
-    language,
-    setLanguage,
-    templates,
-    selectedTemplate,
-    setSelectedTemplate,
-  } = useTemplates(initialLanguage);
+const COMPILER_OPTIONS = [
+  { value: "gcc", label: "GCC" },
+  { value: "clang", label: "Clang" },
+];
 
-  // State for all form controls
-  const [compiler, setCompiler] = useState(initialCompiler);
-  const [optimization, setOptimization] = useState(initialOptimization);
-  const [vimMode, setVimMode] = useState(initialVimMode);
-  const [clickCount, setClickCount] = useState(0);
-  const [lastClickTime, setLastClickTime] = useState(0);
+const OPTIMIZATION_OPTIONS = [
+  { value: "-O0", label: "-O0 (No optimization)" },
+  { value: "-O1", label: "-O1 (Basic optimization)" },
+  { value: "-O2", label: "-O2 (Moderate optimization)" },
+  { value: "-O3", label: "-O3 (Maximum optimization)" },
+  { value: "-Os", label: "-Os (Size optimization)" },
+];
 
-  // References for dropdown containers
-  const learnDropdownRef = useRef<HTMLDivElement>(null);
-  const shortcutsDropdownRef = useRef<HTMLDivElement>(null);
+// Extracted Vim Icon styling
+const StyledVimIcon = styled(VimIcon)`
+  margin-right: 4px;
+`;
 
-  // Effect to handle Vim mode initialization
-  useEffect(() => {
-    // Check local storage for saved preference
-    const savedVimMode = localStorage.getItem("cincout-vim-mode") === "true";
+// Memoized Dropdown components
+const LearningResourcesDropdown = memo(
+  ({ resources }: { resources: React.ReactNode }) => (
+    <DropdownContainer className="dropdown" id="learn-dropdown">
+      <DropdownButton id="learn-cpp-btn" className="header-btn dropdown-btn">
+        <i className="fas fa-book"></i> Learn
+        <i className="fas fa-chevron-down"></i>
+      </DropdownButton>
+      <DropdownContent className="dropdown-content" id="learn-dropdown-content">
+        {resources}
+      </DropdownContent>
+    </DropdownContainer>
+  )
+);
 
-    // Update state if different from prop
-    if (savedVimMode !== initialVimMode) {
-      setVimMode(savedVimMode);
-      if (onVimModeToggle) onVimModeToggle(savedVimMode);
-    }
+const ShortcutsDropdown = memo(
+  ({ shortcuts }: { shortcuts: React.ReactNode }) => (
+    <ShortcutsContainer
+      id="shortcuts-panel"
+      className="shortcuts-panel dropdown"
+    >
+      <DropdownButton id="toggle-shortcuts" className="header-btn dropdown-btn">
+        <i className="fas fa-keyboard"></i> Shortcuts
+        <i className="fas fa-chevron-down"></i>
+      </DropdownButton>
+      <ShortcutsContent
+        className="shortcuts-content dropdown-content"
+        id="shortcuts-content"
+      >
+        {shortcuts}
+      </ShortcutsContent>
+    </ShortcutsContainer>
+  )
+);
 
-    // Set editor option directly (this will be removed once full React migration is complete)
-    const setEditorVimMode = (enabled: boolean) => {
-      if ((window as any).editor) {
-        (window as any).editor.setOption("keyMap", enabled ? "vim" : "default");
-      }
-    };
+// Main component wrapped with memo for performance
+const Header: React.FC<HeaderProps> = memo(
+  ({
+    onLanguageChange,
+    onCompilerChange,
+    onOptimizationChange,
+    onVimModeToggle,
+    initialLanguage = "c",
+    initialCompiler = "gcc",
+    initialOptimization = "-O0",
+    initialVimMode = false,
+    shortcuts = [],
+  }) => {
+    // Use theme hook
+    const { theme, setTheme, getThemeOptions } = useTheme();
 
-    setEditorVimMode(savedVimMode || initialVimMode);
-  }, [initialVimMode, onVimModeToggle]);
+    // Use templates hook
+    const {
+      language,
+      setLanguage,
+      templates,
+      selectedTemplate,
+      setSelectedTemplate,
+    } = useTemplates(initialLanguage);
 
-  // Memoized select options to prevent unnecessary re-renders
-  const languageOptions = useMemo(
-    () => [
-      { value: "c", label: "C" },
-      { value: "cpp", label: "C++" },
-    ],
-    []
-  );
+    // State for all form controls
+    const [compiler, setCompiler] = useState(initialCompiler);
+    const [optimization, setOptimization] = useState(initialOptimization);
+    const [vimMode, setVimMode] = useState(initialVimMode);
 
-  const compilerOptions = useMemo(
-    () => [
-      { value: "gcc", label: "GCC" },
-      { value: "clang", label: "Clang" },
-    ],
-    []
-  );
+    // Use refs for Easter egg to avoid unnecessary re-renders
+    const easterEggState = useRef({ clickCount: 0, lastClickTime: 0 });
 
-  const optimizationOptions = useMemo(
-    () => [
-      { value: "-O0", label: "-O0 (No optimization)" },
-      { value: "-O1", label: "-O1 (Basic optimization)" },
-      { value: "-O2", label: "-O2 (Moderate optimization)" },
-      { value: "-O3", label: "-O3 (Maximum optimization)" },
-      { value: "-Os", label: "-Os (Size optimization)" },
-    ],
-    []
-  );
+    // Effect to handle Vim mode initialization
+    useEffect(() => {
+      // Check local storage for saved preference
+      const savedVimMode = localStorage.getItem("cincout-vim-mode") === "true";
 
-  const themeOptions = useMemo(() => getThemeOptions(), [getThemeOptions]);
-
-  // Event handlers with useCallback to prevent unnecessary re-renders
-  const handleLanguageChange = useCallback(
-    (value: string) => {
-      setLanguage(value);
-      if (onLanguageChange) onLanguageChange(value);
-    },
-    [setLanguage, onLanguageChange]
-  );
-
-  const handleCompilerChange = useCallback(
-    (value: string) => {
-      setCompiler(value);
-      if (onCompilerChange) onCompilerChange(value);
-    },
-    [onCompilerChange]
-  );
-
-  const handleOptimizationChange = useCallback(
-    (value: string) => {
-      setOptimization(value);
-      if (onOptimizationChange) onOptimizationChange(value);
-    },
-    [onOptimizationChange]
-  );
-
-  const handleTemplateChange = useCallback(
-    (value: string) => {
-      setSelectedTemplate(value);
-    },
-    [setSelectedTemplate]
-  );
-
-  const handleThemeChange = useCallback(
-    (value: string) => {
-      setTheme(value);
-    },
-    [setTheme]
-  );
-
-  const handleVimModeToggle = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const enabled = e.target.checked;
-
-      // Update local state
-      setVimMode(enabled);
-
-      // Save to localStorage for persistence
-      localStorage.setItem("cincout-vim-mode", enabled.toString());
-
-      // Update editor directly (this will be removed once full React migration is complete)
-      if ((window as any).editor) {
-        (window as any).editor.setOption("keyMap", enabled ? "vim" : "default");
+      // Update state if different from prop
+      if (savedVimMode !== initialVimMode) {
+        setVimMode(savedVimMode);
+        if (onVimModeToggle) onVimModeToggle(savedVimMode);
       }
 
-      // Call prop callback if provided
-      if (onVimModeToggle) onVimModeToggle(enabled);
-    },
-    [onVimModeToggle]
-  );
+      // Set editor option directly (this will be removed once full React migration is complete)
+      const setEditorVimMode = (enabled: boolean) => {
+        if ((window as any).editor) {
+          (window as any).editor.setOption(
+            "keyMap",
+            enabled ? "vim" : "default"
+          );
+        }
+      };
 
-  const handleTitleClick = useCallback(() => {
-    const currentTime = new Date().getTime();
-    if (currentTime - lastClickTime > 1500) {
-      setClickCount(0);
-    }
+      setEditorVimMode(savedVimMode || initialVimMode);
+    }, [initialVimMode, onVimModeToggle]);
 
-    const newClickCount = clickCount + 1;
-    setClickCount(newClickCount);
-    setLastClickTime(currentTime);
+    // Cache theme options
+    const themeOptions = useMemo(() => getThemeOptions(), [getThemeOptions]);
 
-    // easter egg: show a notification after 3 clicks
-    if (newClickCount >= 2) {
-      showNotification(
-        "info",
-        "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🚀",
-        4000,
-        { top: "50%", left: "50%" }
+    // Event handlers with useCallback to prevent unnecessary re-renders
+    const handleLanguageChange = useCallback(
+      (value: string) => {
+        setLanguage(value);
+        if (onLanguageChange) onLanguageChange(value);
+      },
+      [setLanguage, onLanguageChange]
+    );
+
+    const handleCompilerChange = useCallback(
+      (value: string) => {
+        setCompiler(value);
+        if (onCompilerChange) onCompilerChange(value);
+      },
+      [onCompilerChange]
+    );
+
+    const handleOptimizationChange = useCallback(
+      (value: string) => {
+        setOptimization(value);
+        if (onOptimizationChange) onOptimizationChange(value);
+      },
+      [onOptimizationChange]
+    );
+
+    const handleTemplateChange = useCallback(
+      (value: string) => {
+        setSelectedTemplate(value);
+      },
+      [setSelectedTemplate]
+    );
+
+    const handleThemeChange = useCallback(
+      (value: string) => {
+        setTheme(value);
+      },
+      [setTheme]
+    );
+
+    const handleVimModeToggle = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const enabled = e.target.checked;
+
+        // Update local state
+        setVimMode(enabled);
+
+        // Save to localStorage for persistence
+        localStorage.setItem("cincout-vim-mode", enabled.toString());
+
+        // Update editor directly (this will be removed once full React migration is complete)
+        if ((window as any).editor) {
+          (window as any).editor.setOption(
+            "keyMap",
+            enabled ? "vim" : "default"
+          );
+        }
+
+        // Call prop callback if provided
+        if (onVimModeToggle) onVimModeToggle(enabled);
+      },
+      [onVimModeToggle]
+    );
+
+    // Easter egg click handler
+    const handleTitleClick = useCallback(() => {
+      const currentTime = new Date().getTime();
+      const { clickCount, lastClickTime } = easterEggState.current;
+
+      if (currentTime - lastClickTime > EASTER_EGG_TIMEOUT) {
+        easterEggState.current.clickCount = 0;
+      }
+
+      easterEggState.current.clickCount++;
+      easterEggState.current.lastClickTime = currentTime;
+
+      // easter egg: show a notification after specified number of clicks
+      if (easterEggState.current.clickCount >= EASTER_EGG_CLICKS_REQUIRED) {
+        showNotification(
+          "info",
+          "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🚀",
+          NOTIFICATION_DURATION,
+          { top: "50%", left: "50%" }
+        );
+        // Reset count after showing notification
+        easterEggState.current.clickCount = 0;
+      }
+    }, []);
+
+    // Memoized shortcut list render function
+    const renderShortcutsList = useMemo(() => {
+      if (!shortcuts.length) return null;
+
+      return (
+        <ul>
+          {shortcuts.map((shortcut, index) => (
+            <li key={index}>
+              {shortcut.displayKeys
+                .map((key, i) => <kbd key={i}>{key}</kbd>)
+                .reduce((prev, curr) => (
+                  <>
+                    {prev} + {curr}
+                  </>
+                ))}{" "}
+              - {shortcut.description}
+            </li>
+          ))}
+        </ul>
       );
-    }
-  }, [clickCount, lastClickTime]);
+    }, [shortcuts]);
 
-  // Memoized shortcut list render function
-  const renderShortcutsList = useMemo(() => {
-    if (!shortcuts.length) return null;
+    // Render learning resources
+    const renderLearningResources = useMemo(
+      () =>
+        LEARNING_RESOURCES.map((resource, index) => (
+          <a
+            href={resource.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            key={index}
+          >
+            <ResourceIcon
+              className={`${resource.icon} resource-icon`}
+            ></ResourceIcon>{" "}
+            {resource.label}
+          </a>
+        )),
+      []
+    );
 
     return (
-      <ul>
-        {shortcuts.map((shortcut, index) => (
-          <li key={index}>
-            {shortcut.displayKeys
-              .map((key, i) => <kbd key={i}>{key}</kbd>)
-              .reduce((prev, curr) => (
-                <>
-                  {prev} + {curr}
-                </>
-              ))}{" "}
-            - {shortcut.description}
-          </li>
-        ))}
-      </ul>
-    );
-  }, [shortcuts]);
-
-  // Render learning resources
-  const renderLearningResources = useMemo(
-    () =>
-      LEARNING_RESOURCES.map((resource, index) => (
-        <a href={resource.href} target="_blank" key={index}>
-          <ResourceIcon
-            className={`${resource.icon} resource-icon`}
-          ></ResourceIcon>{" "}
-          {resource.label}
-        </a>
-      )),
-    []
-  );
-
-  return (
-    <>
       <HeaderContainer>
         <HeaderLeft>
           <Title id="title-easter-egg" onClick={handleTitleClick}>
@@ -662,46 +712,10 @@ const Header: React.FC<HeaderProps> = ({
           </Title>
 
           {/* Learn dropdown */}
-          <DropdownContainer
-            className="dropdown"
-            id="learn-dropdown"
-            ref={learnDropdownRef}
-          >
-            <DropdownButton
-              id="learn-cpp-btn"
-              className="header-btn dropdown-btn"
-            >
-              <i className="fas fa-book"></i> Learn
-              <i className="fas fa-chevron-down"></i>
-            </DropdownButton>
-            <DropdownContent
-              className="dropdown-content"
-              id="learn-dropdown-content"
-            >
-              {renderLearningResources}
-            </DropdownContent>
-          </DropdownContainer>
+          <LearningResourcesDropdown resources={renderLearningResources} />
 
           {/* Shortcuts dropdown */}
-          <ShortcutsContainer
-            id="shortcuts-panel"
-            className="shortcuts-panel dropdown"
-            ref={shortcutsDropdownRef}
-          >
-            <DropdownButton
-              id="toggle-shortcuts"
-              className="header-btn dropdown-btn"
-            >
-              <i className="fas fa-keyboard"></i> Shortcuts
-              <i className="fas fa-chevron-down"></i>
-            </DropdownButton>
-            <ShortcutsContent
-              className="shortcuts-content dropdown-content"
-              id="shortcuts-content"
-            >
-              {renderShortcutsList}
-            </ShortcutsContent>
-          </ShortcutsContainer>
+          <ShortcutsDropdown shortcuts={renderShortcutsList} />
         </HeaderLeft>
 
         <ControlsContainer>
@@ -709,21 +723,21 @@ const Header: React.FC<HeaderProps> = ({
             id="language"
             value={language}
             onChange={handleLanguageChange}
-            options={languageOptions}
+            options={LANGUAGE_OPTIONS}
           />
 
           <CustomSelect
             id="compiler"
             value={compiler}
             onChange={handleCompilerChange}
-            options={compilerOptions}
+            options={COMPILER_OPTIONS}
           />
 
           <CustomSelect
             id="optimization"
             value={optimization}
             onChange={handleOptimizationChange}
-            options={optimizationOptions}
+            options={OPTIMIZATION_OPTIONS}
           />
 
           <CustomSelect
@@ -741,7 +755,11 @@ const Header: React.FC<HeaderProps> = ({
           />
 
           <ToggleContainer>
-            <a href="https://www.vim.org" target="_blank">
+            <a
+              href="https://www.vim.org"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <VimIcon
                 src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vim/vim-original.svg"
                 alt="Vim"
@@ -762,7 +780,11 @@ const Header: React.FC<HeaderProps> = ({
             </ToggleSwitch>
           </ToggleContainer>
 
-          <a href="https://github.com/Pp3ng/CinCout" target="_blank">
+          <a
+            href="https://github.com/Pp3ng/CinCout"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <GitHubIcon
               src="https://github.com/fluidicon.png"
               alt="GitHub"
@@ -771,8 +793,8 @@ const Header: React.FC<HeaderProps> = ({
           </a>
         </ControlsContainer>
       </HeaderContainer>
-    </>
-  );
-};
+    );
+  }
+);
 
 export default Header;

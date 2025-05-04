@@ -8,7 +8,7 @@ import React, {
 import themeDefinitions from "../../config/themes.json";
 import { ThemeMap, Theme, TerminalTheme } from "../types";
 
-// Import CodeMirror theme CSS (same as original themes.ts)
+// Import CodeMirror themes
 import "codemirror/theme/nord.css";
 import "codemirror/theme/dracula.css";
 import "codemirror/theme/monokai.css";

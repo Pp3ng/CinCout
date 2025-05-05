@@ -9,9 +9,9 @@ import React, {
 import styled, { keyframes } from "styled-components";
 import { showNotification } from "../utils";
 import CustomSelect from "./CustomSelect";
-import { ShortcutDefinition } from "../types";
 import { useTemplates } from "../hooks/useTemplates";
 import { useTheme } from "../hooks/useTheme";
+import { useShortcuts } from "../hooks/useShortcuts";
 
 // Animation keyframes
 const gradientShift = keyframes`
@@ -422,9 +422,6 @@ interface HeaderProps {
   initialCompiler?: string;
   initialOptimization?: string;
   initialVimMode?: boolean;
-
-  // Shortcuts data from ShortcutService
-  shortcuts?: ShortcutDefinition[];
 }
 
 const LEARNING_RESOURCES: LearningResource[] = [
@@ -525,7 +522,6 @@ const Header: React.FC<HeaderProps> = memo(
     initialCompiler = "gcc",
     initialOptimization = "-O0",
     initialVimMode = false,
-    shortcuts = [],
   }) => {
     // Use theme hook
     const { theme, setTheme, getThemeOptions } = useTheme();
@@ -538,6 +534,9 @@ const Header: React.FC<HeaderProps> = memo(
       selectedTemplate,
       setSelectedTemplate,
     } = useTemplates(initialLanguage);
+
+    // Use shortcuts hook
+    const { shortcuts } = useShortcuts();
 
     // State for all form controls
     const [compiler, setCompiler] = useState(initialCompiler);

@@ -30,7 +30,7 @@ export default defineConfig({
           ],
           editor: ["./src/editor.ts"],
           handlers: ["./src/handlers.ts", "./src/websocket.ts"],
-          ui: ["./src/layout.ts", "./src/shortcuts.ts"],
+          ui: ["./src/layout.ts"],
           react: ["./src/react-integration.tsx", "./src/components/Header.tsx"],
         },
       },

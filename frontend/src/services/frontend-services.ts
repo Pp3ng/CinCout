@@ -1,8 +1,7 @@
 // Data access services for React components
 // This file provides access to the existing vanilla JS modules
 
-import { ShortcutManager } from "../shortcuts";
-import { ShortcutDefinition, ThemeMap } from "../types";
+import { ThemeMap } from "../types";
 
 // Import useTheme hook components
 import { useTheme, ThemeContext } from "../hooks/useTheme";
@@ -25,29 +24,6 @@ declare global {
     getTerminalTheme: () => any;
   }
 }
-
-/**
- * Service to access shortcut data
- */
-export const ShortcutService = {
-  /**
-   * Get all shortcuts for rendering in UI
-   */
-  getAllShortcuts(): Array<ShortcutDefinition> {
-    const state = ShortcutManager.getState();
-    const { common, special } = state.shortcuts;
-    const platformShortcuts = state.isMac
-      ? state.shortcuts.mac
-      : state.shortcuts.other;
-
-    // Combine all shortcut definitions
-    return [
-      ...Object.values(common),
-      ...Object.values(platformShortcuts),
-      ...Object.values(special),
-    ];
-  },
-};
 
 /**
  * Service to access theme data

@@ -2,11 +2,9 @@ import React, { useEffect, useState, useContext } from "react";
 import ReactDOM from "react-dom/client";
 import Header from "./components/Header";
 import {
-  ShortcutService,
   ThemeService,
   setThemeContextValue,
 } from "./services/frontend-services";
-import { ShortcutDefinition } from "./types";
 import { EditorService } from "./handlers";
 import { ThemeProvider, ThemeContext, useTheme } from "./hooks/useTheme";
 
@@ -47,8 +45,7 @@ let isHandlingThemeChange = false;
 
 // React Header component with data fetching capabilities
 const ReactHeader: React.FC = () => {
-  const { theme, getThemeOptions } = useTheme();
-  const [shortcuts, setShortcuts] = useState<Array<ShortcutDefinition>>([]);
+  const { theme } = useTheme();
   const [currentLanguage, setCurrentLanguage] = useState<string>("c");
   const [currentCompiler, setCurrentCompiler] = useState<string>("gcc");
   const [currentOptimization, setCurrentOptimization] = useState<string>("-O0");
@@ -56,23 +53,15 @@ const ReactHeader: React.FC = () => {
     localStorage.getItem("cincout-vim-mode") === "true"
   );
 
-  useEffect(() => {
-    setShortcuts(ShortcutService.getAllShortcuts());
-  }, []);
-
   return (
     <Header
-      themes={getThemeOptions()}
-      shortcuts={shortcuts}
       initialLanguage={currentLanguage}
       initialCompiler={currentCompiler}
       initialOptimization={currentOptimization}
-      initialTheme={theme}
       initialVimMode={vimMode}
       onLanguageChange={handleLanguageChange}
       onCompilerChange={handleCompilerChange}
       onOptimizationChange={handleOptimizationChange}
-      onThemeChange={handleThemeChange}
     />
   );
 };
@@ -88,21 +77,4 @@ function handleCompilerChange(compiler: string) {
 
 function handleOptimizationChange(optimization: string) {
   EditorService.setOptimization(optimization);
-}
-
-function handleThemeChange(theme: string) {
-  if (isHandlingThemeChange) return;
-  isHandlingThemeChange = true;
-
-  try {
-    // Dispatch event for backward compatibility
-    document.dispatchEvent(
-      new CustomEvent("react:themeChange", { detail: { theme } })
-    );
-    ThemeService.setTheme(theme, true);
-  } finally {
-    setTimeout(() => {
-      isHandlingThemeChange = false;
-    }, 100);
-  }
 }

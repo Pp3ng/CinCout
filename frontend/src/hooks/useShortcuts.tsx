@@ -1,10 +1,11 @@
-// Import types from centralized types file
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DomElementId,
   ShortcutDefinition,
   ShortcutCategories,
   ShortcutState,
-} from "./types";
+  ShortcutMap,
+} from "../types";
 
 /**
  * Core utilities for shortcut handling
@@ -17,7 +18,7 @@ const DOM = {
 /**
  * Platform and key handling utilities
  */
-export const ShortcutUtils = {
+const ShortcutUtils = {
   isMac: /Mac/.test(window.navigator.userAgent),
 
   triggerElement: (id: DomElementId): void => {
@@ -49,7 +50,7 @@ export const ShortcutUtils = {
 /**
  * Shortcut actions - functions triggered by shortcuts
  */
-export const Actions = {
+const getActions = () => ({
   ui: {
     compile: () => ShortcutUtils.triggerElement(DomElementId.COMPILE),
     viewAssembly: () =>
@@ -174,7 +175,7 @@ export const Actions = {
       setTimeout(() => editor.refresh(), 100);
     },
   },
-};
+});
 
 /**
  * Action descriptions - centralized descriptions for actions
@@ -197,39 +198,41 @@ const ActionDescriptions = {
 /**
  * Create shortcut configuration based on platform
  */
-function createShortcuts(): ShortcutCategories {
+function createShortcuts(
+  actions: ReturnType<typeof getActions>
+): ShortcutCategories {
   const cmdKey = ShortcutUtils.isMac ? "meta" : "ctrl";
   const isMac = ShortcutUtils.isMac;
 
   // Common shortcuts that use cmd/ctrl key combinations
-  const common = {
+  const common: ShortcutMap = {
     [`${cmdKey}+Enter`]: {
-      action: Actions.ui.compile,
+      action: actions.ui.compile,
       description: ActionDescriptions.compile,
       displayKeys: isMac ? ["⌘", "return"] : ["Ctrl", "Enter"],
     },
     [`${cmdKey}+s`]: {
-      action: Actions.editor.saveCodeToFile,
+      action: actions.editor.saveCodeToFile,
       description: ActionDescriptions.saveCode,
       displayKeys: isMac ? ["⌘", "S"] : ["Ctrl", "S"],
     },
     [`${cmdKey}+o`]: {
-      action: Actions.editor.openCodeFromFile,
+      action: actions.editor.openCodeFromFile,
       description: ActionDescriptions.openCode,
       displayKeys: isMac ? ["⌘", "O"] : ["Ctrl", "O"],
     },
     [`${cmdKey}+k`]: {
-      action: Actions.editor.toggleCodeFolding,
+      action: actions.editor.toggleCodeFolding,
       description: ActionDescriptions.toggleFolding,
       displayKeys: isMac ? ["⌘", "K"] : ["Ctrl", "K"],
     },
     [`${cmdKey}+p`]: {
-      action: Actions.ui.takeCodeSnapshot,
+      action: actions.ui.takeCodeSnapshot,
       description: ActionDescriptions.takeSnapshot,
       displayKeys: isMac ? ["⌘", "P"] : ["Ctrl", "P"],
     },
     [`${cmdKey}+shift+z`]: {
-      action: Actions.view.toggleZenMode,
+      action: actions.view.toggleZenMode,
       description: ActionDescriptions.zenMode,
       displayKeys: isMac ? ["⌘", "⇧", "Z"] : ["Ctrl", "Shift", "Z"],
     },
@@ -238,30 +241,30 @@ function createShortcuts(): ShortcutCategories {
   // Define number action mappings only once
   const numberActions = [
     {
-      action: Actions.ui.viewAssembly,
+      action: actions.ui.viewAssembly,
       description: ActionDescriptions.viewAssembly,
     },
     {
-      action: Actions.ui.formatCode,
+      action: actions.ui.formatCode,
       description: ActionDescriptions.formatCode,
     },
     {
-      action: Actions.ui.styleCheck,
+      action: actions.ui.styleCheck,
       description: ActionDescriptions.styleCheck,
     },
     {
-      action: Actions.ui.memoryCheck,
+      action: actions.ui.memoryCheck,
       description: ActionDescriptions.memoryCheck,
     },
     {
-      action: Actions.ui.debug,
+      action: actions.ui.debug,
       description: ActionDescriptions.debug,
     },
   ];
 
   // Platform-specific mappings for number shortcuts
-  const mac: { [key: string]: ShortcutDefinition } = {};
-  const other: { [key: string]: ShortcutDefinition } = {};
+  const mac: ShortcutMap = {};
+  const other: ShortcutMap = {};
 
   // Generate platform-specific shortcuts for numbers
   numberActions.forEach(({ action, description }, index) => {
@@ -279,9 +282,9 @@ function createShortcuts(): ShortcutCategories {
   });
 
   // Special keys that don't change between platforms
-  const special = {
+  const special: ShortcutMap = {
     Escape: {
-      action: () => Actions.ui.closeOutputPanel(),
+      action: () => actions.ui.closeOutputPanel(),
       description: ActionDescriptions.closeOutput,
       displayKeys: ["Esc"],
     },
@@ -291,72 +294,100 @@ function createShortcuts(): ShortcutCategories {
 }
 
 /**
- * Shortcut manager singleton
+ * React hook for keyboard shortcuts
  */
-export const ShortcutManager = (() => {
-  // State
-  const state: ShortcutState = {
-    currentOS: ShortcutUtils.isMac ? "MacOS" : "Other",
-    isMac: ShortcutUtils.isMac,
-    shortcuts: createShortcuts(),
-  };
+export function useShortcuts() {
+  const [enabled, setEnabled] = useState(true);
 
-  const listeners: Array<() => void> = [];
+  // Initialize state with platform detection
+  const initialState: ShortcutState = useMemo(
+    () => ({
+      currentOS: ShortcutUtils.isMac ? "MacOS" : "Other",
+      isMac: ShortcutUtils.isMac,
+      shortcuts: createShortcuts(getActions()),
+    }),
+    []
+  );
 
-  // Core functionality
-  function handleKeyboardEvent(event: KeyboardEvent): void {
-    // Handle Escape key with priority
-    if (event.key === "Escape" && Actions.ui.closeOutputPanel()) {
-      event.preventDefault();
-      return;
+  const [state] = useState<ShortcutState>(initialState);
+
+  // Event handler for keyboard shortcuts
+  const handleKeyboardEvent = useCallback(
+    (event: KeyboardEvent) => {
+      if (!enabled) return;
+
+      // Handle Escape key with priority
+      if (event.key === "Escape" && getActions().ui.closeOutputPanel()) {
+        event.preventDefault();
+        return;
+      }
+
+      // Handle Enter with modifiers
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        getActions().ui.compile();
+        return;
+      }
+
+      // Handle other shortcuts
+      const normalizedKey = ShortcutUtils.normalizeKey(event);
+      const { common, mac, other, special } = state.shortcuts;
+
+      // Find matching shortcut from relevant maps
+      const shortcut =
+        special[normalizedKey] ||
+        common[normalizedKey] ||
+        (state.isMac ? mac : other)[normalizedKey];
+
+      if (shortcut) {
+        event.preventDefault();
+        shortcut.action();
+      }
+    },
+    [state.shortcuts, state.isMac, enabled]
+  );
+
+  // Set up and clean up event listeners
+  useEffect(() => {
+    if (enabled) {
+      document.addEventListener("keydown", handleKeyboardEvent);
     }
-
-    // Handle Enter with modifiers
-    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      Actions.ui.compile();
-      return;
-    }
-
-    // Handle other shortcuts
-    const normalizedKey = ShortcutUtils.normalizeKey(event);
-    const { common, mac, other, special } = state.shortcuts;
-
-    // Find matching shortcut from relevant maps
-    const shortcut =
-      special[normalizedKey] ||
-      common[normalizedKey] ||
-      (state.isMac ? mac : other)[normalizedKey];
-
-    if (shortcut) {
-      event.preventDefault();
-      shortcut.action();
-    }
-  }
-
-  // Public API
-  function initialize(): () => void {
-    document.addEventListener("keydown", handleKeyboardEvent);
 
     return () => {
       document.removeEventListener("keydown", handleKeyboardEvent);
     };
-  }
+  }, [handleKeyboardEvent, enabled]);
 
+  // Get all active shortcuts
+  const getAllShortcuts = useCallback((): ShortcutDefinition[] => {
+    const { common, mac, other, special } = state.shortcuts;
+
+    // Combine all shortcuts into a single array
+    const allShortcuts = [
+      ...Object.values(common),
+      ...Object.values(state.isMac ? mac : other),
+      ...Object.values(special),
+    ];
+
+    return allShortcuts;
+  }, [state.shortcuts, state.isMac]);
+
+  // Enable/disable shortcuts
+  const toggleShortcuts = useCallback((enable: boolean) => {
+    setEnabled(enable);
+  }, []);
+
+  // Make the Utils and Actions accessible outside the hook
+  const utils = useMemo(() => ShortcutUtils, []);
+
+  // Return interface
   return {
-    initialize,
-    getState: () => ({ ...state }),
-    subscribe: (listener: () => void) => {
-      listeners.push(listener);
-      return () => {
-        const index = listeners.indexOf(listener);
-        if (index > -1) listeners.splice(index, 1);
-      };
-    },
+    shortcuts: getAllShortcuts(),
+    isMac: state.isMac,
+    enabled,
+    toggleShortcuts,
+    utils,
   };
-})();
-
-// Auto-initialize
-if (typeof document !== "undefined") {
-  document.addEventListener("DOMContentLoaded", ShortcutManager.initialize);
 }
+
+export default useShortcuts;

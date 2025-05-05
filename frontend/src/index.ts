@@ -28,7 +28,6 @@ import { initializeReactHeader } from "./react-integration";
 // 5. Import all application modules (in dependency order)
 // Core modules first
 import "./layout"; // Layout management
-import "./shortcuts"; // Keyboard shortcuts
 import "./websocket"; // WebSocket communication
 import "./compileSocket"; // Compilation WebSocket handling
 import "./terminal"; // Terminal functionality

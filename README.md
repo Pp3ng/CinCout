@@ -1,6 +1,6 @@
 # CinCout
 
-This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using TypeScript/Node.js for the backend and HTML/CSS/TypeScript for the frontend. It provides a user-friendly interface with rich features.
+This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using `Node.js` for the backend and `React` for the frontend. It provides a user-friendly interface with rich features.
 
 <div align="center">
 <img src="frontend/assets/cincout.png" alt="logo" width="200" />
@@ -31,7 +31,7 @@ The project follows a clean separation between frontend and backend:
 
 ### Frontend
 
-- **Core**: TypeScript, HTML5, CSS3
+- **Core**: React with TypeScript
 - **Editor**: CodeMirror with syntax highlighting and code folding
 - **Terminal**: Xterm.js for interactive program execution
 - **Build Tool**: Vite for fast development and optimized production builds
@@ -40,7 +40,7 @@ The project follows a clean separation between frontend and backend:
 ### Backend
 
 - **Runtime**: Node.js with TypeScript
-- **API**: Express.js for HTTP endpoints
+- **API**: koa.js for HTTP endpoints
 - **WebSockets**: Socket.IO for real-time communication
 - **Process Management**: Node-PTY for spawning and managing compiler and program processes
 - **Containerization**: Docker for consistent deployment

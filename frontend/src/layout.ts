@@ -1,5 +1,6 @@
 // Import types from centralized type definition
 import { PanelState } from "./types";
+import { EditorService } from "./editor";
 
 // Component structure designed from React perspective
 class LayoutManager {
@@ -109,10 +110,43 @@ class LayoutManager {
       }
     }
   }
+
+  // New methods moved from DOMService
+  toggleOutputPanel(show: boolean): void {
+    this.setState({ isOutputVisible: show });
+
+    // Handle zen mode
+    const isZenMode = document.body.classList.contains("zen-mode-active");
+    if (isZenMode) {
+      EditorService.refresh();
+    }
+  }
+
+  showOutputPanel(): void {
+    this.toggleOutputPanel(true);
+  }
+
+  hideOutputPanel(): void {
+    this.toggleOutputPanel(false);
+  }
+
+  setOutput(html: string): void {
+    if (this.elements.outputContent) {
+      this.elements.outputContent.innerHTML = html;
+    }
+  }
+
+  showLoadingInOutput(text: string): void {
+    this.setOutput(`<div class='loading'>${text}</div>`);
+  }
 }
 
 // Create and initialize layout manager instance
+const layoutManager = new LayoutManager();
+
 document.addEventListener("DOMContentLoaded", () => {
-  const layoutManager = new LayoutManager();
   layoutManager.initialize();
 });
+
+// Export the layout manager instance
+export { layoutManager };

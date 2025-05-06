@@ -1,12 +1,9 @@
 import React, { useEffect, useState, useContext } from "react";
 import ReactDOM from "react-dom/client";
 import Header from "./components/Header";
-import {
-  ThemeService,
-  setThemeContextValue,
-} from "./services/frontend-services";
-import { EditorService } from "./handlers";
-import { ThemeProvider, ThemeContext, useTheme } from "./hooks/useTheme";
+import { setThemeContextValue } from "./services/frontend-services";
+import { EditorService } from "./editor";
+import { ThemeProvider, ThemeContext } from "./hooks/useTheme";
 
 /**
  * Initialize the React Header component and mount it to replace the existing header
@@ -41,24 +38,19 @@ const ThemeContextBridge: React.FC<{ children: React.ReactNode }> = ({
 };
 
 // Flag to prevent infinite loops in event handling
-let isHandlingThemeChange = false;
-
 // React Header component with data fetching capabilities
 const ReactHeader: React.FC = () => {
-  const { theme } = useTheme();
-  const [currentLanguage, setCurrentLanguage] = useState<string>("c");
-  const [currentCompiler, setCurrentCompiler] = useState<string>("gcc");
-  const [currentOptimization, setCurrentOptimization] = useState<string>("-O0");
-  const [vimMode, setVimMode] = useState<boolean>(
-    localStorage.getItem("cincout-vim-mode") === "true"
-  );
+  const [currentLanguage] = useState<string>("c");
+  const [currentCompiler] = useState<string>("gcc");
+  const [currentOptimization] = useState<string>("-O0");
+  const initialVimMode = localStorage.getItem("cincout-vim-mode") === "true";
 
   return (
     <Header
       initialLanguage={currentLanguage}
       initialCompiler={currentCompiler}
       initialOptimization={currentOptimization}
-      initialVimMode={vimMode}
+      initialVimMode={initialVimMode}
       onLanguageChange={handleLanguageChange}
       onCompilerChange={handleCompilerChange}
       onOptimizationChange={handleOptimizationChange}

@@ -1,6 +1,7 @@
 // Import utility functions
 import { takeCodeSnap, showNotification } from "./utils";
 import { ThemeService } from "./services/frontend-services";
+import { ApiService } from "./services/api-service";
 import CompileSocketManager from "./compileSocket";
 import DebugSocketManager from "./debugSocket";
 import { debounce } from "lodash-es";
@@ -12,136 +13,12 @@ import {
   DOMElements,
   CompilationState,
 } from "./types";
+import { EditorService } from "./editor";
+import { layoutManager } from "./layout";
 
 // ------------------------------------------------------------
-// Services - These will become React hooks/services
+// UI Services - Will become React components in future
 // ------------------------------------------------------------
-
-/**
- * API Service - handles all API calls
- * In React, this would become a custom hook (useApiService)
- */
-export class ApiService {
-  /**
-   * Make a generic API POST request
-   * @param endpoint - API endpoint
-   * @param data - Request data
-   * @returns Promise with response data
-   */
-  private static async post<T>(endpoint: string, data: any): Promise<T> {
-    const response = await fetch(`/api/${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error (${endpoint}): ${response.statusText}`);
-    }
-
-    return (await response.text()) as unknown as T;
-  }
-
-  static async fetchAssembly(options: CompileOptions): Promise<string> {
-    return this.post<string>("assembly", options);
-  }
-
-  static async runMemCheck(options: CompileOptions): Promise<string> {
-    return this.post<string>("memcheck", options);
-  }
-
-  static async formatCode(code: string, lang: string): Promise<string> {
-    return this.post<string>("format", { code, lang });
-  }
-
-  static async runStyleCheck(code: string, lang: string): Promise<string> {
-    return this.post<string>("styleCheck", { code, lang });
-  }
-}
-
-/**
- * Editor Service - handles editor-specific functionality
- * In React, this would become a custom hook (useEditor)
- */
-export class EditorService {
-  private static getEditor() {
-    return (window as any).editor;
-  }
-
-  static getValue(): string {
-    return this.getEditor()?.getValue() || "";
-  }
-
-  static setValue(value: string): void {
-    const editor = this.getEditor();
-    if (editor) {
-      editor.setValue(value);
-    }
-  }
-
-  static getCursor(): any {
-    return this.getEditor()?.getCursor();
-  }
-
-  static setCursor(cursor: any): void {
-    const editor = this.getEditor();
-    if (editor) {
-      editor.setCursor(cursor);
-    }
-  }
-
-  static getScrollInfo(): any {
-    return this.getEditor()?.getScrollInfo();
-  }
-
-  static scrollTo(left: number, top: number): void {
-    const editor = this.getEditor();
-    if (editor) {
-      editor.scrollTo(left, top);
-    }
-  }
-
-  static refresh(): void {
-    const editor = this.getEditor();
-    if (editor) {
-      editor.refresh();
-    }
-  }
-
-  static setOption(key: string, value: any): void {
-    const editor = this.getEditor();
-    if (editor) {
-      editor.setOption(key, value);
-    }
-  }
-
-  static setAssemblyValue(value: string): void {
-    if ((window as any).assemblyView) {
-      (window as any).assemblyView.setValue(value);
-    }
-  }
-
-  // Methods for React integration - set select values with change event triggering
-  static setSelectValue(selectId: string, value: string): void {
-    const select = document.getElementById(selectId) as HTMLSelectElement;
-    if (select && select.value !== value) {
-      select.value = value;
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-  }
-
-  static setLanguage(language: string): void {
-    this.setSelectValue("language", language);
-  }
-
-  static setCompiler(compiler: string): void {
-    this.setSelectValue("compiler", compiler);
-  }
-
-  static setOptimization(optimization: string): void {
-    this.setSelectValue("optimization", optimization);
-  }
-}
 
 /**
  * DOM Service - handles DOM interactions
@@ -170,45 +47,23 @@ export class DOMService {
   }
 
   static setOutput(html: string): void {
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = html;
-    }
+    layoutManager.setOutput(html);
   }
 
   static showLoadingInOutput(text: string): void {
-    this.setOutput(`<div class='loading'>${text}</div>`);
+    layoutManager.showLoadingInOutput(text);
   }
 
   static toggleOutputPanel(show: boolean): void {
-    const outputPanel = document.getElementById("outputPanel");
-    if (!outputPanel) return;
-
-    // Toggle display
-    outputPanel.style.display = show ? "flex" : "none";
-    document
-      .querySelector(".editor-panel")
-      ?.classList.toggle("with-output", show);
-
-    // Handle zen mode
-    const isZenMode = document.body.classList.contains("zen-mode-active");
-    if (isZenMode) {
-      EditorService.refresh();
-    }
-
-    // Clear output content when hiding
-    if (!show) {
-      const output = document.getElementById("output");
-      if (output) output.innerHTML = "";
-    }
+    layoutManager.toggleOutputPanel(show);
   }
 
   static showOutputPanel(): void {
-    this.toggleOutputPanel(true);
+    layoutManager.showOutputPanel();
   }
 
   static hideOutputPanel(): void {
-    this.toggleOutputPanel(false);
+    layoutManager.hideOutputPanel();
   }
 
   static getCompileOptions(): CompileOptions {
@@ -223,12 +78,12 @@ export class DOMService {
 }
 
 // ------------------------------------------------------------
-// State Management - Will become React Context/Redux
+// State Management - Will become React Context/Hooks
 // ------------------------------------------------------------
 
 /**
  * Store - React-like state management
- * In React, this would be replaced by useState, useReducer, or Redux
+ * In React, this would be replaced by useState, useReducer, or Context
  */
 export class AppState {
   private state: UIState;
@@ -269,6 +124,7 @@ export class AppState {
 
 /**
  * Base state adapter with common functionality
+ * In React, this would be handled through Context or custom hooks
  */
 class BaseStateAdapter {
   protected appState: AppState;
@@ -329,23 +185,26 @@ class DebugStateAdapter extends BaseStateAdapter implements DebugStateUpdater {
 }
 
 // ------------------------------------------------------------
-// Feature Controllers - Will become React components/custom hooks
+// Feature Services - Will become React custom hooks
 // ------------------------------------------------------------
 
 /**
- * CodeActionsController - Manages code-related actions
- * In React, this would become custom hooks (useCodeActions)
+ * CodeActionsService - Manages code-related actions
+ * In React, this would become a custom hook (useCodeActions)
  */
-export class CodeActionsController {
-  private appState: AppState;
+export class CodeActionsService {
   private compileSocketManager: CompileSocketManager | null = null;
 
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
+  // Remove dependency on appState as it's not used
+  constructor() {}
 
   setCompileSocketManager(manager: CompileSocketManager): void {
     this.compileSocketManager = manager;
+  }
+
+  async compile(options: CompileOptions): Promise<void> {
+    if (!this.compileSocketManager) return;
+    await this.compileSocketManager.compile(options);
   }
 
   async viewAssembly(options: CompileOptions): Promise<void> {
@@ -460,16 +319,13 @@ export class CodeActionsController {
 }
 
 /**
- * DebugController - Manages GDB debugging actions
- * In React, this would become custom hooks (useDebugActions)
+ * DebugService - Manages GDB debugging actions
+ * In React, this would become a custom hook (useDebugActions)
  */
-export class DebugController {
-  private appState: AppState;
+export class DebugService {
   private debugSocketManager: DebugSocketManager | null = null;
 
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
+  constructor() {}
 
   setDebugSocketManager(manager: DebugSocketManager): void {
     this.debugSocketManager = manager;
@@ -495,38 +351,32 @@ export class DebugController {
 }
 
 /**
- * EditorSettingsController - Manages editor settings
- * In React, this would become a custom hook (useEditorSettings)
+ * ThemeService - Manages editor theme settings
+ * In React, this would be part of a custom hook (useEditorSettings)
  */
-export class EditorSettingsController {
-  private appState: AppState;
-
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
+export class EditorSettingsService {
+  constructor() {}
 
   setTheme(theme: string): void {
-    this.appState.setState({ theme });
     localStorage.setItem("cincout-theme", theme);
     ThemeService.setTheme(theme);
   }
 }
 
 // ------------------------------------------------------------
-// Main Application Class
+// Main Application Class - Will become React App component
 // ------------------------------------------------------------
 
 /**
- * Main App Controller
- * In React, this would be App component
+ * AppController - Main application controller
+ * In React, this would be the App component
  */
-export class CinCoutApp {
+export class AppController {
   private appState: AppState;
   private compileSocketManager: CompileSocketManager;
   private debugSocketManager: DebugSocketManager;
-  private codeActions: CodeActionsController;
-  private debugController: DebugController;
-  private editorSettings: EditorSettingsController;
+  private codeActions: CodeActionsService;
+  private debugService: DebugService;
 
   constructor() {
     // Initialize state
@@ -540,14 +390,12 @@ export class CinCoutApp {
     this.compileSocketManager = new CompileSocketManager(compileStateAdapter);
     this.debugSocketManager = new DebugSocketManager(debugStateAdapter);
 
-    // Initialize controllers with managers
-    this.codeActions = new CodeActionsController(this.appState);
+    // Initialize services
+    this.codeActions = new CodeActionsService();
     this.codeActions.setCompileSocketManager(this.compileSocketManager);
 
-    this.debugController = new DebugController(this.appState);
-    this.debugController.setDebugSocketManager(this.debugSocketManager);
-
-    this.editorSettings = new EditorSettingsController(this.appState);
+    this.debugService = new DebugService();
+    this.debugService.setDebugSocketManager(this.debugSocketManager);
   }
 
   init(): void {
@@ -602,46 +450,41 @@ export class CinCoutApp {
     // Zen Mode button
     const zenModeButton = document.getElementById("zenMode");
     this.addButtonListener(zenModeButton, () => {
-      if (typeof Actions !== "undefined" && Actions.toggleZenMode) {
-        Actions.toggleZenMode();
-      } else {
-        // Fallback implementation if Actions is not available
-        const editor = (window as any).editor;
-        if (!editor) return;
+      const editor = (window as any).editor;
+      if (!editor) return;
 
-        const editorWrapper = editor.getWrapperElement();
-        const elements = [
-          { el: editorWrapper, cls: "zen-mode" },
-          { el: document.body, cls: "zen-mode-active" },
-          { el: document.querySelector(".container"), cls: "zen-container" },
-          { el: document.querySelector(".header"), cls: "hidden-zen" },
-          {
-            el: document.querySelector(".main-container"),
-            cls: "zen-mode-container",
-          },
-          {
-            el: document.querySelector(".editor-panel"),
-            cls: "zen-mode-panel",
-          },
-          {
-            el: document.querySelector(".panel-header"),
-            cls: "zen-mode-minimized",
-          },
-        ];
+      const editorWrapper = editor.getWrapperElement();
+      const elements = [
+        { el: editorWrapper, cls: "zen-mode" },
+        { el: document.body, cls: "zen-mode-active" },
+        { el: document.querySelector(".container"), cls: "zen-container" },
+        { el: document.querySelector(".header"), cls: "hidden-zen" },
+        {
+          el: document.querySelector(".main-container"),
+          cls: "zen-mode-container",
+        },
+        {
+          el: document.querySelector(".editor-panel"),
+          cls: "zen-mode-panel",
+        },
+        {
+          el: document.querySelector(".panel-header"),
+          cls: "zen-mode-minimized",
+        },
+      ];
 
-        // Toggle class for each element
-        elements.forEach(({ el, cls }) => el?.classList.toggle(cls));
+      // Toggle class for each element
+      elements.forEach(({ el, cls }) => el?.classList.toggle(cls));
 
-        // Toggle icon
-        const icon = zenModeButton?.querySelector("i");
-        if (icon) {
-          icon.classList.toggle("fa-expand");
-          icon.classList.toggle("fa-compress");
-        }
-
-        // Force editor refresh
-        setTimeout(() => editor.refresh(), 100);
+      // Toggle icon
+      const icon = zenModeButton?.querySelector("i");
+      if (icon) {
+        icon.classList.toggle("fa-expand");
+        icon.classList.toggle("fa-compress");
       }
+
+      // Force editor refresh
+      setTimeout(() => editor.refresh(), 100);
     });
   }
 
@@ -655,7 +498,7 @@ export class CinCoutApp {
     // Debug button
     this.addButtonListener(elements.debug, () => {
       const options = DOMService.getCompileOptions();
-      this.debugController.startDebugSession(options);
+      this.debugService.startDebugSession(options);
     });
 
     // Close output panel
@@ -664,7 +507,7 @@ export class CinCoutApp {
       () => {
         // Clean up both socket managers
         this.compileSocketManager.cleanup();
-        this.debugController.cleanup();
+        this.debugService.cleanup();
         DOMService.hideOutputPanel();
         this.appState.setState({ isOutputVisible: false });
       },
@@ -685,5 +528,6 @@ export class CinCoutApp {
   }
 }
 
-const app = new CinCoutApp();
+// Create and initialize application instance
+const app = new AppController();
 app.init();

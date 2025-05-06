@@ -98,6 +98,90 @@ const initEditors = (): void => {
   }
 };
 
+/**
+ * EditorService - handles editor-specific functionality
+ * Provides methods to interact with CodeMirror editor instances
+ */
+export class EditorService {
+  private static getEditor() {
+    return (window as any).editor;
+  }
+
+  static getValue(): string {
+    return this.getEditor()?.getValue() || "";
+  }
+
+  static setValue(value: string): void {
+    const editor = this.getEditor();
+    if (editor) {
+      editor.setValue(value);
+    }
+  }
+
+  static getCursor(): any {
+    return this.getEditor()?.getCursor();
+  }
+
+  static setCursor(cursor: any): void {
+    const editor = this.getEditor();
+    if (editor) {
+      editor.setCursor(cursor);
+    }
+  }
+
+  static getScrollInfo(): any {
+    return this.getEditor()?.getScrollInfo();
+  }
+
+  static scrollTo(left: number, top: number): void {
+    const editor = this.getEditor();
+    if (editor) {
+      editor.scrollTo(left, top);
+    }
+  }
+
+  static refresh(): void {
+    const editor = this.getEditor();
+    if (editor) {
+      editor.refresh();
+    }
+  }
+
+  static setOption(key: string, value: any): void {
+    const editor = this.getEditor();
+    if (editor) {
+      editor.setOption(key, value);
+    }
+  }
+
+  static setAssemblyValue(value: string): void {
+    if ((window as any).assemblyView) {
+      (window as any).assemblyView.setValue(value);
+    }
+  }
+
+  // Methods for React integration - set select values with change event triggering
+  static setSelectValue(selectId: string, value: string): void {
+    const select = document.getElementById(selectId) as HTMLSelectElement;
+    if (select && select.value !== value) {
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  static setLanguage(language: string): void {
+    this.setSelectValue("language", language);
+  }
+
+  static setCompiler(compiler: string): void {
+    this.setSelectValue("compiler", compiler);
+  }
+
+  static setOptimization(optimization: string): void {
+    this.setSelectValue("optimization", optimization);
+  }
+}
+
 // Add global refresh method
 (window as any).refreshEditors = forceRefreshEditors;
 

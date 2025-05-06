@@ -5,6 +5,7 @@ import MainContainer from "./components/MainContainer";
 import { ApiServiceProvider } from "./context/ApiServiceContext";
 import { SocketProvider } from "./context/SocketContext";
 import { UIStateProvider } from "./context/UIStateContext";
+import { TemplateProvider } from "./context/TemplateContext";
 
 const App: React.FC = () => {
   return (
@@ -12,10 +13,12 @@ const App: React.FC = () => {
       <UIStateProvider>
         <ApiServiceProvider>
           <SocketProvider>
-            <div className="container">
-              <Header />
-              <MainContainer />
-            </div>
+            <TemplateProvider>
+              <div className="container">
+                <Header />
+                <MainContainer />
+              </div>
+            </TemplateProvider>
           </SocketProvider>
         </ApiServiceProvider>
       </UIStateProvider>

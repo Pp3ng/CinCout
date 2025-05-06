@@ -56,7 +56,7 @@ export class EditorService {
   static refresh(): void {
     const editor = this.getEditor();
     if (editor) {
-      setTimeout(() => editor.refresh(), 10);
+      editor.refresh();
     }
   }
 
@@ -70,7 +70,7 @@ export class EditorService {
   static setAssemblyValue(value: string): void {
     if ((window as any).assemblyView) {
       (window as any).assemblyView.setValue(value);
-      setTimeout(() => (window as any).assemblyView.refresh(), 10);
+      (window as any).assemblyView.refresh();
     }
   }
 

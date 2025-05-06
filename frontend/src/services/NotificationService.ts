@@ -87,13 +87,6 @@ class NotificationService {
       setTimeout(() => notification.parentNode?.removeChild(notification), 500);
     }, duration);
   }
-
-  /**
-   * Show success notification
-   * @param message Notification message content
-   * @param duration Display duration in milliseconds, default 3000ms
-   * @param position Display position, default top-right corner
-   */
   success(
     message: string,
     duration?: number,
@@ -102,12 +95,6 @@ class NotificationService {
     this.show("success", message, duration, position);
   }
 
-  /**
-   * Show error notification
-   * @param message Notification message content
-   * @param duration Display duration in milliseconds, default 3000ms
-   * @param position Display position, default top-right corner
-   */
   error(
     message: string,
     duration?: number,
@@ -116,12 +103,6 @@ class NotificationService {
     this.show("error", message, duration, position);
   }
 
-  /**
-   * Show warning notification
-   * @param message Notification message content
-   * @param duration Display duration in milliseconds, default 3000ms
-   * @param position Display position, default top-right corner
-   */
   warning(
     message: string,
     duration?: number,
@@ -130,12 +111,6 @@ class NotificationService {
     this.show("warning", message, duration, position);
   }
 
-  /**
-   * Show info notification
-   * @param message Notification message content
-   * @param duration Display duration in milliseconds, default 3000ms
-   * @param position Display position, default top-right corner
-   */
   info(
     message: string,
     duration?: number,

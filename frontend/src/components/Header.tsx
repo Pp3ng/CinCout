@@ -9,7 +9,7 @@ import React, {
 import styled, { keyframes, css } from "styled-components";
 import { notificationService } from "../services/NotificationService";
 import CustomSelect from "./CustomSelect";
-import { useTemplates } from "../services/TemplateManager";
+import { useTemplates } from "../context/TemplateContext";
 import { useTheme } from "../hooks/useTheme";
 import { useShortcuts } from "../hooks/useShortcuts";
 import { useCodeConfig, useUIState } from "../context/UIStateContext";
@@ -44,15 +44,6 @@ const fadeIn = keyframes`
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-`;
-
-const float = keyframes`
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1.2);
-  }
-  100% {
-    transform: translateY(-5px) rotate(10deg) scale(1.3);
   }
 `;
 

@@ -19,6 +19,7 @@ class TerminalManager {
   private fitAddon: FitAddon | null = null;
   private domElements: TerminalDomElements = {};
   private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private resizeDebounceTime = 100; // ms
 
   /**
    * Initialize the terminal manager with DOM elements
@@ -105,7 +106,7 @@ class TerminalManager {
     // Fit terminal to container
     this.fitTerminal();
 
-    // Setup effects after render
+    // Setup effects after render - without setTimeout
     this.setupAfterRender();
 
     // Set up event handlers
@@ -130,8 +131,7 @@ class TerminalManager {
 
       // Send resize event to server if connected and running
       if (socketManager.isConnected() && socketManager.isProcessRunning()) {
-        // Add a small delay to avoid resize events during connection transitions
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           // Double-check connection is still active before sending
           if (socketManager.isConnected() && socketManager.isProcessRunning()) {
             socketManager
@@ -143,7 +143,7 @@ class TerminalManager {
                 }
               });
           }
-        }, 50);
+        });
       }
     } catch (e) {
       console.error("Error fitting terminal:", e);
@@ -172,29 +172,27 @@ class TerminalManager {
    * Set up effects after terminal is rendered
    */
   private setupAfterRender = (): void => {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       // Force terminal redraw to apply new theme
       try {
         if (this.terminal) {
           this.terminal.refresh(0, this.terminal.rows - 1);
-
           // Apply custom cursor styling
           this.applyCursorStyling();
+          // Focus terminal
+          this.terminal.focus();
         }
       } catch (e) {
         console.error("Error refreshing terminal:", e);
       }
-    }, 50);
-
-    // Focus terminal
-    setTimeout(() => this.terminal?.focus(), 100);
+    });
   };
 
   /**
    * Apply custom cursor styling
    */
   private applyCursorStyling = (): void => {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       const terminalContainer = document.getElementById("terminal-container");
       const cursorElement = terminalContainer?.querySelector(".xterm-cursor");
       if (cursorElement) {
@@ -206,7 +204,7 @@ class TerminalManager {
           .getPropertyValue("--accent")
           .trim();
       }
-    }, 100);
+    });
   };
 
   /**
@@ -221,7 +219,7 @@ class TerminalManager {
   };
 
   /**
-   * Handle window resize event
+   * Handle window resize event with debouncing
    */
   private handleResize = (): void => {
     // Debounce resize events to avoid too many calls
@@ -231,7 +229,7 @@ class TerminalManager {
 
     this.resizeTimeout = setTimeout(() => {
       this.fitTerminal();
-    }, 100);
+    }, this.resizeDebounceTime);
   };
 
   /**

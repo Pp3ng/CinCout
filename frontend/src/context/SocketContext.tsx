@@ -36,9 +36,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
           setState({ isOutputVisible: true });
         },
         refreshEditor: () => {
-          setTimeout(() => {
-            EditorService.refresh();
-          }, 10);
+          EditorService.refresh();
         },
       });
     }
@@ -55,9 +53,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
           setState({ isOutputVisible: true });
         },
         refreshEditor: () => {
-          setTimeout(() => {
-            EditorService.refresh();
-          }, 10);
+          EditorService.refresh();
         },
       });
     }

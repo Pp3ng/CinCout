@@ -1,7 +1,13 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import { debounce } from "lodash-es";
 import useEditor from "../hooks/useEditor";
-import { useTemplates } from "../services/TemplateManager";
+import { useTemplates } from "../context/TemplateContext";
 import { useUIState, useCodeConfig } from "../context/UIStateContext";
 import { useApiService } from "../context/ApiServiceContext";
 import { useSocket } from "../context/SocketContext";
@@ -113,12 +119,14 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ isOutputVisible }) => {
         }
       }
     });
-
-    // Force editor refresh
-    setTimeout(() => {
-      editor.refresh();
-    }, 100);
   }, [state.isZenMode, toggleZenMode]);
+
+  useLayoutEffect(() => {
+    const editor = EditorService.getEditor();
+    if (editor) {
+      editor.refresh();
+    }
+  }, [state.isZenMode]);
 
   const handleCodeSnap = useCallback(
     debounce(() => {

@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useLayoutEffect } from "react";
 import useTerminal from "../hooks/useTerminal";
 import { useSocket } from "../context/SocketContext";
-import { socketManager, SocketEvents } from "../services/WebSocketManager";
+import { socketManager } from "../services/WebSocketManager";
 import { terminalManager } from "../services/TerminalManager";
 
 interface OutputPanelProps {
@@ -24,17 +24,14 @@ const OutputPanel: React.FC<OutputPanelProps> = ({ isVisible, onClose }) => {
         output: document.getElementById("output"),
         outputPanel: document.getElementById("outputPanel"),
       });
-
-      // When the panel becomes visible, focus the terminal
-      const timer = setTimeout(() => {
-        if (terminalRef.current) {
-          terminalRef.current.focus();
-        }
-      }, 100);
-
-      return () => clearTimeout(timer);
     }
-  }, [isVisible, containerRef, terminalRef]);
+  }, [isVisible, containerRef]);
+
+  useLayoutEffect(() => {
+    if (isVisible && terminalRef.current) {
+      terminalRef.current.focus();
+    }
+  }, [isVisible, terminalRef]);
 
   // Effect to handle cleanup when panel becomes invisible
   useEffect(() => {

@@ -77,61 +77,70 @@ export class WebSocketManager {
         reject(error);
       });
 
-      this.socket.on(SocketEvents.DISCONNECT, (reason) => {
-        if (reason === "io server disconnect") {
-          this.socket?.connect();
-        }
-      });
+      this.setupEventHandlers();
+    });
+  }
 
-      // Handle session creation
-      this.socket.on(SocketEvents.SESSION_CREATED, (data) => {
-        this.sessionId = data.sessionId;
-        this.notifyListeners(SocketEvents.SESSION_CREATED, data);
-      });
+  /**
+   * Setup all socket event handlers
+   */
+  private setupEventHandlers(): void {
+    if (!this.socket) return;
 
-      // Update compilation state based on events
-      this.socket.on(SocketEvents.COMPILING, () => {
-        this.compilationState = CompilationState.COMPILING;
-        this.notifyListeners(SocketEvents.COMPILING, {});
-      });
+    this.socket.on(SocketEvents.DISCONNECT, (reason) => {
+      if (reason === "io server disconnect") {
+        this.socket?.connect();
+      }
+    });
 
-      this.socket.on(SocketEvents.COMPILE_SUCCESS, () => {
-        this.compilationState = CompilationState.RUNNING;
-        this.notifyListeners(SocketEvents.COMPILE_SUCCESS, {});
-      });
+    // Handle session creation
+    this.socket.on(SocketEvents.SESSION_CREATED, (data) => {
+      this.sessionId = data.sessionId;
+      this.notifyListeners(SocketEvents.SESSION_CREATED, data);
+    });
 
-      this.socket.on(SocketEvents.COMPILE_ERROR, (data) => {
-        this.compilationState = CompilationState.IDLE;
-        this.notifyListeners(SocketEvents.COMPILE_ERROR, data);
-      });
+    // Update compilation state based on events
+    this.socket.on(SocketEvents.COMPILING, () => {
+      this.compilationState = CompilationState.COMPILING;
+      this.notifyListeners(SocketEvents.COMPILING, {});
+    });
 
-      this.socket.on(SocketEvents.EXIT, (data) => {
-        this.compilationState = CompilationState.IDLE;
-        this.notifyListeners(SocketEvents.EXIT, data);
-      });
+    this.socket.on(SocketEvents.COMPILE_SUCCESS, () => {
+      this.compilationState = CompilationState.RUNNING;
+      this.notifyListeners(SocketEvents.COMPILE_SUCCESS, {});
+    });
 
-      // Handle debug session events
-      this.socket.on(SocketEvents.DEBUG_START, (data) => {
-        this.compilationState = CompilationState.RUNNING;
-        this.notifyListeners(SocketEvents.DEBUG_START, data);
-      });
+    this.socket.on(SocketEvents.COMPILE_ERROR, (data) => {
+      this.compilationState = CompilationState.IDLE;
+      this.notifyListeners(SocketEvents.COMPILE_ERROR, data);
+    });
 
-      this.socket.on(SocketEvents.DEBUG_EXIT, (data) => {
-        this.compilationState = CompilationState.IDLE;
-        this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
-      });
+    this.socket.on(SocketEvents.EXIT, (data) => {
+      this.compilationState = CompilationState.IDLE;
+      this.notifyListeners(SocketEvents.EXIT, data);
+    });
 
-      // Forward all other events to listeners
-      [
-        SocketEvents.OUTPUT,
-        SocketEvents.ERROR,
-        SocketEvents.CLEANUP_COMPLETE,
-        SocketEvents.DEBUG_RESPONSE,
-        SocketEvents.DEBUG_ERROR,
-      ].forEach((event) => {
-        this.socket?.on(event, (data) => {
-          this.notifyListeners(event, data);
-        });
+    // Handle debug session events
+    this.socket.on(SocketEvents.DEBUG_START, (data) => {
+      this.compilationState = CompilationState.RUNNING;
+      this.notifyListeners(SocketEvents.DEBUG_START, data);
+    });
+
+    this.socket.on(SocketEvents.DEBUG_EXIT, (data) => {
+      this.compilationState = CompilationState.IDLE;
+      this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
+    });
+
+    // Forward all other events to listeners
+    [
+      SocketEvents.OUTPUT,
+      SocketEvents.ERROR,
+      SocketEvents.CLEANUP_COMPLETE,
+      SocketEvents.DEBUG_RESPONSE,
+      SocketEvents.DEBUG_ERROR,
+    ].forEach((event) => {
+      this.socket?.on(event, (data) => {
+        this.notifyListeners(event, data);
       });
     });
   }

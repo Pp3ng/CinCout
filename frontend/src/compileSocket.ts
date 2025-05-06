@@ -7,7 +7,6 @@ import { socketManager, SocketEvents } from "./websocket";
 
 /**
  * CompileSocketManager handles the Socket.IO communication for code compilation
- * Mirrors the backend CompileWebSocketHandler structure
  */
 export class CompileSocketManager {
   private stateUpdater: CompileStateUpdater;
@@ -26,57 +25,59 @@ export class CompileSocketManager {
    */
   private setupEventListeners(): void {
     // Handle compilation events
-    socketManager.on(SocketEvents.COMPILING, () => {
-      this.stateUpdater.showOutput();
-      this.showOutputMessage('<div class="loading">Compiling</div>');
-      this.stateUpdater.refreshEditor();
-      this.updateCompilationState();
-    });
+    const eventHandlers = {
+      [SocketEvents.COMPILING]: () => {
+        this.stateUpdater.showOutput();
+        this.showOutputMessage('<div class="loading">Compiling</div>');
+        this.stateUpdater.refreshEditor();
+        this.updateCompilationState();
+      },
 
-    socketManager.on(SocketEvents.COMPILE_SUCCESS, () => {
-      // Reset any existing terminal first
-      terminalManager.dispose();
+      [SocketEvents.COMPILE_SUCCESS]: () => {
+        // Reset any existing terminal first
+        terminalManager.dispose();
+        this.stateUpdater.showOutput();
 
-      this.stateUpdater.showOutput();
+        // Set up the terminal with the correct DOM elements
+        terminalManager.setDomElements({
+          output: document.getElementById("output"),
+          outputPanel: document.getElementById("outputPanel"),
+        });
 
-      // Set up the terminal with the correct DOM elements
-      terminalManager.setDomElements({
-        output: document.getElementById("output"),
-        outputPanel: document.getElementById("outputPanel"),
-      });
+        // Initialize terminal
+        terminalManager.setupTerminal();
+        this.stateUpdater.refreshEditor();
+        this.updateCompilationState();
+      },
 
-      // Initialize terminal
-      terminalManager.setupTerminal();
-      this.stateUpdater.refreshEditor();
-      this.updateCompilationState();
-    });
+      [SocketEvents.COMPILE_ERROR]: (data) => {
+        this.stateUpdater.showOutput();
+        this.showOutputMessage(
+          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
+        );
+        socketManager.disconnect();
+        this.updateCompilationState();
+      },
 
-    socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
-      this.stateUpdater.showOutput();
-      this.showOutputMessage(
-        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
-      );
-      socketManager.disconnect();
-      this.updateCompilationState();
-    });
+      [SocketEvents.OUTPUT]: (data) => {
+        terminalManager.write(data.output);
+      },
 
-    // Handle execution events
-    socketManager.on(SocketEvents.OUTPUT, (data) => {
-      terminalManager.write(data.output);
-    });
+      [SocketEvents.ERROR]: (data) => {
+        console.error("Received error from server:", data.message);
+        terminalManager.writeError(data.message);
+      },
 
-    socketManager.on(SocketEvents.ERROR, (data) => {
-      console.error("Received error from server:", data.message);
-      terminalManager.writeError(data.message);
-    });
+      [SocketEvents.EXIT]: (data) => {
+        terminalManager.writeExitMessage(data.code);
+        socketManager.disconnect();
+        this.updateCompilationState();
+      },
+    };
 
-    socketManager.on(SocketEvents.EXIT, (data) => {
-      // Display the exit message
-      terminalManager.writeExitMessage(data.code);
-
-      socketManager.disconnect();
-
-      this.updateCompilationState();
+    // Register all event handlers
+    Object.entries(eventHandlers).forEach(([event, handler]) => {
+      socketManager.on(event, handler);
     });
   }
 
@@ -116,7 +117,7 @@ export class CompileSocketManager {
       return;
     }
 
-    if (options.code.trim() === "") {
+    if (!options.code.trim()) {
       this.showOutputMessage(
         '<div class="error-output">Error: Code cannot be empty</div>'
       );
@@ -143,12 +144,7 @@ export class CompileSocketManager {
       this.showOutputMessage(
         '<div class="error-output">Error: Socket connection failed. Please try again.</div>'
       );
-
-      try {
-        socketManager.disconnect();
-      } catch (e) {
-        console.error("Error disconnecting after failure:", e);
-      }
+      socketManager.disconnect();
     }
   }
 

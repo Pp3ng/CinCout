@@ -25,72 +25,72 @@ export class DebugSocketManager {
    * Set up event listeners for Socket.IO events
    */
   private setupEventListeners(): void {
-    // Handle compilation events
-    socketManager.on(SocketEvents.COMPILING, () => {
-      this.stateUpdater.showOutput();
-      this.stateUpdater.refreshEditor();
-      this.updateDebugState();
-    });
+    // map of event names to their handlers
+    const eventHandlers = {
+      [SocketEvents.COMPILING]: () => {
+        this.stateUpdater.showOutput();
+        this.stateUpdater.refreshEditor();
+        this.updateDebugState();
+      },
 
-    // Handle debugging events
-    socketManager.on(SocketEvents.DEBUG_START, (data) => {
-      // Reset any existing terminal first
-      terminalManager.dispose();
+      [SocketEvents.DEBUG_START]: (data) => {
+        // Reset any existing terminal first
+        terminalManager.dispose();
+        this.stateUpdater.showOutput();
 
-      this.stateUpdater.showOutput();
+        // Setup a terminal for GDB interaction
+        terminalManager.setDomElements({
+          output: document.getElementById("output"),
+          outputPanel: document.getElementById("outputPanel"),
+        });
 
-      // Setup a terminal for GDB interaction
-      terminalManager.setDomElements({
-        output: document.getElementById("output"),
-        outputPanel: document.getElementById("outputPanel"),
-      });
+        // Initialize the terminal - this creates an xterm.js instance
+        const terminal = terminalManager.setupTerminal();
+        if (!terminal) return;
 
-      // Initialize the terminal - this creates an xterm.js instance
-      const terminal = terminalManager.setupTerminal();
-      if (!terminal) {
-        return;
-      }
+        this.stateUpdater.setDebuggingActive(true);
+        this.updateDebugState();
 
-      this.stateUpdater.setDebuggingActive(true);
-      this.updateDebugState();
+        if (data?.message) {
+          terminalManager.write(`${data.message}\r\n\r\n`);
+        }
+      },
 
-      if (data && data.message) {
-        terminalManager.write(`${data.message}\r\n\r\n`);
-      }
-    });
+      [SocketEvents.DEBUG_RESPONSE]: (data) => {
+        if (data?.output) {
+          terminalManager.write(data.output);
+        }
+      },
 
-    socketManager.on(SocketEvents.DEBUG_RESPONSE, (data) => {
-      if (data && data.output) {
-        // Send GDB output directly to terminal
-        terminalManager.write(data.output);
-      }
-    });
+      [SocketEvents.DEBUG_ERROR]: (data) => {
+        console.error("Received debug error from server:", data.message);
+        terminalManager.writeError(`\r\nError: ${data.message}\r\n`);
+        this.stateUpdater.setDebuggingActive(false);
+        this.updateDebugState();
+      },
 
-    socketManager.on(SocketEvents.DEBUG_ERROR, (data) => {
-      console.error("Received debug error from server:", data.message);
-      terminalManager.writeError(`\r\nError: ${data.message}\r\n`);
-      this.stateUpdater.setDebuggingActive(false);
-      this.updateDebugState();
-    });
+      [SocketEvents.DEBUG_EXIT]: (data) => {
+        terminalManager.writeExitMessage(data.code);
+        socketManager.disconnect();
+        this.stateUpdater.setDebuggingActive(false);
+        this.updateDebugState();
+      },
 
-    socketManager.on(SocketEvents.DEBUG_EXIT, (data) => {
-      // Display the exit message
-      terminalManager.writeExitMessage(data.code);
-      socketManager.disconnect();
-      this.stateUpdater.setDebuggingActive(false);
-      this.updateDebugState();
-    });
+      [SocketEvents.COMPILE_ERROR]: () => {
+        this.stateUpdater.showOutput();
+        socketManager.disconnect();
+        this.updateDebugState();
+      },
 
-    // Handle error and exit events
-    socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
-      this.stateUpdater.showOutput();
-      socketManager.disconnect();
-      this.updateDebugState();
-    });
+      [SocketEvents.ERROR]: (data) => {
+        console.error("Received error from server:", data.message);
+        terminalManager.writeError(`\r\nError: ${data.message}\r\n`);
+      },
+    };
 
-    socketManager.on(SocketEvents.ERROR, (data) => {
-      console.error("Received error from server:", data.message);
-      terminalManager.writeError(`\r\nError: ${data.message}\r\n`);
+    // Register all event handlers at once
+    Object.entries(eventHandlers).forEach(([event, handler]) => {
+      socketManager.on(event, handler);
     });
   }
 
@@ -125,19 +125,13 @@ export class DebugSocketManager {
    * @param options Compilation options including code, language, compiler, etc.
    */
   async startDebugSession(options: CompileOptions): Promise<void> {
-    if (socketManager.isProcessRunning()) {
-      return;
-    }
-
-    if (options.code.trim() === "") {
+    if (socketManager.isProcessRunning() || !options.code.trim()) {
       return;
     }
 
     try {
       this.stateUpdater.showOutput();
-
       await socketManager.connect();
-
       await socketManager.emit(SocketEvents.DEBUG_START, {
         code: options.code,
         lang: options.lang,
@@ -145,12 +139,7 @@ export class DebugSocketManager {
       });
     } catch (error) {
       console.error("Debug socket operation failed:", error);
-
-      try {
-        socketManager.disconnect();
-      } catch (e) {
-        console.error("Error disconnecting after debug failure:", e);
-      }
+      socketManager.disconnect();
     }
   }
 
@@ -159,6 +148,8 @@ export class DebugSocketManager {
    * @param command GDB command to execute
    */
   async sendDebugCommand(command: string): Promise<void> {
+    if (!command) return;
+
     try {
       await socketManager.emit(SocketEvents.DEBUG_COMMAND, { command });
     } catch (error) {

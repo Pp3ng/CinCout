@@ -638,26 +638,27 @@ const Header: React.FC<HeaderProps> = memo(
 
     // Easter egg click handler
     const handleTitleClick = useCallback(() => {
-      const currentTime = new Date().getTime();
-      const { clickCount, lastClickTime } = easterEggState.current;
+      const now = new Date().getTime();
+      const state = easterEggState.current;
 
-      if (currentTime - lastClickTime > EASTER_EGG_TIMEOUT) {
-        easterEggState.current.clickCount = 0;
+      // Reset count if timeout passed
+      if (now - state.lastClickTime > EASTER_EGG_TIMEOUT) {
+        state.clickCount = 0;
       }
 
-      easterEggState.current.clickCount++;
-      easterEggState.current.lastClickTime = currentTime;
+      // Update state
+      state.clickCount++;
+      state.lastClickTime = now;
 
-      // easter egg: show a notification after specified number of clicks
-      if (easterEggState.current.clickCount >= EASTER_EGG_CLICKS_REQUIRED) {
+      // Show easter egg message after reaching click threshold
+      if (state.clickCount >= EASTER_EGG_CLICKS_REQUIRED) {
         showNotification(
           "info",
-          "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🚀",
+          "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🤓",
           NOTIFICATION_DURATION,
           { top: "50%", left: "50%" }
         );
-        // Reset count after showing notification
-        easterEggState.current.clickCount = 0;
+        state.clickCount = 0;
       }
     }, []);
 

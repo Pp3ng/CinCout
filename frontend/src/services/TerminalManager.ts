@@ -1,12 +1,14 @@
+/**
+ * TerminalManager.ts
+ * Manages terminal functionality
+ */
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { TerminalDomElements, TerminalOptions } from "./types";
-import { socketManager, SocketEvents } from "./websocket";
+import { TerminalDomElements, TerminalOptions } from "../types";
+import { socketManager, SocketEvents } from "./WebSocketManager";
 
-// Import the CSS with the correct path for the new @xterm package
+// Import the CSS
 import "@xterm/xterm/css/xterm.css";
-
-// === Main Component ===
 
 /**
  * TerminalManager - Manages terminal functionality
@@ -16,6 +18,7 @@ class TerminalManager {
   private terminal: Terminal | null = null;
   private fitAddon: FitAddon | null = null;
   private domElements: TerminalDomElements = {};
+  private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Initialize the terminal manager with DOM elements
@@ -31,6 +34,25 @@ class TerminalManager {
    */
   setDomElements = (elements: TerminalDomElements): void => {
     this.domElements = { ...this.domElements, ...elements };
+  };
+
+  /**
+   * Sync with an existing terminal instance from useTerminal hook
+   * This ensures that TerminalManager can work with a terminal instance
+   * created by React components
+   */
+  syncWithTerminal = (terminal: Terminal): void => {
+    // If we already have a terminal instance, dispose it first
+    if (this.terminal && this.terminal !== terminal) {
+      try {
+        this.terminal.dispose();
+      } catch (e) {
+        console.error("Error disposing existing terminal:", e);
+      }
+    }
+
+    // Set the new terminal instance
+    this.terminal = terminal;
   };
 
   /**
@@ -62,7 +84,7 @@ class TerminalManager {
 
     // Create terminal instance with options
     this.terminal = new Terminal(terminalOptions);
-    window.terminal = this.terminal;
+    (window as any).terminal = this.terminal;
 
     // Create and load fit addon
     this.fitAddon = new FitAddon();
@@ -107,7 +129,6 @@ class TerminalManager {
       const rows = this.terminal.rows;
 
       // Send resize event to server if connected and running
-      // Use a more robust check with additional debouncing for disconnection scenarios
       if (socketManager.isConnected() && socketManager.isProcessRunning()) {
         // Add a small delay to avoid resize events during connection transitions
         setTimeout(() => {
@@ -212,8 +233,6 @@ class TerminalManager {
       this.fitTerminal();
     }, 100);
   };
-
-  private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Set up terminal input handling
@@ -328,7 +347,7 @@ class TerminalManager {
       try {
         this.terminal.dispose();
         this.terminal = null;
-        window.terminal = null;
+        (window as any).terminal = null;
       } catch (e) {
         console.error("Error disposing terminal:", e);
       }

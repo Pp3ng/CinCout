@@ -22,20 +22,27 @@ import "codemirror/addon/fold/brace-fold";
 import "codemirror/addon/fold/comment-fold";
 import "codemirror/addon/hint/show-hint";
 
-// Import utility functions
-import { initializeReactHeader } from "./react-integration";
+// Import React and ReactDOM for rendering the app
+import React from "react";
+import { createRoot } from "react-dom/client";
 
-// 5. Import all application modules (in dependency order)
-// Core modules first
-import "./layout"; // Layout management
-import "./websocket"; // WebSocket communication
-import "./compileSocket"; // Compilation WebSocket handling
-import "./terminal"; // Terminal functionality
-import "./handlers"; // Event handlers
-import "./editor"; // Main editor functionality (depends on most other modules)
+// Import our main App component
+import App from "./App";
 
-// Initialize React components after DOM content loaded
+// Import required core modules that might be needed for compatibility
+
+// Initialize the React app
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize React Header
-  initializeReactHeader();
+  const rootElement = document.getElementById("app");
+
+  if (rootElement) {
+    const root = createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  } else {
+    console.error("Root element #app not found");
+  }
 });

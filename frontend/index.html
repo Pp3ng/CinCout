@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CinCout</title>
     <!-- Google src -->
     <link
@@ -26,61 +27,10 @@
   </head>
 
   <body>
-    <div class="container">
-      <!-- React will render the header into this div -->
-      <div class="header"></div>
-
-      <div class="main-container">
-        <!-- Editor panel (full-screen initially) -->
-        <div class="panel editor-panel">
-          <div class="panel-header">
-            <div class="button-container">
-              <button id="styleCheck" class="action-btn">
-                <i class="fas fa-check"></i> Lint Code
-              </button>
-              <button id="format" class="action-btn">
-                <i class="fas fa-align-left"></i> Format
-              </button>
-              <button id="compile" class="action-btn">
-                <i class="fas fa-play"></i> Compile & Run
-              </button>
-              <button id="debug" class="action-btn">
-                <i class="fas fa-bug"></i> Debug
-              </button>
-              <button id="viewAssembly" class="action-btn">
-                <i class="fas fa-cogs"></i> View Assembly
-              </button>
-              <button id="memcheck" class="action-btn">
-                <i class="fas fa-memory"></i> Leak Detector
-              </button>
-            </div>
-            <div class="button-container right-aligned">
-              <button id="zenMode" class="action-btn">
-                <i class="fas fa-expand"></i> Zen Mode
-              </button>
-              <button id="codeSnap" class="action-btn">
-                <i class="fas fa-camera"></i> Code Snap
-              </button>
-            </div>
-          </div>
-          <textarea id="code"></textarea>
-        </div>
-
-        <!-- Output panel (hidden initially) -->
-        <div class="panel output-panel" id="outputPanel" style="display: none">
-          <div class="panel-header">
-            <div class="button-container">
-              <button id="closeOutput" class="action-btn">
-                <i class="fas fa-times"></i> Close
-              </button>
-            </div>
-          </div>
-          <div id="output"></div>
-        </div>
-      </div>
-    </div>
+    <!-- Single mount point for the React app -->
+    <div id="app"></div>
 
     <!-- Main JS entry point - Vite will bundle all dependencies -->
-    <script type="module" src="./src/index.ts"></script>
+    <script type="module" src="./src/index.tsx"></script>
   </body>
 </html>

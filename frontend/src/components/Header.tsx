@@ -6,12 +6,13 @@ import React, {
   useEffect,
   memo,
 } from "react";
-import styled, { keyframes } from "styled-components";
-import { showNotification } from "../utils";
+import styled, { keyframes, css } from "styled-components";
+import { notificationService } from "../services/NotificationService";
 import CustomSelect from "./CustomSelect";
-import { useTemplates } from "../hooks/useTemplates";
+import { useTemplates } from "../services/TemplateManager";
 import { useTheme } from "../hooks/useTheme";
 import { useShortcuts } from "../hooks/useShortcuts";
+import { useCodeConfig, useUIState } from "../context/UIStateContext";
 
 // Animation keyframes
 const gradientShift = keyframes`
@@ -56,7 +57,7 @@ const float = keyframes`
 `;
 
 // Styled components for the header layout
-const HeaderContainer = styled.div`
+const HeaderContainer = styled.div<{ isZenMode: boolean }>`
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -67,6 +68,16 @@ const HeaderContainer = styled.div`
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   gap: var(--spacing-sm);
+
+  /* Hide header in zen mode */
+  ${({ isZenMode }) =>
+    isZenMode &&
+    css`
+      opacity: 0;
+      pointer-events: none;
+      position: absolute;
+      top: -100px;
+    `}
 `;
 
 const HeaderLeft = styled.div`
@@ -411,16 +422,7 @@ interface LearningResource {
 }
 
 interface HeaderProps {
-  // Props that allow interaction with existing non-React code
-  onLanguageChange?: (language: string) => void;
-  onCompilerChange?: (compiler: string) => void;
-  onOptimizationChange?: (optimization: string) => void;
   onVimModeToggle?: (enabled: boolean) => void;
-
-  // Initial values
-  initialLanguage?: string;
-  initialCompiler?: string;
-  initialOptimization?: string;
   initialVimMode?: boolean;
 }
 
@@ -513,34 +515,29 @@ const ShortcutsDropdown = memo(
 
 // Main component wrapped with memo for performance
 const Header: React.FC<HeaderProps> = memo(
-  ({
-    onLanguageChange,
-    onCompilerChange,
-    onOptimizationChange,
-    onVimModeToggle,
-    initialLanguage = "c",
-    initialCompiler = "gcc",
-    initialOptimization = "-O0",
-    initialVimMode = false,
-  }) => {
+  ({ onVimModeToggle, initialVimMode = false }) => {
     // Use theme hook
     const { theme, setTheme, getThemeOptions } = useTheme();
 
-    // Use templates hook
+    // Use global code configuration context
+    const { config, setConfig } = useCodeConfig();
+
+    // Use UI state for Zen Mode
+    const { state: uiState } = useUIState();
+
+    // Use templates hook - now without passing language
     const {
-      language,
-      setLanguage,
       templates,
       selectedTemplate,
       setSelectedTemplate,
-    } = useTemplates(initialLanguage);
+      isLoading: templatesLoading,
+      error: templatesError,
+    } = useTemplates();
 
     // Use shortcuts hook
     const { shortcuts } = useShortcuts();
 
-    // State for all form controls
-    const [compiler, setCompiler] = useState(initialCompiler);
-    const [optimization, setOptimization] = useState(initialOptimization);
+    // Only track vim mode locally since it's not used by other components
     const [vimMode, setVimMode] = useState(initialVimMode);
 
     // Use refs for Easter egg to avoid unnecessary re-renders
@@ -576,26 +573,23 @@ const Header: React.FC<HeaderProps> = memo(
     // Event handlers with useCallback to prevent unnecessary re-renders
     const handleLanguageChange = useCallback(
       (value: string) => {
-        setLanguage(value);
-        if (onLanguageChange) onLanguageChange(value);
+        setConfig({ language: value });
       },
-      [setLanguage, onLanguageChange]
+      [setConfig]
     );
 
     const handleCompilerChange = useCallback(
       (value: string) => {
-        setCompiler(value);
-        if (onCompilerChange) onCompilerChange(value);
+        setConfig({ compiler: value });
       },
-      [onCompilerChange]
+      [setConfig]
     );
 
     const handleOptimizationChange = useCallback(
       (value: string) => {
-        setOptimization(value);
-        if (onOptimizationChange) onOptimizationChange(value);
+        setConfig({ optimization: value });
       },
-      [onOptimizationChange]
+      [setConfig]
     );
 
     const handleTemplateChange = useCallback(
@@ -652,8 +646,7 @@ const Header: React.FC<HeaderProps> = memo(
 
       // Show easter egg message after reaching click threshold
       if (state.clickCount >= EASTER_EGG_CLICKS_REQUIRED) {
-        showNotification(
-          "info",
+        notificationService.info(
           "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🤓",
           NOTIFICATION_DURATION,
           { top: "50%", left: "50%" }
@@ -661,6 +654,13 @@ const Header: React.FC<HeaderProps> = memo(
         state.clickCount = 0;
       }
     }, []);
+
+    // Display template error if there is one
+    useEffect(() => {
+      if (templatesError) {
+        notificationService.error(templatesError, 3000);
+      }
+    }, [templatesError]);
 
     // Memoized shortcut list render function
     const renderShortcutsList = useMemo(() => {
@@ -704,7 +704,7 @@ const Header: React.FC<HeaderProps> = memo(
     );
 
     return (
-      <HeaderContainer>
+      <HeaderContainer isZenMode={uiState.isZenMode || false}>
         <HeaderLeft>
           <Title id="title-easter-egg" onClick={handleTitleClick}>
             <i className="devicon-c-plain"></i>
@@ -721,21 +721,22 @@ const Header: React.FC<HeaderProps> = memo(
         <ControlsContainer>
           <CustomSelect
             id="language"
-            value={language}
+            value={config.language}
             onChange={handleLanguageChange}
             options={LANGUAGE_OPTIONS}
+            disabled={templatesLoading}
           />
 
           <CustomSelect
             id="compiler"
-            value={compiler}
+            value={config.compiler}
             onChange={handleCompilerChange}
             options={COMPILER_OPTIONS}
           />
 
           <CustomSelect
             id="optimization"
-            value={optimization}
+            value={config.optimization}
             onChange={handleOptimizationChange}
             options={OPTIMIZATION_OPTIONS}
           />
@@ -745,6 +746,7 @@ const Header: React.FC<HeaderProps> = memo(
             value={selectedTemplate}
             onChange={handleTemplateChange}
             options={templates}
+            disabled={templatesLoading || templates.length === 0}
           />
 
           <CustomSelect

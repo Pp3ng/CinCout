@@ -1,9 +1,9 @@
 /**
  * CompileSocket - Module handling compilation-related Socket.IO communication
  */
-import { terminalManager } from "./terminal";
-import { CompileOptions, CompileStateUpdater } from "./types";
-import { socketManager, SocketEvents } from "./websocket";
+import { terminalManager } from "./TerminalManager";
+import { CompileOptions, CompileStateUpdater } from "../types";
+import { socketManager, SocketEvents } from "./WebSocketManager";
 
 /**
  * CompileSocketManager handles the Socket.IO communication for code compilation
@@ -56,6 +56,7 @@ export class CompileSocketManager {
           `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
         );
         socketManager.disconnect();
+        socketManager.setProcessRunning(false); // Reset socket state
         this.updateCompilationState();
       },
 
@@ -71,6 +72,7 @@ export class CompileSocketManager {
       [SocketEvents.EXIT]: (data) => {
         terminalManager.writeExitMessage(data.code);
         socketManager.disconnect();
+        socketManager.setProcessRunning(false); // Reset socket state
         this.updateCompilationState();
       },
     };
@@ -100,9 +102,16 @@ export class CompileSocketManager {
         socketManager
           .emit(SocketEvents.CLEANUP)
           .catch((e) => console.error("Error sending cleanup message:", e));
-
-        socketManager.disconnect();
       }
+
+      // Disconnect socket
+      socketManager.disconnect();
+
+      // Reset process state
+      socketManager.setProcessRunning(false);
+
+      // Dispose terminal
+      terminalManager.dispose();
     } catch (error) {
       console.error("Failed to handle cleanup:", error);
     }
@@ -114,7 +123,8 @@ export class CompileSocketManager {
    */
   async compile(options: CompileOptions): Promise<void> {
     if (socketManager.isProcessRunning()) {
-      return;
+      // If there's an active process, terminate it first
+      this.cleanup();
     }
 
     if (!options.code.trim()) {
@@ -125,14 +135,11 @@ export class CompileSocketManager {
     }
 
     try {
+      // Make sure we start with a clean terminal regardless of previous state
+      terminalManager.dispose();
+
       this.stateUpdater.showOutput();
-      this.showOutputMessage('<div class="loading">Connecting...</div>');
-
       await socketManager.connect();
-      this.showOutputMessage(
-        '<div class="loading">Sending code for compilation...</div>'
-      );
-
       await socketManager.emit(SocketEvents.COMPILE, {
         code: options.code,
         lang: options.lang,
@@ -145,6 +152,7 @@ export class CompileSocketManager {
         '<div class="error-output">Error: Socket connection failed. Please try again.</div>'
       );
       socketManager.disconnect();
+      socketManager.setProcessRunning(false); // Reset socket state
     }
   }
 

@@ -1,6 +1,9 @@
-// Socket.IO communication module
+/**
+ * WebSocketManager.ts
+ * Socket.IO communication module
+ */
 import { io, Socket } from "socket.io-client";
-import { CompilationState } from "./types";
+import { CompilationState } from "../types";
 
 // Create a strongly-typed event system matching backend
 export enum SocketEvents {
@@ -38,7 +41,7 @@ export enum SocketEvents {
 
 /**
  * WebSocketManager class for frontend
- * Mirrors the backend WebSocketManager structure
+ * Manages Socket.IO connections and events
  */
 export class WebSocketManager {
   private socket: Socket | null = null;

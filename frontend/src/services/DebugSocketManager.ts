@@ -1,20 +1,20 @@
 /**
- * DebugSocket - Module handling GDB debugging-related Socket.IO communication
+ * DebugSocketManager - Module handling debugging-related Socket.IO communication
  */
-import { terminalManager } from "./terminal";
-import { CompileOptions, DebugStateUpdater } from "./types";
-import { socketManager, SocketEvents } from "./websocket";
+import { terminalManager } from "./TerminalManager";
+import { CompileOptions, DebugStateUpdater } from "../types";
+import { socketManager, SocketEvents } from "./WebSocketManager";
 
 /**
- * DebugSocketManager handles the Socket.IO communication for GDB debugging
- * Mirrors the backend's debug websocket handling structure
+ * DebugSocketManager handles WebSocket communication for GDB debug sessions
  */
 export class DebugSocketManager {
   private stateUpdater: DebugStateUpdater;
+  private debugPrompt = "(gdb) ";
 
   /**
    * Create a new DebugSocketManager
-   * @param stateUpdater Interface to update UI state based on socket events
+   * @param stateUpdater - Interface to update UI state based on socket events
    */
   constructor(stateUpdater: DebugStateUpdater) {
     this.stateUpdater = stateUpdater;
@@ -22,15 +22,15 @@ export class DebugSocketManager {
   }
 
   /**
-   * Set up event listeners for Socket.IO events
+   * Set up listeners for debugging-related events
    */
   private setupEventListeners(): void {
-    // map of event names to their handlers
+    // Define all event handlers
     const eventHandlers = {
       [SocketEvents.COMPILING]: () => {
         this.stateUpdater.showOutput();
         this.stateUpdater.refreshEditor();
-        this.updateDebugState();
+        this.updateDebugState("compiling");
       },
 
       [SocketEvents.DEBUG_START]: (data) => {
@@ -38,26 +38,28 @@ export class DebugSocketManager {
         terminalManager.dispose();
         this.stateUpdater.showOutput();
 
-        // Setup a terminal for GDB interaction
+        // Set up the terminal with the correct DOM elements
         terminalManager.setDomElements({
           output: document.getElementById("output"),
           outputPanel: document.getElementById("outputPanel"),
         });
 
-        // Initialize the terminal - this creates an xterm.js instance
+        // Initialize terminal
         const terminal = terminalManager.setupTerminal();
-        if (!terminal) return;
 
+        // Update state to show we're in debug mode
         this.stateUpdater.setDebuggingActive(true);
-        this.updateDebugState();
+        this.updateDebugState("debugging");
+        this.stateUpdater.refreshEditor();
 
+        // Show startup message if provided
         if (data?.message) {
           terminalManager.write(`${data.message}\r\n\r\n`);
         }
       },
 
       [SocketEvents.DEBUG_RESPONSE]: (data) => {
-        if (data?.output) {
+        if (data.output) {
           terminalManager.write(data.output);
         }
       },
@@ -66,20 +68,37 @@ export class DebugSocketManager {
         console.error("Received debug error from server:", data.message);
         terminalManager.writeError(`\r\nError: ${data.message}\r\n`);
         this.stateUpdater.setDebuggingActive(false);
-        this.updateDebugState();
+        this.updateDebugState("idle");
+
+        // Ensure we reset the socket state
+        socketManager.setProcessRunning(false);
       },
 
       [SocketEvents.DEBUG_EXIT]: (data) => {
         terminalManager.writeExitMessage(data.code);
-        socketManager.disconnect();
+
+        // First set debug state to idle
         this.stateUpdater.setDebuggingActive(false);
-        this.updateDebugState();
+        this.updateDebugState("idle");
+
+        // Then disconnect socket after display is updated
+        socketManager.disconnect();
+
+        // Ensure we reset the socket state
+        socketManager.setProcessRunning(false);
       },
 
       [SocketEvents.COMPILE_ERROR]: () => {
         this.stateUpdater.showOutput();
+
+        // First set debug state to idle
+        this.updateDebugState("idle");
+
+        // Then disconnect socket
         socketManager.disconnect();
-        this.updateDebugState();
+
+        // Ensure we reset the socket state
+        socketManager.setProcessRunning(false);
       },
 
       [SocketEvents.ERROR]: (data) => {
@@ -88,48 +107,40 @@ export class DebugSocketManager {
       },
     };
 
-    // Register all event handlers at once
+    // Register all event handlers
     Object.entries(eventHandlers).forEach(([event, handler]) => {
       socketManager.on(event, handler);
     });
   }
 
   /**
-   * Update the UI based on the current debug state
+   * Update debug state and notify UI
+   * @param state - New debug state
    */
-  private updateDebugState(): void {
-    this.stateUpdater.updateDebugState(socketManager.getCompilationState());
+  private updateDebugState(state: string): void {
+    this.stateUpdater.updateDebugState(state);
   }
 
   /**
-   * Clean up the Socket.IO connection and send cleanup request to server
-   */
-  cleanup(): void {
-    try {
-      const sessionId = socketManager.getSessionId();
-      if (sessionId && socketManager.isConnected()) {
-        socketManager
-          .emit(SocketEvents.CLEANUP)
-          .catch((e) => console.error("Error sending cleanup message:", e));
-
-        socketManager.disconnect();
-        this.stateUpdater.setDebuggingActive(false);
-      }
-    } catch (error) {
-      console.error("Failed to handle cleanup:", error);
-    }
-  }
-
-  /**
-   * Start a debug session using Socket.IO communication
-   * @param options Compilation options including code, language, compiler, etc.
+   * Start a debug session
+   * @param options - Compilation options for the code to debug
    */
   async startDebugSession(options: CompileOptions): Promise<void> {
-    if (socketManager.isProcessRunning() || !options.code.trim()) {
+    if (socketManager.isProcessRunning()) {
+      return;
+    }
+
+    if (!options.code.trim()) {
+      this.showOutputMessage(
+        '<div class="error-output">Error: Code cannot be empty</div>'
+      );
       return;
     }
 
     try {
+      // Make sure we start with a clean terminal regardless of previous state
+      terminalManager.dispose();
+
       this.stateUpdater.showOutput();
       await socketManager.connect();
       await socketManager.emit(SocketEvents.DEBUG_START, {
@@ -140,12 +151,13 @@ export class DebugSocketManager {
     } catch (error) {
       console.error("Debug socket operation failed:", error);
       socketManager.disconnect();
+      socketManager.setProcessRunning(false); // Ensure socket state is reset
     }
   }
 
   /**
    * Send a GDB command to the debug session
-   * @param command GDB command to execute
+   * @param command - GDB command to execute
    */
   async sendDebugCommand(command: string): Promise<void> {
     if (!command) return;
@@ -154,6 +166,34 @@ export class DebugSocketManager {
       await socketManager.emit(SocketEvents.DEBUG_COMMAND, { command });
     } catch (error) {
       console.error("Failed to send debug command:", error);
+    }
+  }
+
+  /**
+   * Clean up debug connections
+   */
+  cleanup(): void {
+    try {
+      const sessionId = socketManager.getSessionId();
+      if (sessionId && socketManager.isConnected()) {
+        socketManager
+          .emit(SocketEvents.CLEANUP)
+          .catch((e) => console.error("Error sending cleanup message:", e));
+      }
+
+      // Disconnect socket
+      socketManager.disconnect();
+
+      // Reset debug states
+      this.stateUpdater.setDebuggingActive(false);
+
+      // Make sure the socket state is reset
+      socketManager.setProcessRunning(false);
+
+      // Make sure to dispose of the terminal to clean up resources
+      terminalManager.dispose();
+    } catch (error) {
+      console.error("Failed to handle debug cleanup:", error);
     }
   }
 
@@ -179,6 +219,16 @@ export class DebugSocketManager {
       await socketManager.resizeTerminal(cols, rows);
     } catch (error) {
       console.error("Failed to resize debug terminal:", error);
+    }
+  }
+
+  /**
+   * Display a message in the output panel
+   */
+  private showOutputMessage(html: string): void {
+    const output = document.getElementById("output");
+    if (output) {
+      output.innerHTML = html;
     }
   }
 }

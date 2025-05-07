@@ -1,9 +1,6 @@
-/**
- * WebSocketManager.ts
- * Socket.IO communication module
- */
+// Socket.IO communication module
 import { io, Socket } from "socket.io-client";
-import { CompilationState } from "../types";
+import { CompilationState } from "./types";
 
 // Create a strongly-typed event system matching backend
 export enum SocketEvents {
@@ -41,7 +38,7 @@ export enum SocketEvents {
 
 /**
  * WebSocketManager class for frontend
- * Manages Socket.IO connections and events
+ * Mirrors the backend WebSocketManager structure
  */
 export class WebSocketManager {
   private socket: Socket | null = null;
@@ -80,70 +77,61 @@ export class WebSocketManager {
         reject(error);
       });
 
-      this.setupEventHandlers();
-    });
-  }
+      this.socket.on(SocketEvents.DISCONNECT, (reason) => {
+        if (reason === "io server disconnect") {
+          this.socket?.connect();
+        }
+      });
 
-  /**
-   * Setup all socket event handlers
-   */
-  private setupEventHandlers(): void {
-    if (!this.socket) return;
+      // Handle session creation
+      this.socket.on(SocketEvents.SESSION_CREATED, (data) => {
+        this.sessionId = data.sessionId;
+        this.notifyListeners(SocketEvents.SESSION_CREATED, data);
+      });
 
-    this.socket.on(SocketEvents.DISCONNECT, (reason) => {
-      if (reason === "io server disconnect") {
-        this.socket?.connect();
-      }
-    });
+      // Update compilation state based on events
+      this.socket.on(SocketEvents.COMPILING, () => {
+        this.compilationState = CompilationState.COMPILING;
+        this.notifyListeners(SocketEvents.COMPILING, {});
+      });
 
-    // Handle session creation
-    this.socket.on(SocketEvents.SESSION_CREATED, (data) => {
-      this.sessionId = data.sessionId;
-      this.notifyListeners(SocketEvents.SESSION_CREATED, data);
-    });
+      this.socket.on(SocketEvents.COMPILE_SUCCESS, () => {
+        this.compilationState = CompilationState.RUNNING;
+        this.notifyListeners(SocketEvents.COMPILE_SUCCESS, {});
+      });
 
-    // Update compilation state based on events
-    this.socket.on(SocketEvents.COMPILING, () => {
-      this.compilationState = CompilationState.COMPILING;
-      this.notifyListeners(SocketEvents.COMPILING, {});
-    });
+      this.socket.on(SocketEvents.COMPILE_ERROR, (data) => {
+        this.compilationState = CompilationState.IDLE;
+        this.notifyListeners(SocketEvents.COMPILE_ERROR, data);
+      });
 
-    this.socket.on(SocketEvents.COMPILE_SUCCESS, () => {
-      this.compilationState = CompilationState.RUNNING;
-      this.notifyListeners(SocketEvents.COMPILE_SUCCESS, {});
-    });
+      this.socket.on(SocketEvents.EXIT, (data) => {
+        this.compilationState = CompilationState.IDLE;
+        this.notifyListeners(SocketEvents.EXIT, data);
+      });
 
-    this.socket.on(SocketEvents.COMPILE_ERROR, (data) => {
-      this.compilationState = CompilationState.IDLE;
-      this.notifyListeners(SocketEvents.COMPILE_ERROR, data);
-    });
+      // Handle debug session events
+      this.socket.on(SocketEvents.DEBUG_START, (data) => {
+        this.compilationState = CompilationState.RUNNING;
+        this.notifyListeners(SocketEvents.DEBUG_START, data);
+      });
 
-    this.socket.on(SocketEvents.EXIT, (data) => {
-      this.compilationState = CompilationState.IDLE;
-      this.notifyListeners(SocketEvents.EXIT, data);
-    });
+      this.socket.on(SocketEvents.DEBUG_EXIT, (data) => {
+        this.compilationState = CompilationState.IDLE;
+        this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
+      });
 
-    // Handle debug session events
-    this.socket.on(SocketEvents.DEBUG_START, (data) => {
-      this.compilationState = CompilationState.RUNNING;
-      this.notifyListeners(SocketEvents.DEBUG_START, data);
-    });
-
-    this.socket.on(SocketEvents.DEBUG_EXIT, (data) => {
-      this.compilationState = CompilationState.IDLE;
-      this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
-    });
-
-    // Forward all other events to listeners
-    [
-      SocketEvents.OUTPUT,
-      SocketEvents.ERROR,
-      SocketEvents.CLEANUP_COMPLETE,
-      SocketEvents.DEBUG_RESPONSE,
-      SocketEvents.DEBUG_ERROR,
-    ].forEach((event) => {
-      this.socket?.on(event, (data) => {
-        this.notifyListeners(event, data);
+      // Forward all other events to listeners
+      [
+        SocketEvents.OUTPUT,
+        SocketEvents.ERROR,
+        SocketEvents.CLEANUP_COMPLETE,
+        SocketEvents.DEBUG_RESPONSE,
+        SocketEvents.DEBUG_ERROR,
+      ].forEach((event) => {
+        this.socket?.on(event, (data) => {
+          this.notifyListeners(event, data);
+        });
       });
     });
   }

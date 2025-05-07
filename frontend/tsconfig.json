@@ -12,13 +12,12 @@
     "esModuleInterop": true,
     "allowJs": false,
     "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "removeComments": true,
-    "allowSyntheticDefaultImports": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+  "include": ["ts/**/*.ts", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

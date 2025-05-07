@@ -10,8 +10,5 @@
   "devDependencies": {
     "@types/node": "^20.11.5",
     "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "socket.io": "^4.8.1"
   }
 }

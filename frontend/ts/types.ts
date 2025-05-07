@@ -9,6 +9,11 @@ export type PlatformType = "MacOS" | "Other";
 // UI & Layout
 // ==========================================
 
+// Layout panel state
+export interface PanelState {
+  isOutputVisible: boolean;
+}
+
 // UI global state
 export interface UIState {
   isOutputVisible: boolean;
@@ -17,8 +22,28 @@ export interface UIState {
   compilationState: CompilationState;
   isProcessRunning?: boolean;
   isDebuggingActive?: boolean; // Add debugging active state
-  isZenMode?: boolean; // Add zen mode state
   theme: string;
+  vimMode: boolean;
+}
+
+// DOM elements for accessing UI elements
+export interface DOMElements {
+  template: HTMLElement | null;
+  vimMode: HTMLInputElement | null;
+  language: HTMLSelectElement | null;
+  output: HTMLElement | null;
+  compile: HTMLElement | null;
+  memcheck: HTMLElement | null;
+  format: HTMLElement | null;
+  viewAssembly: HTMLElement | null;
+  styleCheck: HTMLElement | null;
+  debug: HTMLElement | null; // Added debug button
+  themeSelect: HTMLSelectElement | null;
+  outputPanel: HTMLElement | null;
+  closeOutput: HTMLElement | null;
+  codesnap: HTMLElement | null;
+  compiler: HTMLSelectElement | null;
+  optimization: HTMLSelectElement | null;
 }
 
 // ==========================================
@@ -29,6 +54,27 @@ export interface UIState {
 export interface EditorInstances {
   editor: CodeMirror.Editor;
   assemblyView: CodeMirror.Editor;
+}
+
+// ==========================================
+// Templates
+// ==========================================
+
+// Template cache structure
+export interface TemplateCache {
+  lists: Record<string, string[]>;
+  contents: Record<string, string>;
+}
+
+// ==========================================
+// Selector & Custom UI
+// ==========================================
+
+// Select option representation
+export interface SelectOption {
+  readonly value: string;
+  readonly text: string;
+  readonly selected: boolean;
 }
 
 // ==========================================
@@ -43,11 +89,32 @@ export interface CompileOptions {
   code: string;
 }
 
+// WebSocket message structure
+export interface WebSocketMessage {
+  type: string;
+  [key: string]: any;
+}
+
 // Compilation state enum
 export enum CompilationState {
   IDLE = "idle",
   COMPILING = "compiling",
   RUNNING = "running",
+}
+
+// CinCout socket interface
+export interface CinCoutSocket {
+  init: (messageHandler: (eventName: string, data: any) => void) => void;
+  sendData: (data: any) => Promise<void>;
+  isConnected: () => boolean;
+  getSessionId: () => string | null;
+  setSessionId: (id: string) => void;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+  setProcessRunning: (running: boolean) => void;
+  isProcessRunning: () => boolean;
+  updateStateFromMessage: (type: string) => void;
+  getCompilationState: () => CompilationState | string;
 }
 
 // Interface for UI state updates
@@ -58,19 +125,19 @@ export interface CompileStateUpdater {
   refreshEditor: () => void;
 }
 
-// Debug session status
-export enum DebugState {
-  IDLE = "idle",
-  COMPILING = "compiling",
-  DEBUGGING = "debugging",
-}
-
 // Interface for debug state updates
 export interface DebugStateUpdater {
   updateDebugState: (state: CompilationState | string) => void;
   setDebuggingActive: (active: boolean) => void;
   showOutput: () => void;
   refreshEditor: () => void;
+}
+
+// Debug session status
+export enum DebugState {
+  IDLE = "idle",
+  COMPILING = "compiling",
+  DEBUGGING = "debugging",
 }
 
 // ==========================================
@@ -148,6 +215,22 @@ export interface TerminalTheme {
 // ==========================================
 // Keyboard Shortcuts
 // ==========================================
+
+// DOM element IDs for shortcut targets
+export enum DomElementId {
+  COMPILE = "compile",
+  CLOSE_OUTPUT = "closeOutput",
+  VIEW_ASSEMBLY = "viewAssembly",
+  FORMAT = "format",
+  STYLE_CHECK = "styleCheck",
+  MEMORY_CHECK = "memcheck",
+  DEBUG = "debug", // Added debug element ID
+  OUTPUT_PANEL = "outputPanel",
+  LANGUAGE = "language",
+  SHORTCUTS_CONTENT = "shortcuts-content",
+  CODESNAP = "codeSnap",
+  ZEN_MODE = "zenMode",
+}
 
 // Shortcut definition
 export interface ShortcutDefinition {

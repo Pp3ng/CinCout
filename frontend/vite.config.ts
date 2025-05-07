@@ -1,13 +1,9 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
-import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   // Base public path
   base: "./",
-
-  // Add React plugin
-  plugins: [react()],
 
   // Build options
   build: {
@@ -25,9 +21,10 @@ export default defineConfig({
             "@xterm/xterm",
             "@xterm/addon-fit",
             "html2canvas",
-            "react",
-            "react-dom",
           ],
+          editor: ["./ts/editor.ts", "./ts/themes.ts"],
+          handlers: ["./ts/handlers.ts", "./ts/websocket.ts"],
+          ui: ["./ts/layout.ts", "./ts/selector.ts", "./ts/shortcuts.ts"],
         },
       },
     },

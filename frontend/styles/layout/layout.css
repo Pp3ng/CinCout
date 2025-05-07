@@ -3,6 +3,109 @@
  * Styles for overall application layout structure
  */
 
+/* Header styles */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  background: var(--bg-secondary);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  gap: var(--spacing-sm);
+}
+
+.header > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+/* Title styles */
+h1 {
+  font-family: var(--font-mono);
+  background: linear-gradient(
+    45deg,
+    var(--accent),
+    var(--accent-hover),
+    var(--accent),
+    var(--accent-hover)
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 1.6em;
+  margin: 0;
+  letter-spacing: 0.4px;
+  text-shadow: var(--shadow-accent-sm);
+  animation: gradient-shift 8s ease-in-out infinite;
+  white-space: nowrap;
+  line-height: 1;
+  display: flex;
+  position: relative;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+    text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.2);
+  }
+  25% {
+    text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
+  }
+  50% {
+    background-position: 100% 50%;
+    text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.3);
+  }
+  75% {
+    text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
+  }
+  100% {
+    background-position: 0% 50%;
+    text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.2);
+  }
+}
+
+/* GitHub icon */
+.github-icon {
+  width: 26px;
+  height: 26px;
+  transition: transform 0.3s, opacity 0.3s;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+
+.github-icon:hover {
+  opacity: 0.9;
+  transform: scale(1.1);
+}
+
+/* Vim icon */
+.toggle-container img {
+  transition: transform 0.3s, opacity 0.3s;
+  flex-shrink: 0;
+}
+
+.toggle-container img:hover {
+  opacity: 0.9;
+  transform: scale(1.1);
+}
+
+/* Controls group */
+.controls {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  height: auto;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 /* Main container layout */
 .main-container {
   display: flex;

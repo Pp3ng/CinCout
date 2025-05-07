@@ -1,14 +1,12 @@
-/**
- * TerminalManager.ts
- * Manages terminal functionality
- */
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { TerminalDomElements, TerminalOptions } from "../types";
-import { socketManager, SocketEvents } from "./WebSocketManager";
+import { TerminalDomElements, TerminalOptions } from "./types";
+import { socketManager, SocketEvents } from "./websocket";
 
-// Import the CSS
+// Import the CSS with the correct path for the new @xterm package
 import "@xterm/xterm/css/xterm.css";
+
+// === Main Component ===
 
 /**
  * TerminalManager - Manages terminal functionality
@@ -18,8 +16,6 @@ class TerminalManager {
   private terminal: Terminal | null = null;
   private fitAddon: FitAddon | null = null;
   private domElements: TerminalDomElements = {};
-  private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
-  private resizeDebounceTime = 100; // ms
 
   /**
    * Initialize the terminal manager with DOM elements
@@ -35,25 +31,6 @@ class TerminalManager {
    */
   setDomElements = (elements: TerminalDomElements): void => {
     this.domElements = { ...this.domElements, ...elements };
-  };
-
-  /**
-   * Sync with an existing terminal instance from useTerminal hook
-   * This ensures that TerminalManager can work with a terminal instance
-   * created by React components
-   */
-  syncWithTerminal = (terminal: Terminal): void => {
-    // If we already have a terminal instance, dispose it first
-    if (this.terminal && this.terminal !== terminal) {
-      try {
-        this.terminal.dispose();
-      } catch (e) {
-        console.error("Error disposing existing terminal:", e);
-      }
-    }
-
-    // Set the new terminal instance
-    this.terminal = terminal;
   };
 
   /**
@@ -85,7 +62,7 @@ class TerminalManager {
 
     // Create terminal instance with options
     this.terminal = new Terminal(terminalOptions);
-    (window as any).terminal = this.terminal;
+    window.terminal = this.terminal;
 
     // Create and load fit addon
     this.fitAddon = new FitAddon();
@@ -106,7 +83,7 @@ class TerminalManager {
     // Fit terminal to container
     this.fitTerminal();
 
-    // Setup effects after render - without setTimeout
+    // Setup effects after render
     this.setupAfterRender();
 
     // Set up event handlers
@@ -130,8 +107,10 @@ class TerminalManager {
       const rows = this.terminal.rows;
 
       // Send resize event to server if connected and running
+      // Use a more robust check with additional debouncing for disconnection scenarios
       if (socketManager.isConnected() && socketManager.isProcessRunning()) {
-        requestAnimationFrame(() => {
+        // Add a small delay to avoid resize events during connection transitions
+        setTimeout(() => {
           // Double-check connection is still active before sending
           if (socketManager.isConnected() && socketManager.isProcessRunning()) {
             socketManager
@@ -143,7 +122,7 @@ class TerminalManager {
                 }
               });
           }
-        });
+        }, 50);
       }
     } catch (e) {
       console.error("Error fitting terminal:", e);
@@ -172,27 +151,29 @@ class TerminalManager {
    * Set up effects after terminal is rendered
    */
   private setupAfterRender = (): void => {
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       // Force terminal redraw to apply new theme
       try {
         if (this.terminal) {
           this.terminal.refresh(0, this.terminal.rows - 1);
+
           // Apply custom cursor styling
           this.applyCursorStyling();
-          // Focus terminal
-          this.terminal.focus();
         }
       } catch (e) {
         console.error("Error refreshing terminal:", e);
       }
-    });
+    }, 50);
+
+    // Focus terminal
+    setTimeout(() => this.terminal?.focus(), 100);
   };
 
   /**
    * Apply custom cursor styling
    */
   private applyCursorStyling = (): void => {
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       const terminalContainer = document.getElementById("terminal-container");
       const cursorElement = terminalContainer?.querySelector(".xterm-cursor");
       if (cursorElement) {
@@ -204,7 +185,7 @@ class TerminalManager {
           .getPropertyValue("--accent")
           .trim();
       }
-    });
+    }, 100);
   };
 
   /**
@@ -219,7 +200,7 @@ class TerminalManager {
   };
 
   /**
-   * Handle window resize event with debouncing
+   * Handle window resize event
    */
   private handleResize = (): void => {
     // Debounce resize events to avoid too many calls
@@ -229,8 +210,10 @@ class TerminalManager {
 
     this.resizeTimeout = setTimeout(() => {
       this.fitTerminal();
-    }, this.resizeDebounceTime);
+    }, 100);
   };
+
+  private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Set up terminal input handling
@@ -345,7 +328,7 @@ class TerminalManager {
       try {
         this.terminal.dispose();
         this.terminal = null;
-        (window as any).terminal = null;
+        window.terminal = null;
       } catch (e) {
         console.error("Error disposing terminal:", e);
       }

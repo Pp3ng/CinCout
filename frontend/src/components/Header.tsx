@@ -7,7 +7,7 @@ import React, {
   memo,
 } from "react";
 import styled, { keyframes, css } from "styled-components";
-import { notificationService } from "../services/NotificationService";
+import { useNotification } from "../hooks/useNotification";
 import CustomSelect from "./CustomSelect";
 import { useTemplates } from "../context/TemplateContext";
 import { useTheme } from "../hooks/useTheme";
@@ -400,11 +400,6 @@ const Slider = styled.span`
   }
 `;
 
-// Constants for better maintenance
-const EASTER_EGG_TIMEOUT = 1500;
-const EASTER_EGG_CLICKS_REQUIRED = 3;
-const NOTIFICATION_DURATION = 4000;
-
 // Type for learning resources
 interface LearningResource {
   href: string;
@@ -515,6 +510,9 @@ const Header: React.FC<HeaderProps> = memo(
 
     // Use UI state for Zen Mode
     const { state: uiState } = useUIState();
+
+    // Use notification hook
+    const { error, info } = useNotification();
 
     // Use templates hook - now without passing language
     const {
@@ -627,7 +625,7 @@ const Header: React.FC<HeaderProps> = memo(
       const state = easterEggState.current;
 
       // Reset count if timeout passed
-      if (now - state.lastClickTime > EASTER_EGG_TIMEOUT) {
+      if (now - state.lastClickTime > 1500) {
         state.clickCount = 0;
       }
 
@@ -636,22 +634,22 @@ const Header: React.FC<HeaderProps> = memo(
       state.lastClickTime = now;
 
       // Show easter egg message after reaching click threshold
-      if (state.clickCount >= EASTER_EGG_CLICKS_REQUIRED) {
-        notificationService.info(
+      if (state.clickCount >= 3) {
+        info(
           "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🤓",
-          NOTIFICATION_DURATION,
+          3000,
           { top: "50%", left: "50%" }
         );
         state.clickCount = 0;
       }
-    }, []);
+    }, [info]);
 
     // Display template error if there is one
     useEffect(() => {
       if (templatesError) {
-        notificationService.error(templatesError, 3000);
+        error(templatesError, 3000);
       }
-    }, [templatesError]);
+    }, [templatesError, error]);
 
     // Memoized shortcut list render function
     const renderShortcutsList = useMemo(() => {

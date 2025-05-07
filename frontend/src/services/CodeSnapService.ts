@@ -3,7 +3,6 @@
  * Handles code screenshot functionality
  */
 import html2canvas from "html2canvas";
-import { notificationService } from "./NotificationService";
 import { EditorService } from "./EditorService";
 
 /**
@@ -16,10 +15,6 @@ class CodeSnapService {
    */
   async takeSnapshot(): Promise<void> {
     const editorElement = document.querySelector(".CodeMirror");
-    if (!editorElement) {
-      notificationService.error("CodeMirror editor element not found");
-      return;
-    }
 
     // Create and display loading indicator
     const loadingIndicator = document.createElement("div");
@@ -209,10 +204,8 @@ class CodeSnapService {
 
       // Cleanup
       document.body.removeChild(tempContainer);
-      notificationService.success("Code screenshot saved!");
     } catch (error) {
       console.error("CodeSnap error:", error);
-      notificationService.error("Failed to create code screenshot");
     } finally {
       // Always remove loading indicator
       document.body.querySelector(".codesnap-loading")?.remove();

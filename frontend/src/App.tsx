@@ -6,6 +6,7 @@ import { ApiServiceProvider } from "./context/ApiServiceContext";
 import { SocketProvider } from "./context/SocketContext";
 import { UIStateProvider } from "./context/UIStateContext";
 import { TemplateProvider } from "./context/TemplateContext";
+import { ToastContainer } from "./hooks/useNotification";
 
 const App: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ const App: React.FC = () => {
                 <Header />
                 <MainContainer />
               </div>
+              <ToastContainer />
             </TemplateProvider>
           </SocketProvider>
         </ApiServiceProvider>

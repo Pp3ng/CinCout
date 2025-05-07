@@ -10,7 +10,7 @@ interface OutputPanelProps {
 }
 
 const OutputPanel: React.FC<OutputPanelProps> = ({ isVisible, onClose }) => {
-  const { containerRef, terminalRef, resetTerminal } = useTerminal({
+  const { containerRef, terminalRef } = useTerminal({
     autoFocus: true,
   });
   const { cleanup } = useSocket();

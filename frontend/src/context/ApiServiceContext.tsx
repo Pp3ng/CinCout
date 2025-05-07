@@ -1,13 +1,9 @@
-import React, {
-  createContext,
-  useContext,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useCallback } from "react";
 import { ApiService } from "../services/api-service";
 import { CompileOptions } from "../types";
 import { useUIState, useCodeConfig } from "./UIStateContext";
-import { notificationService } from "../services/NotificationService";
 import { EditorService } from "../services/EditorService";
+import { useNotification } from "../hooks/useNotification";
 
 interface ApiContextType {
   viewAssembly: (options?: Partial<CompileOptions>) => Promise<void>;
@@ -23,6 +19,9 @@ export const ApiServiceProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { setState } = useUIState();
   const { config } = useCodeConfig();
+  // Use notification hook
+  const { success, error } = useNotification();
+
   // Get the current compilation options with code from editor
   const getCurrentCompileOptions = useCallback((): CompileOptions => {
     return {
@@ -50,23 +49,19 @@ export const ApiServiceProvider: React.FC<{ children: React.ReactNode }> = ({
         if (scrollInfo) EditorService.scrollTo(scrollInfo.left, scrollInfo.top);
         EditorService.refresh();
 
-        // Show success notification
-        notificationService.success("Code formatted successfully", 2000, {
+        success("Code formatted successfully", 2000, {
           top: "50%",
           left: "50%",
         });
 
         return formattedData;
-      } catch (error) {
-        console.error("Format error:", error);
-        notificationService.error("Failed to format code", 3000, {
-          top: "50%",
-          left: "50%",
-        });
+      } catch (err) {
+        console.error("Format error:", err);
+        error("Failed to format code", 3000, { top: "50%", left: "50%" });
         return null;
       }
     },
-    []
+    [success, error]
   );
 
   // View assembly code

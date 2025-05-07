@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-} from "react";
+import React, { useEffect, useCallback, useLayoutEffect } from "react";
 import { debounce } from "lodash-es";
 import useEditor from "../hooks/useEditor";
 import { useTemplates } from "../context/TemplateContext";
@@ -19,15 +13,15 @@ interface EditorPanelProps {
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({ isOutputVisible }) => {
-  const { state, setState, toggleZenMode } = useUIState();
+  const { state, toggleZenMode } = useUIState();
   const { config } = useCodeConfig();
   const { textareaRef, getValue, refresh } = useEditor();
   const { formatCode, runStyleCheck, viewAssembly, runMemCheck } =
     useApiService();
-  const { compileCode, startDebugSession, cleanup } = useSocket();
+  const { compileCode, startDebugSession } = useSocket();
 
   // Use templates hook to have access to template state
-  const { templateContent, isLoading: templatesLoading } = useTemplates();
+  const { isLoading: templatesLoading } = useTemplates();
 
   // Refresh editor when output visibility changes or templates load
   useEffect(() => {

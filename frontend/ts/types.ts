@@ -144,6 +144,11 @@ export enum DebugState {
 // Terminal
 // ==========================================
 
+export interface TerminalDomElements {
+  output?: HTMLElement | null;
+  outputPanel?: HTMLElement | null;
+}
+
 // Terminal configuration
 export interface TerminalOptions {
   cursorBlink?: boolean;

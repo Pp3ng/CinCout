@@ -339,41 +339,6 @@ export class SessionService implements ISessionService {
   }
 
   /**
-   * Resize terminal dimensions for a session
-   * @param {string} sessionId - Session ID
-   * @param {number} cols - Number of columns
-   * @param {number} rows - Number of rows
-   * @returns {boolean} Success status
-   */
-  resizeTerminal(sessionId: string, cols: number, rows: number): boolean {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      // Session not found - likely already terminated
-      return false;
-    }
-
-    if (!session.pty) {
-      // Session exists but no PTY attached
-      return false;
-    }
-
-    try {
-      // Update terminal dimensions
-      session.pty.resize(cols, rows);
-
-      // Update session dimensions
-      session.dimensions = { cols, rows };
-
-      // Update session activity
-      this.updateSessionActivity(sessionId);
-      return true;
-    } catch (e) {
-      console.error(`Error resizing terminal for session ${sessionId}:`, e);
-      return false;
-    }
-  }
-
-  /**
    * Terminate a session
    * @param {string} sessionId - Session ID
    */

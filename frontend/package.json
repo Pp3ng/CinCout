@@ -7,8 +7,10 @@
     "analyze": "vite build --report"
   },
   "dependencies": {
+    "@types/axios": "^0.9.36",
     "@xterm/addon-fit": "^0.9.0",
     "@xterm/xterm": "^5.3.0",
+    "axios": "^1.9.0",
     "codemirror": "^5.65.2",
     "html2canvas": "^1.4.1",
     "lodash-es": "^4.17.21",

@@ -2,6 +2,7 @@
 import html2canvas from "html2canvas";
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
+import CodeMirror from "codemirror";
 
 /**
  * Display a notification message with various types and customizable position
@@ -20,37 +21,40 @@ export const showNotification = (
   }
 ): void => {
   // Define notification styling options based on type
-  const notificationStyles: Record<string, { backgroundColor: string; icon: string }> = {
+  const notificationStyles: Record<
+    string,
+    { background: string; icon: string }
+  > = {
     success: {
-      backgroundColor: "rgba(40,167,69,0.9)",
-      icon: "fa-check-circle"
+      background: "rgba(40,167,69,0.9)",
+      icon: "fa-check-circle",
     },
     error: {
-      backgroundColor: "rgba(220,53,69,0.9)",
-      icon: "fa-exclamation-circle"
+      background: "rgba(220,53,69,0.9)",
+      icon: "fa-exclamation-circle",
     },
     warning: {
-      backgroundColor: "rgba(255,193,7,0.9)",
-      icon: "fa-exclamation-triangle"
+      background: "rgba(255,193,7,0.9)",
+      icon: "fa-exclamation-triangle",
     },
     info: {
-      backgroundColor: "rgba(23,162,184,0.9)",
-      icon: "fa-info-circle"
-    }
+      background: "rgba(23,162,184,0.9)",
+      icon: "fa-info-circle",
+    },
   };
 
   // Get style settings for the notification type
-  const { backgroundColor, icon } = notificationStyles[type];
+  const { background, icon } = notificationStyles[type];
   const formattedMessage = `<i class="fas ${icon}"></i> ${message}`;
-  
+
   // Check if we're centering (typically for easter eggs or important messages)
   const isCentered = position.top === "50%" && position.left === "50%";
-  
+
   // Special handling for centered notifications
   if (isCentered) {
-    createCenteredNotification(formattedMessage, backgroundColor, duration);
+    createCenteredNotification(formattedMessage, background, duration);
   } else {
-    createToastNotification(formattedMessage, backgroundColor, duration, position);
+    createToastNotification(formattedMessage, background, duration, position);
   }
 };
 
@@ -69,7 +73,7 @@ function createCenteredNotification(
   const notification = document.createElement("div");
   notification.className = "cincout-notification";
   notification.innerHTML = message;
-  
+
   // Apply styles
   Object.assign(notification.style, {
     position: "fixed",
@@ -87,15 +91,15 @@ function createCenteredNotification(
     textAlign: "center",
     maxWidth: "80%",
     transition: "opacity 0.5s ease",
-    opacity: "0"
+    opacity: "0",
   });
-  
+
   // Add to DOM and animate in
   document.body.appendChild(notification);
   requestAnimationFrame(() => {
     notification.style.opacity = "1";
   });
-  
+
   // Remove after duration
   setTimeout(() => {
     notification.style.opacity = "0";
@@ -118,30 +122,32 @@ function createToastNotification(
 ): void {
   // Determine gravity and position for Toastify
   const gravity: "top" | "bottom" = position.bottom ? "bottom" : "top";
-  const positionX: "left" | "right" | "center" = position.left ? "left" : "right";
-  
+  const positionX: "left" | "right" | "center" = position.left
+    ? "left"
+    : "right";
+
   // Extract position styles
   const positionStyle: Record<string, string> = {};
   Object.entries(position).forEach(([key, value]) => {
     if (value) positionStyle[key] = value;
   });
-  
+
   // Create toast notification
   Toastify({
     text: message,
     duration: duration,
     gravity: gravity,
     position: positionX,
-    backgroundColor: backgroundColor,
     className: "cincout-notification",
     stopOnFocus: true,
     close: false,
     escapeMarkup: false,
     style: {
       fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
-      ...positionStyle
+      background: backgroundColor,
+      ...positionStyle,
     },
-    offset: { x: 0, y: 0 }
+    offset: { x: 0, y: 0 },
   }).showToast();
 }
 
@@ -165,17 +171,17 @@ export const takeCodeSnap = async (): Promise<void> => {
       duration: -1, // Stay until manually dismissed
       gravity: "top" as const,
       position: "right" as const,
-      backgroundColor: "rgba(0,0,0,0.7)",
       className: "codesnap-loading",
       style: {
         fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
         padding: "10px",
         borderRadius: "5px",
+        background: "rgba(0,0,0,0.7)",
       },
       escapeMarkup: false,
       stopOnFocus: true,
     });
-    
+
     loadingToast.showToast();
 
     // Get the CodeMirror instance
@@ -221,9 +227,10 @@ export const takeCodeSnap = async (): Promise<void> => {
     const measureEl = document.createElement("div");
     measureEl.style.cssText =
       "position: absolute; left: -9999px; visibility: hidden; white-space: pre;";
+    const view = document.defaultView || window;
     measureEl.style.fontFamily =
-      window.getComputedStyle(editorElement).fontFamily;
-    measureEl.style.fontSize = window.getComputedStyle(editorElement).fontSize;
+      view.getComputedStyle(editorElement).fontFamily;
+    measureEl.style.fontSize = view.getComputedStyle(editorElement).fontSize;
     measureEl.textContent = longestLine;
     document.body.appendChild(measureEl);
     const longestLineWidth = measureEl.clientWidth;
@@ -240,7 +247,7 @@ export const takeCodeSnap = async (): Promise<void> => {
     document.body.appendChild(tempContainer);
 
     // Get original editor styling
-    const computedStyle = window.getComputedStyle(editorElement);
+    const computedStyle = view.getComputedStyle(editorElement);
     const editorStyles = {
       fontFamily: computedStyle.getPropertyValue("font-family"),
       fontSize: computedStyle.getPropertyValue("font-size"),
@@ -272,7 +279,7 @@ export const takeCodeSnap = async (): Promise<void> => {
     }
 
     // Create new CodeMirror instance for snapshot
-    const newCm = (window as any).CodeMirror(tempContainer, {
+    const newCm = CodeMirror(tempContainer, {
       ...currentOptions,
       value: fullContent,
       readOnly: true,
@@ -367,8 +374,10 @@ export const takeCodeSnap = async (): Promise<void> => {
     console.error("CodeSnap error:", error);
 
     // Make sure loading indicator is removed in case of error
-    const loadingToasts = document.querySelectorAll('.toastify.codesnap-loading');
-    loadingToasts.forEach(toast => {
+    const loadingToasts = document.querySelectorAll(
+      ".toastify.codesnap-loading"
+    );
+    loadingToasts.forEach((toast) => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
       }

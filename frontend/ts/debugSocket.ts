@@ -1,7 +1,7 @@
 /**
  * DebugSocket - Module handling GDB debugging-related Socket.IO communication
  */
-import { terminalManager } from "./terminal";
+import { getTerminalService } from "./terminal";
 import { CompileOptions, DebugStateUpdater } from "./types";
 import { socketManager, SocketEvents } from "./websocket";
 
@@ -35,18 +35,19 @@ export class DebugSocketManager {
     // Handle debugging events
     socketManager.on(SocketEvents.DEBUG_START, (data) => {
       // Reset any existing terminal first
-      terminalManager.dispose();
+      const terminalService = getTerminalService();
+      terminalService.dispose();
 
       this.stateUpdater.showOutput();
 
       // Setup a terminal for GDB interaction
-      terminalManager.setDomElements({
+      terminalService.setDomElements({
         output: document.getElementById("output"),
         outputPanel: document.getElementById("outputPanel"),
       });
 
       // Initialize the terminal - this creates an xterm.js instance
-      const terminal = terminalManager.setupTerminal();
+      const terminal = terminalService.setupTerminal();
       if (!terminal) {
         return;
       }
@@ -55,27 +56,30 @@ export class DebugSocketManager {
       this.updateDebugState();
 
       if (data && data.message) {
-        terminalManager.write(`${data.message}\r\n\r\n`);
+        terminalService.write(`${data.message}\r\n\r\n`);
       }
     });
 
     socketManager.on(SocketEvents.DEBUG_RESPONSE, (data) => {
       if (data && data.output) {
         // Send GDB output directly to terminal
-        terminalManager.write(data.output);
+        const terminalService = getTerminalService();
+        terminalService.write(data.output);
       }
     });
 
     socketManager.on(SocketEvents.DEBUG_ERROR, (data) => {
       console.error("Received debug error from server:", data.message);
-      terminalManager.writeError(`\r\nError: ${data.message}\r\n`);
+      const terminalService = getTerminalService();
+      terminalService.writeError(`\r\nError: ${data.message}\r\n`);
       this.stateUpdater.setDebuggingActive(false);
       this.updateDebugState();
     });
 
     socketManager.on(SocketEvents.DEBUG_EXIT, (data) => {
       // Display the exit message
-      terminalManager.writeExitMessage(data.code);
+      const terminalService = getTerminalService();
+      terminalService.writeExitMessage(data.code);
       socketManager.disconnect();
       this.stateUpdater.setDebuggingActive(false);
       this.updateDebugState();
@@ -90,7 +94,8 @@ export class DebugSocketManager {
 
     socketManager.on(SocketEvents.ERROR, (data) => {
       console.error("Received error from server:", data.message);
-      terminalManager.writeError(`\r\nError: ${data.message}\r\n`);
+      const terminalService = getTerminalService();
+      terminalService.writeError(`\r\nError: ${data.message}\r\n`);
     });
   }
 
@@ -175,19 +180,6 @@ export class DebugSocketManager {
       await socketManager.sendInput(input);
     } catch (error) {
       console.error("Failed to send input to debug session:", error);
-    }
-  }
-
-  /**
-   * Resize the terminal
-   * @param cols Number of columns
-   * @param rows Number of rows
-   */
-  async resizeTerminal(cols: number, rows: number): Promise<void> {
-    try {
-      await socketManager.resizeTerminal(cols, rows);
-    } catch (error) {
-      console.error("Failed to resize debug terminal:", error);
     }
   }
 }

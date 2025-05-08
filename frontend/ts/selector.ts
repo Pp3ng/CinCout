@@ -143,4 +143,4 @@ class CustomSelectManager {
 }
 
 const selectManager = new CustomSelectManager();
-window.addEventListener("DOMContentLoaded", () => selectManager.init());
+document.addEventListener("DOMContentLoaded", () => selectManager.init());

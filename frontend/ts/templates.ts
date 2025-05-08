@@ -1,4 +1,6 @@
 import { TemplateCache } from "./types";
+import axios from "axios";
+import { getEditorService } from "./editor";
 
 // Cache object
 const cache: TemplateCache = {
@@ -6,25 +8,9 @@ const cache: TemplateCache = {
   contents: {},
 };
 
-// Default timeout for fetch operations
-const FETCH_TIMEOUT = 5000; // 5 seconds
+// Default timeout for axios operations
+const TIMEOUT = 5000; // 5 seconds
 let initialized = false;
-
-/**
- * Fetch data with timeout handling
- */
-async function fetchWithTimeout(url: string): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) throw new Error(response.statusText);
-    return response;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
 
 /**
  * Load template list for a specific language
@@ -34,11 +20,12 @@ async function loadTemplateList(language: string): Promise<string[]> {
   if (cache.lists[language]) return cache.lists[language];
 
   try {
-    const response = await fetchWithTimeout(`/api/templates/${language}`);
-    const data = await response.json();
-    cache.lists[language] = data.list;
-    return data.list;
-  } catch (error: any) {
+    const response = await axios.get(`/api/templates/${language}`, {
+      timeout: TIMEOUT,
+    });
+    cache.lists[language] = response.data.list;
+    return response.data.list;
+  } catch (error: unknown) {
     console.error(`Failed to load template list for ${language}:`, error);
     return [];
   }
@@ -55,25 +42,27 @@ async function loadTemplateContent(
   if (cache.contents[cacheKey]) return cache.contents[cacheKey];
 
   try {
-    const response = await fetchWithTimeout(
-      `/api/templates/${language}/${encodeURIComponent(templateName)}`
+    const response = await axios.get<string>(
+      `/api/templates/${language}/${encodeURIComponent(templateName)}`,
+      { timeout: TIMEOUT }
     );
-    const content = await response.text();
-    cache.contents[cacheKey] = content;
-    return content;
-  } catch (error: any) {
+    cache.contents[cacheKey] = response.data;
+    return response.data;
+  } catch (error: unknown) {
     console.error(
       `Failed to load template ${templateName} for ${language}:`,
       error
     );
-    return `// Error loading template: ${error.message || "Unknown error"}`;
+    return `// Error loading template: ${
+      error instanceof Error ? error.message : "Unknown error"
+    }`;
   }
 }
 
 /**
  * Update template dropdown and load selected template
  */
-async function updateTemplateList(): Promise<void> {
+export async function updateTemplateList(forceLoadTemplate = false): Promise<void> {
   const languageSelect = document.getElementById(
     "language"
   ) as HTMLSelectElement;
@@ -98,6 +87,12 @@ async function updateTemplateList(): Promise<void> {
     // Clear existing options and add new ones
     templateSelect.innerHTML = "";
     templateSelect.disabled = false;
+
+    if (templateNames.length === 0) {
+      templateSelect.innerHTML = "<option>No templates available</option>";
+      return;
+    }
+
     templateNames.forEach((name) => {
       const option = document.createElement("option");
       option.value = name;
@@ -106,19 +101,16 @@ async function updateTemplateList(): Promise<void> {
     });
 
     // Select Hello World template if exists, otherwise first template
-    if (templateSelect.options.length > 0) {
-      const helloWorldIndex = Array.from(templateSelect.options).findIndex(
-        (option) => option.value === "Hello World"
-      );
-      templateSelect.selectedIndex = helloWorldIndex >= 0 ? helloWorldIndex : 0;
-      templateSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    const helloWorldIndex = Array.from(templateSelect.options).findIndex(
+      (option) => option.value === "Hello World"
+    );
+    templateSelect.selectedIndex = helloWorldIndex >= 0 ? helloWorldIndex : 0;
 
-      // Load template content during initialization or explicit language change
-      if (!initialized || document.activeElement === languageSelect) {
-        await loadSelectedTemplate();
-      }
+    // Load template content during initialization or when explicitly asked to load
+    if (!initialized || forceLoadTemplate || document.activeElement === languageSelect) {
+      await loadSelectedTemplate();
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating template list:", error);
     templateSelect.innerHTML = "<option>Failed to load templates</option>";
     templateSelect.disabled = false;
@@ -128,8 +120,8 @@ async function updateTemplateList(): Promise<void> {
 /**
  * Load the currently selected template
  */
-async function loadSelectedTemplate(): Promise<void> {
-  const editor = (window as any).editor;
+export async function loadSelectedTemplate(): Promise<void> {
+  const editorService = getEditorService();
   const languageSelect = document.getElementById(
     "language"
   ) as HTMLSelectElement;
@@ -137,7 +129,7 @@ async function loadSelectedTemplate(): Promise<void> {
     "template"
   ) as HTMLSelectElement;
 
-  if (!templateSelect || !languageSelect || !editor) {
+  if (!templateSelect || !languageSelect || !editorService) {
     console.error("Required elements not found");
     return;
   }
@@ -147,37 +139,34 @@ async function loadSelectedTemplate(): Promise<void> {
   if (!templateName) return;
 
   try {
-    editor.setValue("// Loading template...");
+    editorService.setValue("// Loading template...");
     const content = await loadTemplateContent(language, templateName);
-    editor.setValue(content);
-  } catch (error: any) {
+    editorService.setValue(content);
+  } catch (error: unknown) {
     console.error("Error setting template:", error);
-    editor.setValue(
-      `// Error loading template: ${error.message || "Unknown error"}`
+    editorService.setValue(
+      `// Error loading template: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
     );
   }
 }
 
-// Initialize and set up event handlers
-document.addEventListener("DOMContentLoaded", () => {
-  // Initialize templates
+// Event handler for language change - ensure exposed for external calls
+export function handleLanguageChange(): void {
+  updateTemplateList(true);
+}
+
+// Initialize templates on app startup but don't set up event listeners here
+export function initializeTemplates(): void {
   updateTemplateList().then(() => {
     initialized = true;
   });
+}
 
-  // Set up language change handler
-  document
-    .getElementById("language")
-    ?.addEventListener("change", updateTemplateList);
-
-  // Set up template change handler
-  document.getElementById("template")?.addEventListener("change", (event) => {
-    if (document.activeElement === event.target) {
-      loadSelectedTemplate();
-    }
-  });
-});
-
-// Export for global access
-(window as any).updateTemplates = updateTemplateList;
-(window as any).setTemplate = loadSelectedTemplate;
+// Export functions for use in other modules
+export default {
+  loadSelectedTemplate,
+  handleLanguageChange,
+  initializeTemplates
+};

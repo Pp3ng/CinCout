@@ -14,6 +14,10 @@ import themeDefinitions from "../config/themes.json";
 // Import types from centralized types file
 import { ThemeMap, Theme, TerminalTheme } from "./types";
 
+// Import services
+import { getEditorService } from "./editor";
+import { getTerminalService } from "./terminal";
+
 // Theme management
 const createThemeStore = () => {
   // State
@@ -89,32 +93,34 @@ const createThemeStore = () => {
 
   // Update editor and terminal with theme
   const updateEditorAndTerminal = (themeName: string): void => {
-    // Update CodeMirror editor theme
-    if ((window as any).editor) {
-      (window as any).editor.setOption(
+    // Update CodeMirror editor theme using EditorService
+    const editorService = getEditorService();
+    const editor = editorService.getEditor();
+    if (editor) {
+      editor.setOption(
         "theme",
         themeName === "default" ? "default" : themeName
       );
     }
 
-    if ((window as any).assemblyView) {
-      (window as any).assemblyView.setOption(
+    const assemblyView = editorService.getAssemblyView();
+    if (assemblyView) {
+      assemblyView.setOption(
         "theme",
         themeName === "default" ? "default" : themeName
       );
     }
 
-    // Update terminal theme
-    if ((window as any).terminal) {
+    // Update terminal theme using TerminalService
+    const terminalService = getTerminalService();
+    const terminal = terminalService.getTerminal();
+    if (terminal) {
       setTimeout(() => {
         try {
           const terminalTheme = getTerminalTheme();
-          if ((window as any).terminal.options) {
-            (window as any).terminal.options.theme = terminalTheme;
-            (window as any).terminal.refresh(
-              0,
-              (window as any).terminal.rows - 1
-            );
+          if (terminal.options) {
+            terminal.options.theme = terminalTheme;
+            terminal.refresh(0, terminal.rows - 1);
           }
         } catch (error) {
           console.error("Error updating terminal theme:", error);

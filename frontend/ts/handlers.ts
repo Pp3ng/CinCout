@@ -4,6 +4,13 @@ import { debounce } from "lodash-es";
 import { themeStoreInstance } from "./themes";
 import CompileSocketManager from "./compileSocket";
 import DebugSocketManager from "./debugSocket";
+import apiService from "./apiService";
+import { getEditorService, getEditorActions } from "./editor";
+import {
+  handleLanguageChange,
+  loadSelectedTemplate,
+  initializeTemplates,
+} from "./templates";
 import {
   CompileOptions,
   CompileStateUpdater,
@@ -13,137 +20,9 @@ import {
   CompilationState,
 } from "./types";
 
-// Declare global window properties
-declare global {
-  interface Window {
-    editor: any;
-    assemblyView: any;
-    setTemplate?: () => void;
-    Actions?: {
-      toggleZenMode?: () => void;
-    };
-  }
-}
-
 // ------------------------------------------------------------
 // Services - These will become React hooks/services
 // ------------------------------------------------------------
-
-/**
- * API Service - handles all API calls
- * In React, this would become a custom hook (useApiService)
- */
-export class ApiService {
-  static async fetchAssembly(options: CompileOptions): Promise<string> {
-    const response = await fetch("/api/assembly", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(options),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Assembly API error: ${response.statusText}`);
-    }
-
-    return await response.text();
-  }
-
-  static async runMemCheck(options: CompileOptions): Promise<string> {
-    const response = await fetch("/api/memcheck", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(options),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Memcheck API error: ${response.statusText}`);
-    }
-
-    return await response.text();
-  }
-
-  static async formatCode(code: string, lang: string): Promise<string> {
-    const response = await fetch("/api/format", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, lang }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Format API error: ${response.statusText}`);
-    }
-
-    return await response.text();
-  }
-
-  static async runStyleCheck(code: string, lang: string): Promise<string> {
-    const response = await fetch("/api/styleCheck", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, lang }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Style check API error: ${response.statusText}`);
-    }
-
-    return await response.text();
-  }
-}
-
-/**
- * Editor Service - handles editor-specific functionality
- * In React, this would become a custom hook (useEditor)
- */
-export class EditorService {
-  static getValue(): string {
-    return (window as any).editor?.getValue() || "";
-  }
-
-  static setValue(value: string): void {
-    if ((window as any).editor) {
-      (window as any).editor.setValue(value);
-    }
-  }
-
-  static getCursor(): any {
-    return (window as any).editor?.getCursor();
-  }
-
-  static setCursor(cursor: any): void {
-    if ((window as any).editor) {
-      (window as any).editor.setCursor(cursor);
-    }
-  }
-
-  static getScrollInfo(): any {
-    return (window as any).editor?.getScrollInfo();
-  }
-
-  static scrollTo(left: number, top: number): void {
-    if ((window as any).editor) {
-      (window as any).editor.scrollTo(left, top);
-    }
-  }
-
-  static refresh(): void {
-    if ((window as any).editor) {
-      (window as any).editor.refresh();
-    }
-  }
-
-  static setOption(key: string, value: any): void {
-    if ((window as any).editor) {
-      (window as any).editor.setOption(key, value);
-    }
-  }
-
-  static setAssemblyValue(value: string): void {
-    if ((window as any).assemblyView) {
-      (window as any).assemblyView.setValue(value);
-    }
-  }
-}
 
 /**
  * DOM Service - handles DOM interactions
@@ -207,7 +86,7 @@ export class DOMService {
     // If in Zen Mode, we need special positioning
     if (isZenMode) {
       // Make sure editor refreshes to adjust for new layout
-      EditorService.refresh();
+      getEditorService().refresh();
     }
   }
 
@@ -228,14 +107,15 @@ export class DOMService {
     const isZenMode = document.body.classList.contains("zen-mode-active");
     if (isZenMode) {
       // Make sure editor refreshes to adjust for new layout
-      EditorService.refresh();
+      getEditorService().refresh();
     }
   }
 
   static getCompileOptions(): CompileOptions {
     const elements = this.getElements();
+    const editorService = getEditorService();
     return {
-      code: EditorService.getValue(),
+      code: editorService.getValue(),
       lang: elements.language?.value || "c",
       compiler: elements.compiler?.value || "gcc",
       optimization: elements.optimization?.value || "O0",
@@ -327,7 +207,7 @@ class CompileStateAdapter implements CompileStateUpdater {
   }
 
   refreshEditor(): void {
-    setTimeout(() => EditorService.refresh(), 10);
+    setTimeout(() => getEditorService().refresh(), 10);
   }
 }
 
@@ -369,7 +249,7 @@ class DebugStateAdapter implements DebugStateUpdater {
   }
 
   refreshEditor(): void {
-    setTimeout(() => EditorService.refresh(), 10);
+    setTimeout(() => getEditorService().refresh(), 10);
   }
 }
 
@@ -394,12 +274,14 @@ export class CodeActionsController {
   }
 
   async viewAssembly(options: CompileOptions): Promise<void> {
+    const editorService = getEditorService();
+
     // Show output panel
     DOMService.showOutputPanel();
     DOMService.showLoadingInOutput("Generating assembly code...");
 
     try {
-      const data = await ApiService.fetchAssembly(options);
+      const data = await apiService.fetchAssembly(options);
 
       // Create a container for assembly display
       const output = document.getElementById("output");
@@ -408,9 +290,9 @@ export class CodeActionsController {
         const container = document.getElementById("assembly-view-container");
 
         // Use the assemblyView to display the assembly code
-        const assemblyView = (window as any).assemblyView;
+        const assemblyView = editorService.getAssemblyView();
         if (assemblyView && container) {
-          assemblyView.setValue(data.trim());
+          editorService.setAssemblyValue(data.trim());
           // Append the CodeMirror instance to our container
           container.appendChild(assemblyView.getWrapperElement());
           setTimeout(() => assemblyView.refresh(), 10);
@@ -433,7 +315,7 @@ export class CodeActionsController {
     DOMService.showLoadingInOutput("Running memory check...");
 
     try {
-      const data = await ApiService.runMemCheck(options);
+      const data = await apiService.runMemCheck(options);
       DOMService.setOutput(
         `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`
       );
@@ -446,19 +328,24 @@ export class CodeActionsController {
   }
 
   async formatCode(code: string, lang: string): Promise<void> {
-    const cursor = EditorService.getCursor();
+    const editorService = getEditorService();
+    const cursor = editorService.getCursor();
 
     try {
-      const data = await ApiService.formatCode(code, lang);
+      const data = await apiService.formatCode(code, lang);
 
       // Apply formatting changes while preserving editor state
       const formattedData = data.replace(/^\n+/, "").replace(/\n+$/, "");
-      const scrollInfo = EditorService.getScrollInfo();
+      const scrollInfo = editorService.getScrollInfo();
 
-      EditorService.setValue(formattedData);
-      EditorService.setCursor(cursor);
-      EditorService.scrollTo(scrollInfo.left, scrollInfo.top);
-      EditorService.refresh();
+      editorService.setValue(formattedData);
+      if (cursor) {
+        editorService.setCursor(cursor);
+      }
+      if (scrollInfo) {
+        editorService.scrollTo(scrollInfo.left, scrollInfo.top);
+      }
+      editorService.refresh();
 
       // Show success notification
       showNotification("success", "Code formatted successfully", 2000, {
@@ -480,7 +367,7 @@ export class CodeActionsController {
     DOMService.showLoadingInOutput("Running style check...");
 
     try {
-      const data = await ApiService.runStyleCheck(code, lang);
+      const data = await apiService.runStyleCheck(code, lang);
 
       // Process and format the output
       const lines = data.split("\n");
@@ -561,7 +448,7 @@ export class EditorSettingsController {
   setVimMode(enabled: boolean): void {
     this.appState.setState({ vimMode: enabled });
     localStorage.setItem("cincout-vim-mode", enabled.toString());
-    EditorService.setOption("keyMap", enabled ? "vim" : "default");
+    getEditorService().setOption("keyMap", enabled ? "vim" : "default");
   }
 }
 
@@ -605,6 +492,7 @@ export class CinCoutApp {
 
   init(): void {
     document.addEventListener("DOMContentLoaded", () => {
+      initializeTemplates();
       this.setupEventListeners();
     });
   }
@@ -624,9 +512,14 @@ export class CinCoutApp {
     // Template change handler
     if (elements.template) {
       elements.template.addEventListener("change", () => {
-        if (typeof window.setTemplate === "function") {
-          window.setTemplate();
-        }
+        loadSelectedTemplate();
+      });
+    }
+
+    // Language change handler
+    if (elements.language) {
+      elements.language.addEventListener("change", () => {
+        handleLanguageChange();
       });
     }
   }
@@ -642,7 +535,8 @@ export class CinCoutApp {
       elements.format.addEventListener(
         "click",
         debounce(() => {
-          const code = EditorService.getValue();
+          const editorService = getEditorService();
+          const code = editorService.getValue();
           const lang = elements.language?.value || "c";
           this.codeActions.formatCode(code, lang);
         }, 300)
@@ -654,7 +548,8 @@ export class CinCoutApp {
       elements.styleCheck.addEventListener(
         "click",
         debounce(() => {
-          const code = EditorService.getValue();
+          const editorService = getEditorService();
+          const code = editorService.getValue();
           const lang = elements.language?.value || "c";
           this.codeActions.runStyleCheck(code, lang);
         }, 300)
@@ -665,11 +560,13 @@ export class CinCoutApp {
     const zenModeButton = document.getElementById("zenMode");
     if (zenModeButton) {
       zenModeButton.addEventListener("click", () => {
-        if (typeof window.Actions !== "undefined" && window.Actions.toggleZenMode) {
-          window.Actions.toggleZenMode();
+        const actions = getEditorActions();
+        if (actions && actions.toggleZenMode) {
+          actions.toggleZenMode();
         } else {
           // Fallback implementation if Actions is not available
-          const editor = (window as any).editor;
+          const editorService = getEditorService();
+          const editor = editorService.getEditor();
           if (!editor) return;
 
           const editorWrapper = editor.getWrapperElement();
@@ -697,7 +594,7 @@ export class CinCoutApp {
           }
 
           // Force editor refresh
-          setTimeout(() => editor.refresh(), 100);
+          setTimeout(() => editorService.refresh(), 100);
         }
       });
     }

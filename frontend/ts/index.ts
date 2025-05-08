@@ -1,15 +1,9 @@
-// 1. Import base CSS
 import "codemirror/lib/codemirror.css";
 import "codemirror/addon/hint/show-hint.css";
 import "codemirror/addon/fold/foldgutter.css";
 import "@xterm/xterm/css/xterm.css";
 
-// 2. Import main CSS
 import "../styles/main.css";
-
-// 3. Import CodeMirror core functionality and plugins
-import CodeMirror from "codemirror";
-window.CodeMirror = CodeMirror;
 
 import "codemirror/mode/clike/clike";
 import "codemirror/mode/gas/gas";
@@ -22,11 +16,8 @@ import "codemirror/addon/fold/brace-fold";
 import "codemirror/addon/fold/comment-fold";
 import "codemirror/addon/hint/show-hint";
 
-// Import utility functions
 import { showNotification } from "./utils";
 
-// 5. Import all application modules (in dependency order)
-// Core modules first
 import "./themes"; // Theme functionality
 import "./templates"; // Code templates
 import "./layout"; // Layout management
@@ -38,40 +29,32 @@ import "./terminal"; // Terminal functionality
 import "./handlers"; // Event handlers
 import "./editor"; // Main editor functionality (depends on most other modules)
 
-// Easter Egg functionality
+// Easter Egg
 document.addEventListener("DOMContentLoaded", () => {
-  const titleElement = document.getElementById("title-easter-egg");
+  const el = document.getElementById("title-easter-egg");
+  if (!el) return;
 
-  if (titleElement) {
-    let clickCount = 0;
-    let lastClickTime = 0;
+  let clicks = 0,
+    lastClick = 0,
+    timer: number | null = null;
 
-    titleElement.addEventListener("click", () => {
-      const currentTime = new Date().getTime();
+  el.addEventListener("click", () => {
+    const now = Date.now();
 
-      // Reset count if more than 1.5 seconds between clicks
-      if (currentTime - lastClickTime > 1500) {
-        clickCount = 0;
-      }
+    if (now - lastClick > 1500) clicks = 0;
+    if (timer) clearTimeout(timer);
 
-      clickCount++;
-      lastClickTime = currentTime;
+    clicks++;
+    lastClick = now;
 
-      // Show message on third click
-      if (clickCount === 3) {
-        // Show the easter egg message using showNotification only
-        showNotification(
-          "info",
-          "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🚀",
-          4000,
-          { top: "50%", left: "50%" }
-        );
-
-        // Reset click count
-        setTimeout(() => {
-          clickCount = 0;
-        }, 4000);
-      }
-    });
-  }
+    if (clicks === 3) {
+      showNotification(
+        "info",
+        "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🤓",
+        4000,
+        { top: "50%", left: "50%" }
+      );
+      timer = window.setTimeout(() => (clicks = 0), 4000);
+    }
+  });
 });

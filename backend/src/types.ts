@@ -196,7 +196,6 @@ export enum SocketEvents {
   OUTPUT = "output",
   INPUT = "input",
   EXIT = "exit",
-  RESIZE = "resize",
 
   // Session management
   SESSION_CREATED = "session_created",
@@ -266,7 +265,6 @@ export interface ISessionService {
     outputFile: string
   ): boolean;
   sendInputToSession(sessionId: string, input: string): boolean;
-  resizeTerminal(sessionId: string, cols: number, rows: number): boolean;
   terminateSession(sessionId: string): void;
   getActiveSessions(): Map<string, Session>;
   getSession(sessionId: string): Session | undefined;

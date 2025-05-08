@@ -6,23 +6,30 @@ import { socketManager, SocketEvents } from "./websocket";
 // Import the CSS with the correct path for the new @xterm package
 import "@xterm/xterm/css/xterm.css";
 
-// === Main Component ===
-
 /**
- * TerminalManager - Manages terminal functionality
+ * TerminalService - Singleton service that manages terminal functionality
  */
-class TerminalManager {
+export class TerminalService {
+  private static instance: TerminalService;
+  
   // Component state
   private terminal: Terminal | null = null;
   private fitAddon: FitAddon | null = null;
   private domElements: TerminalDomElements = {};
 
   /**
-   * Initialize the terminal manager with DOM elements
-   * @param elements - DOM elements required for terminal operation
+   * Private constructor for singleton pattern
    */
-  constructor(elements: TerminalDomElements = {}) {
-    this.domElements = elements;
+  private constructor() {}
+
+  /**
+   * Get the singleton instance
+   */
+  public static getInstance(): TerminalService {
+    if (!TerminalService.instance) {
+      TerminalService.instance = new TerminalService();
+    }
+    return TerminalService.instance;
   }
 
   /**
@@ -62,7 +69,7 @@ class TerminalManager {
 
     // Create terminal instance with options
     this.terminal = new Terminal(terminalOptions);
-    window.terminal = this.terminal;
+    (window as any).terminal = this.terminal;
 
     // Create and load fit addon
     this.fitAddon = new FitAddon();
@@ -86,7 +93,7 @@ class TerminalManager {
     // Setup effects after render
     this.setupAfterRender();
 
-    // Set up event handlers
+    // Set up event listeners
     this.setupEventListeners();
 
     return this.terminal;
@@ -101,29 +108,6 @@ class TerminalManager {
     try {
       // Fit terminal to container
       this.fitAddon.fit();
-
-      // Get new dimensions
-      const cols = this.terminal.cols;
-      const rows = this.terminal.rows;
-
-      // Send resize event to server if connected and running
-      // Use a more robust check with additional debouncing for disconnection scenarios
-      if (socketManager.isConnected() && socketManager.isProcessRunning()) {
-        // Add a small delay to avoid resize events during connection transitions
-        setTimeout(() => {
-          // Double-check connection is still active before sending
-          if (socketManager.isConnected() && socketManager.isProcessRunning()) {
-            socketManager
-              .emit(SocketEvents.RESIZE, { cols, rows })
-              .catch((error) => {
-                // Only log serious errors, not disconnection-related ones
-                if (error.message && !error.message.includes("disconnect")) {
-                  console.error("Error sending resize event:", error);
-                }
-              });
-          }
-        }, 50);
-      }
     } catch (e) {
       console.error("Error fitting terminal:", e);
     }
@@ -194,26 +178,7 @@ class TerminalManager {
   private setupEventListeners = (): void => {
     // Setup terminal input handling
     this.setupTerminalInput();
-
-    // Add resize event listener
-    window.addEventListener("resize", this.handleResize);
   };
-
-  /**
-   * Handle window resize event
-   */
-  private handleResize = (): void => {
-    // Debounce resize events to avoid too many calls
-    if (this.resizeTimeout) {
-      clearTimeout(this.resizeTimeout);
-    }
-
-    this.resizeTimeout = setTimeout(() => {
-      this.fitTerminal();
-    }, 100);
-  };
-
-  private resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Set up terminal input handling
@@ -307,14 +272,6 @@ class TerminalManager {
    * Clean up the terminal
    */
   dispose = (): void => {
-    // Remove event listeners
-    window.removeEventListener("resize", this.handleResize);
-
-    if (this.resizeTimeout) {
-      clearTimeout(this.resizeTimeout);
-      this.resizeTimeout = null;
-    }
-
     if (this.fitAddon) {
       try {
         this.fitAddon.dispose();
@@ -328,7 +285,7 @@ class TerminalManager {
       try {
         this.terminal.dispose();
         this.terminal = null;
-        window.terminal = null;
+        (window as any).terminal = null;
       } catch (e) {
         console.error("Error disposing terminal:", e);
       }
@@ -343,8 +300,10 @@ class TerminalManager {
   };
 }
 
-// Create singleton instance
-export const terminalManager = new TerminalManager();
+// Helper function to get terminal service
+export const getTerminalService = (): TerminalService => {
+  return TerminalService.getInstance();
+};
 
 // Export the Terminal type for use in other modules
 export type { Terminal };

@@ -1,5 +1,7 @@
 // Import types from centralized type definition
 import { PanelState } from "./types";
+import { getEditorService } from "./editor";
+import { WebSocketManager } from "./websocket";
 
 // Component structure designed from React perspective
 class LayoutManager {
@@ -17,10 +19,13 @@ class LayoutManager {
     actionButtons: [] as HTMLElement[],
   };
 
+  private websocketManager: WebSocketManager | null = null;
+
   // Initialization method (will be converted to React's useEffect)
   initialize(): void {
     this.getUIElements();
     this.setupEventListeners();
+    this.websocketManager = new WebSocketManager();
     this.render();
   }
 
@@ -96,17 +101,13 @@ class LayoutManager {
 
   // Refresh editors
   refreshEditors = (): void => {
-    // Main editor refresh
-    if (window.editor) {
-      window.editor.refresh();
-    }
+    const editorService = getEditorService();
+    editorService.refresh();
   };
 
   handleRunningProcess(): void {
-    if (window.CinCoutSocket?.isConnected?.()) {
-      if (typeof window.CinCoutSocket.disconnect === "function") {
-        window.CinCoutSocket.disconnect();
-      }
+    if (this.websocketManager && this.websocketManager.isConnected()) {
+      this.websocketManager.disconnect();
     }
   }
 }

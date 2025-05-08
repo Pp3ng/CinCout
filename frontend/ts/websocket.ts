@@ -18,7 +18,6 @@ export enum SocketEvents {
   OUTPUT = "output",
   INPUT = "input",
   EXIT = "exit",
-  RESIZE = "resize",
 
   // Session management
   SESSION_CREATED = "session_created",
@@ -262,16 +261,6 @@ export class WebSocketManager {
    */
   sendInput(input: string): Promise<void> {
     return this.emit(SocketEvents.INPUT, { input });
-  }
-
-  /**
-   * Resize the terminal
-   * @param {number} cols - Number of columns
-   * @param {number} rows - Number of rows
-   * @returns {Promise<void>}
-   */
-  resizeTerminal(cols: number, rows: number): Promise<void> {
-    return this.emit(SocketEvents.RESIZE, { cols, rows });
   }
 }
 

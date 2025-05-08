@@ -1,6 +1,91 @@
 import CodeMirror from "codemirror";
 import { EditorInstances } from "./types";
 
+export class EditorService {
+  private static instance: EditorService;
+  private editor: CodeMirror.Editor | null = null;
+  private assemblyView: CodeMirror.Editor | null = null;
+
+  private constructor() {}
+
+  static getInstance(): EditorService {
+    if (!EditorService.instance) {
+      EditorService.instance = new EditorService();
+    }
+    return EditorService.instance;
+  }
+
+  setEditors(editors: EditorInstances): void {
+    this.editor = editors.editor;
+    this.assemblyView = editors.assemblyView;
+  }
+
+  getEditor(): CodeMirror.Editor | null {
+    return this.editor;
+  }
+
+  getAssemblyView(): CodeMirror.Editor | null {
+    return this.assemblyView;
+  }
+
+  getValue(): string {
+    return this.editor?.getValue() || "";
+  }
+
+  setValue(value: string): void {
+    if (this.editor) {
+      this.editor.setValue(value);
+    }
+  }
+
+  getCursor(): CodeMirror.Position | null {
+    return this.editor?.getCursor() || null;
+  }
+
+  setCursor(cursor: CodeMirror.Position): void {
+    if (this.editor) {
+      this.editor.setCursor(cursor);
+    }
+  }
+
+  getScrollInfo(): CodeMirror.ScrollInfo | null {
+    return this.editor?.getScrollInfo() || null;
+  }
+
+  scrollTo(left: number, top: number): void {
+    if (this.editor) {
+      this.editor.scrollTo(left, top);
+    }
+  }
+
+  refresh(): void {
+    if (this.editor) {
+      this.editor.refresh();
+    }
+  }
+
+  setOption<K extends keyof CodeMirror.EditorConfiguration>(key: K, value: CodeMirror.EditorConfiguration[K]): void {
+    if (this.editor) {
+      this.editor.setOption(key, value);
+    }
+  }
+
+  setAssemblyValue(value: string): void {
+    if (this.assemblyView) {
+      this.assemblyView.setValue(value);
+    }
+  }
+
+  refreshAll(): void {
+    if (this.editor) {
+      this.editor.refresh();
+    }
+    if (this.assemblyView) {
+      this.assemblyView.refresh();
+    }
+  }
+}
+
 const setupEditors = (): EditorInstances => {
   const codeElement = document.getElementById("code") as HTMLTextAreaElement;
   const outputElement = document.getElementById("output") as HTMLDivElement;
@@ -75,31 +160,37 @@ const setupFontZoomHandler = (
   );
 };
 
-const forceRefreshEditors = () => {
-  if ((window as any).editor) {
-    (window as any).editor.refresh();
-  }
-  if ((window as any).assemblyView) {
-    (window as any).assemblyView.refresh();
-  }
+export const getEditorService = (): EditorService => {
+  return EditorService.getInstance();
+};
+
+export interface EditorActions {
+  toggleZenMode: () => void;
+}
+
+let globalActions: EditorActions | null = null;
+
+export const setEditorActions = (actions: EditorActions): void => {
+  globalActions = actions;
+};
+
+export const getEditorActions = (): EditorActions | null => {
+  return globalActions;
 };
 
 const initEditors = (): void => {
   try {
-    const { editor, assemblyView } = setupEditors();
+    const editorInstances = setupEditors();
+    
+    const editorService = EditorService.getInstance();
+    editorService.setEditors(editorInstances);
 
-    // attach to global window so layout.js can use it
-    (window as any).editor = editor;
-    (window as any).assemblyView = assemblyView;
-
-    setupFontZoomHandler(editor, assemblyView);
+    setupFontZoomHandler(editorInstances.editor, editorInstances.assemblyView);
+    
   } catch (e) {
     console.error("Editor setup failed:", e);
   }
 };
-
-// Add global refresh method
-(window as any).refreshEditors = forceRefreshEditors;
 
 // Initialize on DOM ready
 document.addEventListener("DOMContentLoaded", () => {

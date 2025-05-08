@@ -1,7 +1,7 @@
 /**
  * CompileSocket - Module handling compilation-related Socket.IO communication
  */
-import { terminalManager } from "./terminal";
+import { getTerminalService } from "./terminal";
 import { CompileOptions, CompileStateUpdater } from "./types";
 import { socketManager, SocketEvents } from "./websocket";
 
@@ -35,18 +35,19 @@ export class CompileSocketManager {
 
     socketManager.on(SocketEvents.COMPILE_SUCCESS, () => {
       // Reset any existing terminal first
-      terminalManager.dispose();
+      const terminalService = getTerminalService();
+      terminalService.dispose();
 
       this.stateUpdater.showOutput();
 
       // Set up the terminal with the correct DOM elements
-      terminalManager.setDomElements({
+      terminalService.setDomElements({
         output: document.getElementById("output"),
         outputPanel: document.getElementById("outputPanel"),
       });
 
       // Initialize terminal
-      terminalManager.setupTerminal();
+      terminalService.setupTerminal();
       this.stateUpdater.refreshEditor();
       this.updateCompilationState();
     });
@@ -62,17 +63,20 @@ export class CompileSocketManager {
 
     // Handle execution events
     socketManager.on(SocketEvents.OUTPUT, (data) => {
-      terminalManager.write(data.output);
+      const terminalService = getTerminalService();
+      terminalService.write(data.output);
     });
 
     socketManager.on(SocketEvents.ERROR, (data) => {
       console.error("Received error from server:", data.message);
-      terminalManager.writeError(data.message);
+      const terminalService = getTerminalService();
+      terminalService.writeError(data.message);
     });
 
     socketManager.on(SocketEvents.EXIT, (data) => {
       // Display the exit message
-      terminalManager.writeExitMessage(data.code);
+      const terminalService = getTerminalService();
+      terminalService.writeExitMessage(data.code);
 
       socketManager.disconnect();
 
@@ -161,19 +165,6 @@ export class CompileSocketManager {
       await socketManager.sendInput(input);
     } catch (error) {
       console.error("Failed to send input:", error);
-    }
-  }
-
-  /**
-   * Resize the terminal
-   * @param cols Number of columns
-   * @param rows Number of rows
-   */
-  async resizeTerminal(cols: number, rows: number): Promise<void> {
-    try {
-      await socketManager.resizeTerminal(cols, rows);
-    } catch (error) {
-      console.error("Failed to resize terminal:", error);
     }
   }
 

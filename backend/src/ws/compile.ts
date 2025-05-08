@@ -232,23 +232,6 @@ export class CompileWebSocketHandler {
   }
 
   /**
-   * Handle terminal resize events
-   * @param {SessionSocket} socket - Socket.IO connection
-   * @param {any} data - Resize dimensions
-   */
-  handleResize(
-    socket: SessionSocket,
-    data: { cols: number; rows: number }
-  ): void {
-    const { cols, rows } = data;
-    if (!this.sessionService.resizeTerminal(socket.sessionId, cols, rows)) {
-      console.warn(
-        `Failed to resize terminal for session ${socket.sessionId}: cols=${cols}, rows=${rows}`
-      );
-    }
-  }
-
-  /**
    * Handle cleanup requests
    * @param {SessionSocket} socket - Socket.IO connection
    */
@@ -293,11 +276,6 @@ export class CompileWebSocketHandler {
     // Handle input from client to program
     socket.on(SocketEvents.INPUT, (data: { input: string }) => {
       this.handleInput(socket, data);
-    });
-
-    // Handle terminal resize events
-    socket.on(SocketEvents.RESIZE, (data: { cols: number; rows: number }) => {
-      this.handleResize(socket, data);
     });
 
     // Handle cleanup requests

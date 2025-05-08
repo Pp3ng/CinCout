@@ -5,12 +5,12 @@ import {
   ShortcutCategories,
   ShortcutState,
 } from "./types";
+import { getEditorService } from "./editor";
 
 /**
  * Core utilities for shortcut handling
  */
 const DOM = {
-  editor: () => (window as any).editor,
   get: (id: DomElementId) => document.getElementById(id),
 };
 
@@ -18,7 +18,7 @@ const DOM = {
  * Platform and key handling utilities
  */
 export const ShortcutUtils = {
-  isMac: /Mac/.test(window.navigator.userAgent),
+  isMac: /Mac/.test(navigator.userAgent),
 
   triggerElement: (id: DomElementId): void => {
     DOM.get(id)?.click();
@@ -63,7 +63,10 @@ export const Actions = {
       const outputPanel = DOM.get(DomElementId.OUTPUT_PANEL);
       if (outputPanel && outputPanel.style.display !== "none") {
         ShortcutUtils.triggerElement(DomElementId.CLOSE_OUTPUT);
-        Promise.resolve().then(() => DOM.editor()?.focus());
+        Promise.resolve().then(() => {
+          const editorService = getEditorService();
+          editorService.getEditor()?.focus();
+        });
         return true;
       }
       return false;
@@ -72,16 +75,23 @@ export const Actions = {
 
   editor: {
     toggleCodeFolding: (): void => {
-      const editor = DOM.editor();
-      if (editor) editor.foldCode(editor.getCursor());
+      const editorService = getEditorService();
+      const editor = editorService.getEditor();
+      if (editor) {
+        const cursor = editorService.getCursor();
+        if (cursor) {
+          editor.foldCode(cursor);
+        }
+      }
     },
 
     saveCodeToFile: async (): Promise<void> => {
-      const editor = DOM.editor();
+      const editorService = getEditorService();
+      const editor = editorService.getEditor();
       if (!editor) return;
 
       try {
-        const code = editor.getValue();
+        const code = editorService.getValue();
         const fileType =
           (DOM.get(DomElementId.LANGUAGE) as HTMLSelectElement)?.value === "cpp"
             ? "cpp"
@@ -118,7 +128,8 @@ export const Actions = {
         if (!file) return;
 
         const content = await file.text();
-        DOM.editor()?.setValue(content);
+        const editorService = getEditorService();
+        editorService.setValue(content);
       } catch (error) {
         console.error("Failed to open file:", error);
       }
@@ -127,7 +138,8 @@ export const Actions = {
 
   view: {
     toggleZenMode: (): void => {
-      const editor = DOM.editor();
+      const editorService = getEditorService();
+      const editor = editorService.getEditor();
       if (!editor) return;
 
       const editorWrapper = editor.getWrapperElement();
@@ -156,10 +168,13 @@ export const Actions = {
       // Manage output panel in zen mode
       if (outputPanel && outputPanel.style.display !== "none") {
         if (isZenMode) {
-          // Reset output panel styles
-          ["position", "top", "right", "bottom", "width", "zIndex"].forEach(
-            (prop) => (outputPanel.style[prop as any] = "")
-          );
+          // Reset output panel styles using properly typed properties
+          outputPanel.style.position = "";
+          outputPanel.style.top = "";
+          outputPanel.style.right = "";
+          outputPanel.style.bottom = "";
+          outputPanel.style.width = "";
+          outputPanel.style.zIndex = "";
         }
       }
 
@@ -171,7 +186,7 @@ export const Actions = {
       }
 
       // Force editor refresh
-      setTimeout(() => editor.refresh(), 100);
+      setTimeout(() => editorService.refresh(), 100);
     },
   },
 };

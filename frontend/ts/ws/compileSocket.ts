@@ -7,14 +7,13 @@ import { socketManager, SocketEvents } from "./webSocketManager";
 
 /**
  * CompileSocketManager handles the Socket.IO communication for code compilation
- * Mirrors the backend CompileWebSocketHandler structure
  */
 export class CompileSocketManager {
   private stateUpdater: CompileStateUpdater;
 
   /**
    * Create a new CompileSocketManager
-   * @param stateUpdater Interface to update UI state based on socket events
+   * @param stateUpdater Interface to update UI based on socket events
    */
   constructor(stateUpdater: CompileStateUpdater) {
     this.stateUpdater = stateUpdater;
@@ -30,7 +29,6 @@ export class CompileSocketManager {
       this.stateUpdater.showOutput();
       this.showOutputMessage('<div class="loading">Compiling</div>');
       this.stateUpdater.refreshEditor();
-      this.updateCompilationState();
     });
 
     socketManager.on(SocketEvents.COMPILE_SUCCESS, () => {
@@ -49,7 +47,6 @@ export class CompileSocketManager {
       // Initialize terminal
       terminalService.setupTerminal();
       this.stateUpdater.refreshEditor();
-      this.updateCompilationState();
     });
 
     socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
@@ -58,7 +55,6 @@ export class CompileSocketManager {
         `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
       );
       socketManager.disconnect();
-      this.updateCompilationState();
     });
 
     // Handle execution events
@@ -77,20 +73,8 @@ export class CompileSocketManager {
       // Display the exit message
       const terminalService = getTerminalService();
       terminalService.writeExitMessage(data.code);
-
       socketManager.disconnect();
-
-      this.updateCompilationState();
     });
-  }
-
-  /**
-   * Update the UI based on the current compilation state
-   */
-  private updateCompilationState(): void {
-    this.stateUpdater.updateCompilationState(
-      socketManager.getCompilationState()
-    );
   }
 
   /**

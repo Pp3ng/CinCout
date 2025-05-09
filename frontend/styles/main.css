@@ -14,7 +14,6 @@
 /* Components - Reusable UI elements */
 @import "./components/buttons.css";
 @import "./components/dropdown.css";
-@import "./components/select.css";
 @import "./components/editor.css";
 @import "./components/terminal.css";
 

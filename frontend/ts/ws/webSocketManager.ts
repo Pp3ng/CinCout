@@ -1,6 +1,5 @@
 // Socket.IO communication module
 import { io, Socket } from "socket.io-client";
-import { CompilationState } from "../types";
 
 // Create a strongly-typed event system matching backend
 export enum SocketEvents {
@@ -37,13 +36,12 @@ export enum SocketEvents {
 
 /**
  * WebSocketManager class for frontend
- * Mirrors the backend WebSocketManager structure
  */
 export class WebSocketManager {
   private socket: Socket | null = null;
   private sessionId: string | null = null;
   private eventHandlers: Map<string, Set<(data: any) => void>> = new Map();
-  private compilationState: CompilationState = CompilationState.IDLE;
+  private isRunning: boolean = false;
 
   /**
    * Connect to the Socket.IO server
@@ -67,56 +65,55 @@ export class WebSocketManager {
 
       // Setup core event handlers
       this.socket.once(SocketEvents.CONNECT, () => {
-        this.compilationState = CompilationState.RUNNING;
+        this.isRunning = true;
         resolve(this.socket as Socket);
       });
 
-      this.socket.once("connect_error", (error) => {
+      this.socket.once("connect_error", (error: any) => {
         console.error("Socket connection error:", error);
         reject(error);
       });
 
-      this.socket.on(SocketEvents.DISCONNECT, (reason) => {
+      this.socket.on(SocketEvents.DISCONNECT, (reason: string) => {
         if (reason === "io server disconnect") {
           this.socket?.connect();
         }
       });
 
       // Handle session creation
-      this.socket.on(SocketEvents.SESSION_CREATED, (data) => {
+      this.socket.on(SocketEvents.SESSION_CREATED, (data: any) => {
         this.sessionId = data.sessionId;
         this.notifyListeners(SocketEvents.SESSION_CREATED, data);
       });
 
-      // Update compilation state based on events
       this.socket.on(SocketEvents.COMPILING, () => {
-        this.compilationState = CompilationState.COMPILING;
+        this.isRunning = true;
         this.notifyListeners(SocketEvents.COMPILING, {});
       });
 
       this.socket.on(SocketEvents.COMPILE_SUCCESS, () => {
-        this.compilationState = CompilationState.RUNNING;
+        this.isRunning = true;
         this.notifyListeners(SocketEvents.COMPILE_SUCCESS, {});
       });
 
-      this.socket.on(SocketEvents.COMPILE_ERROR, (data) => {
-        this.compilationState = CompilationState.IDLE;
+      this.socket.on(SocketEvents.COMPILE_ERROR, (data: any) => {
+        this.isRunning = false;
         this.notifyListeners(SocketEvents.COMPILE_ERROR, data);
       });
 
-      this.socket.on(SocketEvents.EXIT, (data) => {
-        this.compilationState = CompilationState.IDLE;
+      this.socket.on(SocketEvents.EXIT, (data: any) => {
+        this.isRunning = false;
         this.notifyListeners(SocketEvents.EXIT, data);
       });
 
       // Handle debug session events
-      this.socket.on(SocketEvents.DEBUG_START, (data) => {
-        this.compilationState = CompilationState.RUNNING;
+      this.socket.on(SocketEvents.DEBUG_START, (data: any) => {
+        this.isRunning = true;
         this.notifyListeners(SocketEvents.DEBUG_START, data);
       });
 
-      this.socket.on(SocketEvents.DEBUG_EXIT, (data) => {
-        this.compilationState = CompilationState.IDLE;
+      this.socket.on(SocketEvents.DEBUG_EXIT, (data: any) => {
+        this.isRunning = false;
         this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
       });
 
@@ -128,7 +125,7 @@ export class WebSocketManager {
         SocketEvents.DEBUG_RESPONSE,
         SocketEvents.DEBUG_ERROR,
       ].forEach((event) => {
-        this.socket?.on(event, (data) => {
+        this.socket?.on(event, (data: any) => {
           this.notifyListeners(event, data);
         });
       });
@@ -143,7 +140,7 @@ export class WebSocketManager {
 
     this.socket.disconnect();
     this.sessionId = null;
-    this.compilationState = CompilationState.IDLE;
+    this.isRunning = false;
   }
 
   /**
@@ -229,33 +226,23 @@ export class WebSocketManager {
   }
 
   /**
-   * Get compilation state
-   * @returns {CompilationState} Current compilation state
-   */
-  getCompilationState(): CompilationState {
-    return this.compilationState;
-  }
-
-  /**
    * Check if a process is running
    * @returns {boolean} True if a process is running
    */
   isProcessRunning(): boolean {
-    return this.compilationState !== CompilationState.IDLE;
+    return this.isRunning;
   }
 
   /**
-   * Set process running state - updates compilation state
+   * Set process running state
    * @param {boolean} running - Whether a process is running
    */
   setProcessRunning(running: boolean): void {
-    this.compilationState = running
-      ? CompilationState.RUNNING
-      : CompilationState.IDLE;
+    this.isRunning = running;
   }
 
   /**
-   * Send input to the running program
+   * Send input to a running process
    * @param {string} input - Input to send
    * @returns {Promise<void>}
    */
@@ -264,7 +251,7 @@ export class WebSocketManager {
   }
 }
 
-// Create singleton instance
+// Export singleton instance for use across the app
 export const socketManager = new WebSocketManager();
 
 // Export as window global for legacy support

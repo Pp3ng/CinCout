@@ -7,14 +7,13 @@ import { socketManager, SocketEvents } from "./webSocketManager";
 
 /**
  * DebugSocketManager handles the Socket.IO communication for GDB debugging
- * Mirrors the backend's debug websocket handling structure
  */
 export class DebugSocketManager {
   private stateUpdater: DebugStateUpdater;
 
   /**
    * Create a new DebugSocketManager
-   * @param stateUpdater Interface to update UI state based on socket events
+   * @param stateUpdater Interface to update UI based on socket events
    */
   constructor(stateUpdater: DebugStateUpdater) {
     this.stateUpdater = stateUpdater;
@@ -29,7 +28,6 @@ export class DebugSocketManager {
     socketManager.on(SocketEvents.COMPILING, () => {
       this.stateUpdater.showOutput();
       this.stateUpdater.refreshEditor();
-      this.updateDebugState();
     });
 
     // Handle debugging events
@@ -52,9 +50,6 @@ export class DebugSocketManager {
         return;
       }
 
-      this.stateUpdater.setDebuggingActive(true);
-      this.updateDebugState();
-
       if (data && data.message) {
         terminalService.write(`${data.message}\r\n\r\n`);
       }
@@ -72,8 +67,6 @@ export class DebugSocketManager {
       console.error("Received debug error from server:", data.message);
       const terminalService = getTerminalService();
       terminalService.writeError(`\r\nError: ${data.message}\r\n`);
-      this.stateUpdater.setDebuggingActive(false);
-      this.updateDebugState();
     });
 
     socketManager.on(SocketEvents.DEBUG_EXIT, (data) => {
@@ -81,15 +74,12 @@ export class DebugSocketManager {
       const terminalService = getTerminalService();
       terminalService.writeExitMessage(data.code);
       socketManager.disconnect();
-      this.stateUpdater.setDebuggingActive(false);
-      this.updateDebugState();
     });
 
     // Handle error and exit events
     socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
       this.stateUpdater.showOutput();
       socketManager.disconnect();
-      this.updateDebugState();
     });
 
     socketManager.on(SocketEvents.ERROR, (data) => {
@@ -97,13 +87,6 @@ export class DebugSocketManager {
       const terminalService = getTerminalService();
       terminalService.writeError(`\r\nError: ${data.message}\r\n`);
     });
-  }
-
-  /**
-   * Update the UI based on the current debug state
-   */
-  private updateDebugState(): void {
-    this.stateUpdater.updateDebugState(socketManager.getCompilationState());
   }
 
   /**
@@ -118,7 +101,6 @@ export class DebugSocketManager {
           .catch((e) => console.error("Error sending cleanup message:", e));
 
         socketManager.disconnect();
-        this.stateUpdater.setDebuggingActive(false);
       }
     } catch (error) {
       console.error("Failed to handle cleanup:", error);

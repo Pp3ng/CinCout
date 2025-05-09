@@ -1,146 +1,283 @@
 // Custom Select Component
-import { SelectOption } from "../types";
 
-class CustomSelect {
-  private container: HTMLElement;
-  private optionsContainer: HTMLElement;
-
-  constructor(private select: HTMLSelectElement) {
-    if (
-      this.select.parentNode instanceof Element &&
-      this.select.parentNode.classList.contains("custom-select-container")
-    ) {
-      this.container = this.select.parentNode as HTMLElement;
-      this.optionsContainer = this.container.querySelector(
-        ".select-options"
-      ) as HTMLElement;
-      return;
+// Embedded styles from select.css
+const injectCustomSelectStyles = (): void => {
+  const styleElement = document.createElement("style");
+  styleElement.id = "custom-select-styles";
+  styleElement.textContent = `
+    /* Base select styling */
+    select {
+      appearance: none;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: 2px solid var(--border);
+      padding: 0px 10px 0px 8px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-xs);
+      cursor: pointer;
+      min-width: 0;
+      height: 28px;
+      background-image: none; /* Remove default arrow */
+      transition: all var(--transition-normal);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      position: relative;
+      font-family: var(--font-mono);
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
     }
 
-    this.container = document.createElement("div");
-    this.container.className = "custom-select-container";
-    this.container.setAttribute("data-for", this.select.id);
-
-    this.optionsContainer = document.createElement("div");
-    this.optionsContainer.className = "select-options";
-
-    if (this.select.parentNode) {
-      this.select.parentNode.insertBefore(this.container, this.select);
-      this.container.appendChild(this.select);
-      this.container.appendChild(this.optionsContainer);
+    /* Specific widths for different select types */
+    select#language {
+      width: 55px;
     }
 
-    this.initialize();
-  }
+    select#compiler {
+      width: 70px;
+    }
 
-  private initialize(): void {
-    this.buildOptions();
-    this.setupEventListeners();
+    select#template {
+      width: 140px;
+    }
 
-    setTimeout(() => this.updateSelectedUI(), 0);
-  }
+    select#optimization {
+      width: 130px;
+    }
 
-  private setupEventListeners(): void {
-    this.select.addEventListener("change", () => this.updateSelectedUI());
+    /* Select states */
+    select:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-accent-sm);
+      animation: selectHover var(--transition-normal);
+    }
 
-    this.container.addEventListener("mouseenter", () => {
-      this.optionsContainer.style.display = "block";
-    });
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: var(--shadow-accent-sm);
+    }
 
-    this.container.addEventListener("mouseleave", () => {
-      setTimeout(() => {
-        if (!this.container.matches(":hover")) {
-          this.optionsContainer.style.display = "none";
-        }
-      }, 100);
-    });
-  }
+    select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: 12px;
+      font-family: var(--font-mono);
+    }
 
-  private updateSelectedUI(): void {
-    const selectedIndex = this.select.selectedIndex;
-    this.optionsContainer
-      .querySelectorAll(".custom-option")
-      .forEach((opt, index) => {
-        opt.classList.toggle("selected", index === selectedIndex);
-      });
-  }
+    /* Custom select container for hover behavior */
+    .custom-select-container {
+      position: relative;
+      display: inline-block;
+    }
 
-  public getOptions(): SelectOption[] {
-    return Array.from(this.select.options).map((option) => ({
-      value: option.value,
-      text: option.text,
-      selected: option.selected,
-    }));
-  }
+    /* Custom dropdown arrow */
+    .custom-select-container::after {
+      content: "";
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      width: 5px;
+      height: 5px;
+      border-right: 1.5px solid var(--text-secondary);
+      border-bottom: 1.5px solid var(--text-secondary);
+      transform: translateY(-70%) rotate(45deg);
+      pointer-events: none;
+      transition: all var(--transition-normal);
+      box-shadow: 0px 0px 1px rgba(var(--accent-rgb), 0.3);
+    }
 
-  public buildOptions(): void {
-    this.optionsContainer.innerHTML = "";
+    /* Arrow animation on hover */
+    .custom-select-container:hover::after {
+      transform: translateY(-55%) rotate(225deg);
+      transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+      border-right: 1.5px solid var(--accent);
+      border-bottom: 1.5px solid var(--accent);
+      box-shadow: 0px 0px 2px rgba(var(--accent-rgb), 0.5);
+    }
 
-    this.getOptions().forEach((option, index) => {
+    /* Custom dropdown */
+    .select-options {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      margin-top: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--bg-secondary);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius-sm);
+      z-index: var(--z-dropdown);
+      box-shadow: var(--shadow-accent-md);
+      display: none;
+      animation: fadeIn var(--transition-normal);
+    }
+
+    /* Show options on hover */
+    .custom-select-container:hover .select-options {
+      display: block;
+    }
+
+    /* Hide default select arrow and make it unclickable */
+    .custom-select-container select {
+      background-image: none;
+      pointer-events: none;
+    }
+
+    /* Custom option styling */
+    .custom-option {
+      padding: 6px 10px;
+      cursor: pointer;
+      border-left: 0px solid var(--accent);
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+      font-family: var(--font-mono);
+    }
+
+    .custom-option:hover {
+      background: var(--accent);
+      color: white;
+      border-left: 3px solid var(--accent);
+      padding-left: 7px;
+      text-shadow: 0 1px 1px rgba(var(--accent-rgb), 0.1);
+      box-shadow: inset 0 0 5px rgba(var(--accent-rgb), 0.05);
+    }
+
+    .custom-option.selected {
+      background-color: rgba(var(--accent-rgb), 0.1);
+      font-weight: bold;
+      border-left: 3px solid var(--accent);
+      padding-left: 7px;
+      color: var(--accent);
+      text-shadow: 0 1px 1px rgba(var(--accent-rgb), 0.1);
+    }
+
+    /* Select animation */
+    @keyframes selectHover {
+      0% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-2px);
+      }
+      100% {
+        transform: translateY(0);
+      }
+    }
+  `;
+
+  // Add styles to the document
+  document.head.appendChild(styleElement);
+};
+
+type CustomSelectInstance = {
+  refresh: () => void;
+};
+
+const createCustomSelect = (
+  select: HTMLSelectElement
+): CustomSelectInstance => {
+  const container: HTMLElement =
+    select.parentNode instanceof Element &&
+    select.parentNode.classList.contains("custom-select-container")
+      ? (select.parentNode as HTMLElement)
+      : (() => {
+          const container = document.createElement("div");
+          container.className = "custom-select-container";
+          container.setAttribute("data-for", select.id);
+
+          const optionsContainer = document.createElement("div");
+          optionsContainer.className = "select-options";
+
+          if (select.parentNode) {
+            select.parentNode.insertBefore(container, select);
+            container.appendChild(select);
+            container.appendChild(optionsContainer);
+          }
+
+          return container;
+        })();
+
+  const optionsContainer: HTMLElement = container.querySelector(
+    ".select-options"
+  ) as HTMLElement;
+
+  const buildOptions = () => {
+    optionsContainer.innerHTML = "";
+
+    Array.from(select.options).forEach((option, index) => {
       const customOption = document.createElement("div");
       customOption.className = `custom-option${
         option.selected ? " selected" : ""
       }`;
       customOption.textContent = option.text;
       customOption.dataset.value = option.value;
-      customOption.dataset.index = index.toString();
 
       customOption.addEventListener("click", () => {
-        this.select.selectedIndex = index;
-        this.select.dispatchEvent(new Event("change", { bubbles: true }));
-        this.optionsContainer.style.display = "none";
+        select.selectedIndex = index;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        optionsContainer.style.display = "none";
       });
 
-      this.optionsContainer.appendChild(customOption);
+      optionsContainer.appendChild(customOption);
     });
-  }
+  };
 
-  public refresh(): void {
-    this.buildOptions();
-    this.updateSelectedUI();
-  }
-}
+  const updateSelectedUI = () => {
+    const selectedIndex = select.selectedIndex;
+    optionsContainer
+      .querySelectorAll(".custom-option")
+      .forEach((opt, index) => {
+        opt.classList.toggle("selected", index === selectedIndex);
+      });
+  };
 
-/**
- * CustomSelectManager - Handles all custom select instances on the page
- */
-class CustomSelectManager {
-  private selects: Map<HTMLSelectElement, CustomSelect> = new Map();
+  const setupEventListeners = () => {
+    select.addEventListener("change", updateSelectedUI);
 
-  public init(): void {
-    document
-      .querySelectorAll("select")
-      .forEach((select) => this.enhance(select as HTMLSelectElement));
-
-    this.observeTemplateSelect();
-  }
-
-  public enhance(selectElement: HTMLSelectElement): CustomSelect {
-    const customSelect = new CustomSelect(selectElement);
-    this.selects.set(selectElement, customSelect);
-    return customSelect;
-  }
-
-  public getCustomSelect(
-    selectElement: HTMLSelectElement
-  ): CustomSelect | undefined {
-    return this.selects.get(selectElement);
-  }
-
-  private observeTemplateSelect(): void {
-    const templateSelect = document.getElementById(
-      "template"
-    ) as HTMLSelectElement;
-    if (!templateSelect) return;
-
-    const customSelect = this.getCustomSelect(templateSelect);
-    if (!customSelect) return;
-
-    new MutationObserver(() => customSelect.refresh()).observe(templateSelect, {
-      childList: true,
+    container.addEventListener("mouseenter", () => {
+      optionsContainer.style.display = "block";
     });
-  }
-}
 
-const selectManager = new CustomSelectManager();
-document.addEventListener("DOMContentLoaded", () => selectManager.init());
+    container.addEventListener("mouseleave", () => {
+      setTimeout(() => {
+        if (!container.matches(":hover")) {
+          optionsContainer.style.display = "none";
+        }
+      }, 100);
+    });
+  };
+
+  buildOptions();
+  setupEventListeners();
+  setTimeout(() => updateSelectedUI(), 0);
+
+  return {
+    refresh: () => {
+      buildOptions();
+      updateSelectedUI();
+    },
+  };
+};
+
+const initCustomSelects = () => {
+  // Inject CSS styles
+  injectCustomSelectStyles();
+
+  const selectInstances = new Map<HTMLSelectElement, CustomSelectInstance>();
+
+  document.querySelectorAll("select").forEach((select) => {
+    const selectElement = select as HTMLSelectElement;
+    selectInstances.set(selectElement, createCustomSelect(selectElement));
+  });
+
+  const templateSelect = document.getElementById(
+    "template"
+  ) as HTMLSelectElement;
+  if (templateSelect && selectInstances.has(templateSelect)) {
+    new MutationObserver(() =>
+      selectInstances.get(templateSelect)?.refresh()
+    ).observe(templateSelect, { childList: true });
+  }
+};
+
+document.addEventListener("DOMContentLoaded", initCustomSelects);

@@ -1,30 +1,6 @@
 // ==========================================
-// Common Types
-// ==========================================
-
-// Platform detection
-export type PlatformType = "MacOS" | "Other";
-
-// ==========================================
 // UI & Layout
 // ==========================================
-
-// Layout panel state
-export interface PanelState {
-  isOutputVisible: boolean;
-}
-
-// UI global state
-export interface UIState {
-  isOutputVisible: boolean;
-  isLoading: boolean;
-  loadingMessage: string;
-  compilationState: CompilationState;
-  isProcessRunning?: boolean;
-  isDebuggingActive?: boolean; // Add debugging active state
-  theme: string;
-  vimMode: boolean;
-}
 
 // DOM elements for accessing UI elements
 export interface DOMElements {
@@ -52,8 +28,8 @@ export interface DOMElements {
 
 // Editor instances
 export interface EditorInstances {
-  editor: CodeMirror.Editor;
-  assemblyView: CodeMirror.Editor;
+  editor: any; // CodeMirror.Editor
+  assemblyView: any; // CodeMirror.Editor
 }
 
 // ==========================================
@@ -64,17 +40,6 @@ export interface EditorInstances {
 export interface TemplateCache {
   lists: Record<string, string[]>;
   contents: Record<string, string>;
-}
-
-// ==========================================
-// Selector & Custom UI
-// ==========================================
-
-// Select option representation
-export interface SelectOption {
-  readonly value: string;
-  readonly text: string;
-  readonly selected: boolean;
 }
 
 // ==========================================
@@ -95,14 +60,6 @@ export interface WebSocketMessage {
   [key: string]: any;
 }
 
-// Compilation state enum
-export enum CompilationState {
-  IDLE = "idle",
-  COMPILING = "compiling",
-  RUNNING = "running",
-}
-
-// CinCout socket interface
 export interface CinCoutSocket {
   init: (messageHandler: (eventName: string, data: any) => void) => void;
   sendData: (data: any) => Promise<void>;
@@ -113,31 +70,18 @@ export interface CinCoutSocket {
   disconnect: () => void;
   setProcessRunning: (running: boolean) => void;
   isProcessRunning: () => boolean;
-  updateStateFromMessage: (type: string) => void;
-  getCompilationState: () => CompilationState | string;
 }
 
-// Interface for UI state updates
+// Minimal DOM update functions
 export interface CompileStateUpdater {
-  updateCompilationState: (state: CompilationState | string) => void;
-  updateProcessRunning?: (running: boolean) => void;
   showOutput: () => void;
   refreshEditor: () => void;
 }
 
-// Interface for debug state updates
+// Minimal DOM update functions for debugging
 export interface DebugStateUpdater {
-  updateDebugState: (state: CompilationState | string) => void;
-  setDebuggingActive: (active: boolean) => void;
   showOutput: () => void;
   refreshEditor: () => void;
-}
-
-// Debug session status
-export enum DebugState {
-  IDLE = "idle",
-  COMPILING = "compiling",
-  DEBUGGING = "debugging",
 }
 
 // ==========================================
@@ -245,7 +189,7 @@ export interface ShortcutDefinition {
 }
 
 // Mapping of key combos to shortcut definitions
-export type ShortcutMap = Record<string, ShortcutDefinition>;
+type ShortcutMap = Record<string, ShortcutDefinition>;
 
 // Categories of shortcuts
 export interface ShortcutCategories {
@@ -253,11 +197,4 @@ export interface ShortcutCategories {
   mac: ShortcutMap;
   other: ShortcutMap;
   special: ShortcutMap;
-}
-
-// Shortcut state
-export interface ShortcutState {
-  currentOS: PlatformType;
-  isMac: boolean;
-  shortcuts: ShortcutCategories;
 }

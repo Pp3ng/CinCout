@@ -1,6 +1,3 @@
-/**
- * API Service - handles all API calls
- */
 import axios from "axios";
 import { CompileOptions } from "../types";
 

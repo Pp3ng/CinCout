@@ -19,14 +19,8 @@ import "codemirror/addon/hint/show-hint";
 import { showNotification } from "./service/notification";
 
 import "./ui/themes";
-import "./service/templates";
 import "./ui/layout";
 import "./ui/selector";
-import "./service/shortcuts";
-import "./ws/webSocketManager";
-import "./ws/compileSocket";
-import "./service/terminal";
-import "./service/editor";
 import "./app";
 
 document.addEventListener("DOMContentLoaded", () => {

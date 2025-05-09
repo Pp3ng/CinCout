@@ -1,4 +1,4 @@
-// Import CodeMirror themes from npm packages
+// Import CSS for CodeMirror themes
 import "codemirror/theme/nord.css";
 import "codemirror/theme/dracula.css";
 import "codemirror/theme/monokai.css";
@@ -8,66 +8,68 @@ import "codemirror/theme/gruvbox-dark.css";
 import "codemirror/theme/seti.css";
 import "codemirror/theme/the-matrix.css";
 
-// Import theme definitions from JSON file
 import themeDefinitions from "../../config/themes.json";
-
-// Import types from centralized types file
 import { ThemeMap, Theme, TerminalTheme } from "../types";
-
-// Import services
 import { getEditorService } from "../service/editor";
 import { getTerminalService } from "../service/terminal";
 
-// Theme management
-const createThemeStore = () => {
-  // State
-  let currentTheme = "default";
-  const themeData = themeDefinitions as ThemeMap;
+// Helper functions
+const hexToRgb = (hex: string): string => {
+  const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return rgb
+    ? `${parseInt(rgb[1], 16)}, ${parseInt(rgb[2], 16)}, ${parseInt(
+        rgb[3],
+        16
+      )}`
+    : "30, 136, 229";
+};
 
-  const hexToRgb = (hex: string): string => {
-    const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return rgb
-      ? `${parseInt(rgb[1], 16)}, ${parseInt(rgb[2], 16)}, ${parseInt(
-          rgb[3],
-          16
-        )}`
-      : "30, 136, 229";
-  };
+const ensureHashPrefixes = (
+  colorObject: Record<string, string>
+): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(colorObject).map(([key, value]) => [
+      key,
+      typeof value === "string" && value.trim() !== "" && !value.startsWith("#")
+        ? "#" + value.trim()
+        : value,
+    ])
+  );
 
-  const ensureHashPrefixes = (
-    colorObject: Record<string, string>
-  ): Record<string, string> => {
-    return Object.fromEntries(
-      Object.entries(colorObject).map(([key, value]) => {
-        if (
-          typeof value === "string" &&
-          value.trim() !== "" &&
-          !value.startsWith("#")
-        ) {
-          return [key, "#" + value.trim()];
-        }
-        return [key, value];
-      })
-    );
-  };
+// Create a more React-friendly theme store
+type ThemeListener = (themeName: string, theme: Theme) => void;
+
+class ThemeStore {
+  private currentTheme = localStorage.getItem("preferred-theme") || "default";
+  private themeData: ThemeMap = themeDefinitions as ThemeMap;
+  private listeners: ThemeListener[] = [];
+
+  // Get current theme name
+  getCurrentThemeName(): string {
+    return this.currentTheme;
+  }
 
   // Get current theme data
-  const getCurrentTheme = (): Theme => {
-    return themeData[currentTheme] || themeData.default;
-  };
+  getCurrentTheme(): Theme {
+    return this.themeData[this.currentTheme] || this.themeData.default;
+  }
 
-  const getTerminalTheme = (): TerminalTheme => {
-    const theme = getCurrentTheme();
+  // Get available themes
+  getThemes(): ThemeMap {
+    return this.themeData;
+  }
 
-    const terminalColors = theme.terminal || themeData.default.terminal;
+  // Get terminal theme
+  getTerminalTheme(): TerminalTheme {
+    const theme = this.getCurrentTheme();
+    const terminalColors = theme.terminal || this.themeData.default.terminal;
 
-    const terminalTheme = {
+    return ensureHashPrefixes({
       background: theme.bg,
       foreground: theme.text,
       cursor: theme.accent,
       cursorAccent: theme.bg,
       selection: theme.accent + "40",
-
       black: "#000000",
       red: terminalColors.red,
       green: terminalColors.green,
@@ -76,7 +78,6 @@ const createThemeStore = () => {
       magenta: terminalColors.magenta,
       cyan: terminalColors.cyan,
       white: "#bfbfbf",
-
       brightBlack: "#4d4d4d",
       brightRed: terminalColors.red,
       brightGreen: terminalColors.green,
@@ -85,15 +86,73 @@ const createThemeStore = () => {
       brightMagenta: terminalColors.magenta,
       brightCyan: terminalColors.cyan,
       brightWhite: "#e6e6e6",
+    }) as TerminalTheme;
+  }
+
+  // Get CSS variables for current theme
+  getCssVariables(): Record<string, string> {
+    const theme = this.getCurrentTheme();
+    return {
+      "--bg-primary": theme.bg,
+      "--bg-secondary": theme.bgSecondary,
+      "--text-primary": theme.text,
+      "--text-secondary": theme.textSecondary,
+      "--accent": theme.accent,
+      "--accent-hover": theme.accentHover,
+      "--border": theme.border,
+      "--accent-rgb": hexToRgb(theme.accent),
+      "--error-rgb": "255, 85, 85",
     };
+  }
 
-    const processedTheme = ensureHashPrefixes(terminalTheme);
-    return processedTheme as TerminalTheme;
-  };
+  // Set theme and notify subscribers
+  setTheme(themeName: string): void {
+    if (!this.themeData[themeName]) {
+      console.warn(`Theme ${themeName} not found`);
+      return;
+    }
 
-  // Update editor and terminal with theme
-  const updateEditorAndTerminal = (themeName: string): void => {
-    // Update CodeMirror editor theme using EditorService
+    this.currentTheme = themeName;
+    localStorage.setItem("preferred-theme", themeName);
+
+    // Notify all listeners
+    const theme = this.getCurrentTheme();
+    this.listeners.forEach((listener) => listener(themeName, theme));
+  }
+
+  // Subscribe to theme changes (React-friendly)
+  subscribe(listener: ThemeListener): () => void {
+    this.listeners.push(listener);
+    // Return unsubscribe function
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+  }
+}
+
+// Create singleton instance
+const themeStore = new ThemeStore();
+
+// DOM-specific theme application functions (separate from core theme logic)
+export const applyThemeToDOM = (): void => {
+  const themeName = themeStore.getCurrentThemeName();
+  const theme = themeStore.getCurrentTheme();
+
+  document.body.classList.add("theme-transitioning");
+
+  // Apply CSS variables
+  requestAnimationFrame(() => {
+    Object.entries(themeStore.getCssVariables()).forEach(([key, value]) => {
+      document.documentElement.style.setProperty(key, value);
+    });
+
+    // Update theme select dropdown if exists
+    const themeSelect = document.getElementById(
+      "theme-select"
+    ) as HTMLSelectElement;
+    if (themeSelect) themeSelect.value = themeName;
+
+    // Update CodeMirror editor theme
     const editorService = getEditorService();
     const editor = editorService.getEditor();
     if (editor) {
@@ -111,13 +170,12 @@ const createThemeStore = () => {
       );
     }
 
-    // Update terminal theme using TerminalService
-    const terminalService = getTerminalService();
-    const terminal = terminalService.getTerminal();
+    // Update terminal theme
+    const terminal = getTerminalService().getTerminal();
     if (terminal) {
       setTimeout(() => {
         try {
-          const terminalTheme = getTerminalTheme();
+          const terminalTheme = themeStore.getTerminalTheme();
           if (terminal.options) {
             terminal.options.theme = terminalTheme;
             terminal.refresh(0, terminal.rows - 1);
@@ -127,120 +185,48 @@ const createThemeStore = () => {
         }
       }, 50);
     }
-  };
 
-  // Apply theme to DOM
-  const applyThemeToDOM = (themeName: string): void => {
-    const theme = themeData[themeName];
-    if (!theme) return;
-
-    // Add transition class
-    document.body.classList.add("theme-transitioning");
-
-    // CSS variable mapping
-    const cssVarMap = {
-      bg: "--bg-primary",
-      bgSecondary: "--bg-secondary",
-      text: "--text-primary",
-      textSecondary: "--text-secondary",
-      accent: "--accent",
-      accentHover: "--accent-hover",
-      border: "--border",
-    };
-
-    requestAnimationFrame(() => {
-      const root = document.documentElement;
-
-      // Apply theme variables
-      Object.entries(cssVarMap).forEach(([themeKey, cssVar]) => {
-        if (theme[themeKey as keyof Theme]) {
-          root.style.setProperty(
-            cssVar,
-            theme[themeKey as keyof Theme] as string
-          );
-        }
-      });
-
-      // Add RGB versions for transparency effects
-      root.style.setProperty("--accent-rgb", hexToRgb(theme.accent));
-      root.style.setProperty("--error-rgb", "255, 85, 85");
-
-      // Update UI components
-      const themeSelect = document.getElementById(
-        "theme-select"
-      ) as HTMLSelectElement;
-      if (themeSelect) {
-        themeSelect.value = themeName;
-      }
-
-      // Update editor and terminal
-      updateEditorAndTerminal(themeName);
-
-      // Remove transition class after animation
-      setTimeout(() => {
-        document.body.classList.remove("theme-transitioning");
-      }, 300);
-    });
-  };
-
-  // Public API
-  return {
-    setTheme: (themeName: string): void => {
-      if (!themeData[themeName]) {
-        console.warn(`Theme ${themeName} not found`);
-        return;
-      }
-
-      currentTheme = themeName;
-      localStorage.setItem("preferred-theme", themeName);
-      applyThemeToDOM(themeName);
-    },
-
-    getTerminalTheme,
-
-    initialize: (): void => {
-      // Setup theme selector
-      const themeSelect = document.getElementById(
-        "theme-select"
-      ) as HTMLSelectElement;
-      if (themeSelect) {
-        // Clear existing options
-        themeSelect.innerHTML = "";
-
-        // Add theme options
-        Object.entries(themeData).forEach(([key, theme]) => {
-          const option = document.createElement("option");
-          option.value = key;
-          option.textContent = theme.name;
-          themeSelect.appendChild(option);
-        });
-
-        // Set initial value and add event listener
-        const savedTheme = localStorage.getItem("preferred-theme") || "default";
-        themeSelect.value = savedTheme;
-        themeSelect.addEventListener("change", (e) => {
-          const target = e.target as HTMLSelectElement;
-          themeStoreInstance.setTheme(target.value);
-        });
-      }
-
-      // Apply initial theme from storage
-      const savedTheme = localStorage.getItem("preferred-theme") || "default";
-      themeStoreInstance.setTheme(savedTheme);
-
-      // Make theme getter available globally for terminal setup
-      (window as any).getTerminalTheme = getTerminalTheme;
-    },
-  };
+    setTimeout(
+      () => document.body.classList.remove("theme-transitioning"),
+      300
+    );
+  });
 };
 
-// Create singleton instance
-const themeStoreInstance = createThemeStore();
+// Initialize theme system with DOM elements
+export const initializeThemeUI = (): void => {
+  const themeSelect = document.getElementById(
+    "theme-select"
+  ) as HTMLSelectElement;
+  if (themeSelect) {
+    themeSelect.innerHTML = "";
+
+    Object.entries(themeStore.getThemes()).forEach(([key, theme]) => {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = theme.name;
+      themeSelect.appendChild(option);
+    });
+
+    themeSelect.value = themeStore.getCurrentThemeName();
+    themeSelect.addEventListener("change", (e) =>
+      themeStore.setTheme((e.target as HTMLSelectElement).value)
+    );
+  }
+
+  // Subscribe to theme changes to update DOM
+  themeStore.subscribe(() => applyThemeToDOM());
+
+  // Initial theme application
+  applyThemeToDOM();
+
+  // Expose terminal theme getter for external code
+  (window as any).getTerminalTheme =
+    themeStore.getTerminalTheme.bind(themeStore);
+};
 
 // Initialize on DOM ready
-document.addEventListener("DOMContentLoaded", () => {
-  themeStoreInstance.initialize();
-});
+document.addEventListener("DOMContentLoaded", initializeThemeUI);
 
 // Export for use in other modules
-export { themeStoreInstance };
+export { themeStore };

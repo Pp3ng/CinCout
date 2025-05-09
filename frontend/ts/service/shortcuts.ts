@@ -1,200 +1,130 @@
 // Import types from centralized types file
-import {
-  DomElementId,
-  ShortcutDefinition,
-  ShortcutCategories,
-  ShortcutState,
-} from "../types";
+import { DomElementId, ShortcutDefinition, ShortcutCategories } from "../types";
 import { getEditorService } from "./editor";
 
-/**
- * Core utilities for shortcut handling
- */
-const DOM = {
-  get: (id: DomElementId) => document.getElementById(id),
+// Platform detection
+export const isMac = /Mac/.test(navigator.userAgent);
+
+// Key normalization utility
+export const normalizeKey = (event: KeyboardEvent): string => {
+  const key = event.key.toLowerCase();
+  // Normalize special keys
+  if (key === "enter" || key === "escape")
+    return key.charAt(0).toUpperCase() + key.slice(1);
+
+  // Build modifier string
+  const modifiers = [
+    event.ctrlKey && "ctrl",
+    event.altKey && "alt",
+    event.metaKey && "meta",
+    event.shiftKey && "shift",
+  ].filter(Boolean);
+
+  if (!modifiers.length) return event.key;
+
+  const prefix = modifiers.join("+") + "+";
+  // Only apply prefix to single character keys or numbers
+  return key.length === 1 || /^[0-9]$/.test(key) ? prefix + key : event.key;
 };
 
-/**
- * Platform and key handling utilities
- */
-export const ShortcutUtils = {
-  isMac: /Mac/.test(navigator.userAgent),
-
-  triggerElement: (id: DomElementId): void => {
-    DOM.get(id)?.click();
-  },
-
-  normalizeKey: (event: KeyboardEvent): string => {
-    const key = event.key.toLowerCase();
-    // Normalize special keys
-    if (key === "enter" || key === "escape")
-      return key.charAt(0).toUpperCase() + key.slice(1);
-
-    // Build modifier string
-    const modifiers = [
-      event.ctrlKey && "ctrl",
-      event.altKey && "alt",
-      event.metaKey && "meta",
-      event.shiftKey && "shift",
-    ].filter(Boolean);
-
-    if (!modifiers.length) return event.key;
-
-    const prefix = modifiers.join("+") + "+";
-    // Only apply prefix to single character keys or numbers
-    return key.length === 1 || /^[0-9]$/.test(key) ? prefix + key : event.key;
-  },
-};
-
-/**
- * Shortcut actions - functions triggered by shortcuts
- */
-export const Actions = {
-  ui: {
-    compile: () => ShortcutUtils.triggerElement(DomElementId.COMPILE),
-    viewAssembly: () =>
-      ShortcutUtils.triggerElement(DomElementId.VIEW_ASSEMBLY),
-    formatCode: () => ShortcutUtils.triggerElement(DomElementId.FORMAT),
-    styleCheck: () => ShortcutUtils.triggerElement(DomElementId.STYLE_CHECK),
-    memoryCheck: () => ShortcutUtils.triggerElement(DomElementId.MEMORY_CHECK),
-    debug: () => ShortcutUtils.triggerElement(DomElementId.DEBUG),
-    takeCodeSnapshot: () => ShortcutUtils.triggerElement(DomElementId.CODESNAP),
-    closeOutputPanel: (): boolean => {
-      const outputPanel = DOM.get(DomElementId.OUTPUT_PANEL);
-      if (outputPanel && outputPanel.style.display !== "none") {
-        ShortcutUtils.triggerElement(DomElementId.CLOSE_OUTPUT);
-        Promise.resolve().then(() => {
-          const editorService = getEditorService();
-          editorService.getEditor()?.focus();
-        });
-        return true;
-      }
-      return false;
-    },
-  },
-
-  editor: {
-    toggleCodeFolding: (): void => {
-      const editorService = getEditorService();
-      const editor = editorService.getEditor();
-      if (editor) {
-        const cursor = editorService.getCursor();
-        if (cursor) {
-          editor.foldCode(cursor);
-        }
-      }
-    },
-
-    saveCodeToFile: async (): Promise<void> => {
-      const editorService = getEditorService();
-      const editor = editorService.getEditor();
-      if (!editor) return;
-
-      try {
-        const code = editorService.getValue();
-        const fileType =
-          (DOM.get(DomElementId.LANGUAGE) as HTMLSelectElement)?.value === "cpp"
-            ? "cpp"
-            : "c";
-        const blob = new Blob([code], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-
-        // Create and click download link
-        Object.assign(document.createElement("a"), {
-          href: url,
-          download: `code.${fileType}`,
-        }).click();
-
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-      } catch (error) {
-        console.error("Failed to save file:", error);
-      }
-    },
-
-    openCodeFromFile: async (): Promise<void> => {
-      try {
-        const fileInput = Object.assign(document.createElement("input"), {
-          type: "file",
-          accept: ".c,.cpp",
-        });
-        fileInput.click();
-
-        const file = await new Promise<File | null>((resolve) => {
-          fileInput.onchange = (e) =>
-            resolve((e.target as HTMLInputElement).files?.[0] || null);
-          fileInput.oncancel = () => resolve(null);
-        });
-
-        if (!file) return;
-
-        const content = await file.text();
+// Core UI actions - easily adaptable to React components
+export const uiActions = {
+  compile: () => document.getElementById(DomElementId.COMPILE)?.click(),
+  viewAssembly: () =>
+    document.getElementById(DomElementId.VIEW_ASSEMBLY)?.click(),
+  formatCode: () => document.getElementById(DomElementId.FORMAT)?.click(),
+  styleCheck: () => document.getElementById(DomElementId.STYLE_CHECK)?.click(),
+  memoryCheck: () =>
+    document.getElementById(DomElementId.MEMORY_CHECK)?.click(),
+  debug: () => document.getElementById(DomElementId.DEBUG)?.click(),
+  takeCodeSnapshot: () =>
+    document.getElementById(DomElementId.CODESNAP)?.click(),
+  closeOutputPanel: (): boolean => {
+    const outputPanel = document.getElementById(DomElementId.OUTPUT_PANEL);
+    if (outputPanel && outputPanel.style.display !== "none") {
+      document.getElementById(DomElementId.CLOSE_OUTPUT)?.click();
+      Promise.resolve().then(() => {
         const editorService = getEditorService();
-        editorService.setValue(content);
-      } catch (error) {
-        console.error("Failed to open file:", error);
-      }
-    },
-  },
-
-  view: {
-    toggleZenMode: (): void => {
-      const editorService = getEditorService();
-      const editor = editorService.getEditor();
-      if (!editor) return;
-
-      const editorWrapper = editor.getWrapperElement();
-      const isZenMode = editorWrapper.classList.contains("zen-mode");
-      const outputPanel = DOM.get(DomElementId.OUTPUT_PANEL);
-
-      // Toggle zen mode classes
-      const elements = {
-        editor: editorWrapper,
-        body: document.body,
-        container: document.querySelector(".container"),
-        header: document.querySelector(".header"),
-        mainContainer: document.querySelector(".main-container"),
-        editorPanel: document.querySelector(".editor-panel"),
-        panelHeader: document.querySelector(".panel-header"),
-      };
-
-      elements.editor.classList.toggle("zen-mode");
-      elements.body.classList.toggle("zen-mode-active");
-      elements.container?.classList.toggle("zen-container");
-      elements.header?.classList.toggle("hidden-zen");
-      elements.mainContainer?.classList.toggle("zen-mode-container");
-      elements.editorPanel?.classList.toggle("zen-mode-panel");
-      elements.panelHeader?.classList.toggle("zen-mode-minimized");
-
-      // Manage output panel in zen mode
-      if (outputPanel && outputPanel.style.display !== "none") {
-        if (isZenMode) {
-          // Reset output panel styles using properly typed properties
-          outputPanel.style.position = "";
-          outputPanel.style.top = "";
-          outputPanel.style.right = "";
-          outputPanel.style.bottom = "";
-          outputPanel.style.width = "";
-          outputPanel.style.zIndex = "";
-        }
-      }
-
-      // Update button icon
-      const zenButton = DOM.get(DomElementId.ZEN_MODE)?.querySelector("i");
-      if (zenButton) {
-        zenButton.classList.toggle("fa-expand");
-        zenButton.classList.toggle("fa-compress");
-      }
-
-      // Force editor refresh
-      setTimeout(() => editorService.refresh(), 100);
-    },
+        editorService.getEditor()?.focus();
+      });
+      return true;
+    }
+    return false;
   },
 };
 
-/**
- * Action descriptions - centralized descriptions for actions
- */
-const ActionDescriptions = {
+// Editor-specific actions
+export const editorActions = {
+  toggleCodeFolding: (): void => {
+    const editorService = getEditorService();
+    const editor = editorService.getEditor();
+    if (editor) {
+      const cursor = editorService.getCursor();
+      if (cursor) {
+        editor.foldCode(cursor);
+      }
+    }
+  },
+
+  saveCodeToFile: async (): Promise<void> => {
+    const editorService = getEditorService();
+    const editor = editorService.getEditor();
+    if (!editor) return;
+
+    try {
+      const code = editorService.getValue();
+      const languageElement = document.getElementById(
+        DomElementId.LANGUAGE
+      ) as HTMLSelectElement;
+      const fileType = languageElement?.value === "cpp" ? "cpp" : "c";
+      const blob = new Blob([code], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+
+      // Create and click download link
+      Object.assign(document.createElement("a"), {
+        href: url,
+        download: `code.${fileType}`,
+      }).click();
+
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error("Failed to save file:", error);
+    }
+  },
+
+  openCodeFromFile: async (): Promise<void> => {
+    try {
+      const fileInput = Object.assign(document.createElement("input"), {
+        type: "file",
+        accept: ".c,.cpp",
+      });
+      fileInput.click();
+
+      const file = await new Promise<File | null>((resolve) => {
+        fileInput.onchange = (e) =>
+          resolve((e.target as HTMLInputElement).files?.[0] || null);
+        fileInput.oncancel = () => resolve(null);
+      });
+
+      if (!file) return;
+
+      const content = await file.text();
+      const editorService = getEditorService();
+      editorService.setValue(content);
+    } catch (error) {
+      console.error("Failed to open file:", error);
+    }
+  },
+};
+
+// View actions
+export const viewActions = {
+  toggleZenMode: (): void =>
+    document.getElementById(DomElementId.ZEN_MODE)?.click(),
+};
+
+// Action descriptions - for UI rendering
+export const actionDescriptions = {
   compile: "Compile and run",
   saveCode: "Save code to file",
   openCode: "Open code from file",
@@ -209,43 +139,40 @@ const ActionDescriptions = {
   closeOutput: "Close output panel",
 };
 
-/**
- * Create shortcut configuration based on platform
- */
-function createShortcuts(): ShortcutCategories {
-  const cmdKey = ShortcutUtils.isMac ? "meta" : "ctrl";
-  const isMac = ShortcutUtils.isMac;
+// Create shortcut configuration based on platform
+export const createShortcuts = (): ShortcutCategories => {
+  const cmdKey = isMac ? "meta" : "ctrl";
 
   // Common shortcuts that use cmd/ctrl key combinations
   const common = {
     [`${cmdKey}+Enter`]: {
-      action: Actions.ui.compile,
-      description: ActionDescriptions.compile,
+      action: uiActions.compile,
+      description: actionDescriptions.compile,
       displayKeys: isMac ? ["⌘", "return"] : ["Ctrl", "Enter"],
     },
     [`${cmdKey}+s`]: {
-      action: Actions.editor.saveCodeToFile,
-      description: ActionDescriptions.saveCode,
+      action: editorActions.saveCodeToFile,
+      description: actionDescriptions.saveCode,
       displayKeys: isMac ? ["⌘", "S"] : ["Ctrl", "S"],
     },
     [`${cmdKey}+o`]: {
-      action: Actions.editor.openCodeFromFile,
-      description: ActionDescriptions.openCode,
+      action: editorActions.openCodeFromFile,
+      description: actionDescriptions.openCode,
       displayKeys: isMac ? ["⌘", "O"] : ["Ctrl", "O"],
     },
     [`${cmdKey}+k`]: {
-      action: Actions.editor.toggleCodeFolding,
-      description: ActionDescriptions.toggleFolding,
+      action: editorActions.toggleCodeFolding,
+      description: actionDescriptions.toggleFolding,
       displayKeys: isMac ? ["⌘", "K"] : ["Ctrl", "K"],
     },
     [`${cmdKey}+p`]: {
-      action: Actions.ui.takeCodeSnapshot,
-      description: ActionDescriptions.takeSnapshot,
+      action: uiActions.takeCodeSnapshot,
+      description: actionDescriptions.takeSnapshot,
       displayKeys: isMac ? ["⌘", "P"] : ["Ctrl", "P"],
     },
     [`${cmdKey}+shift+z`]: {
-      action: Actions.view.toggleZenMode,
-      description: ActionDescriptions.zenMode,
+      action: viewActions.toggleZenMode,
+      description: actionDescriptions.zenMode,
       displayKeys: isMac ? ["⌘", "⇧", "Z"] : ["Ctrl", "Shift", "Z"],
     },
   };
@@ -253,24 +180,24 @@ function createShortcuts(): ShortcutCategories {
   // Define number action mappings only once
   const numberActions = [
     {
-      action: Actions.ui.viewAssembly,
-      description: ActionDescriptions.viewAssembly,
+      action: uiActions.viewAssembly,
+      description: actionDescriptions.viewAssembly,
     },
     {
-      action: Actions.ui.formatCode,
-      description: ActionDescriptions.formatCode,
+      action: uiActions.formatCode,
+      description: actionDescriptions.formatCode,
     },
     {
-      action: Actions.ui.styleCheck,
-      description: ActionDescriptions.styleCheck,
+      action: uiActions.styleCheck,
+      description: actionDescriptions.styleCheck,
     },
     {
-      action: Actions.ui.memoryCheck,
-      description: ActionDescriptions.memoryCheck,
+      action: uiActions.memoryCheck,
+      description: actionDescriptions.memoryCheck,
     },
     {
-      action: Actions.ui.debug,
-      description: ActionDescriptions.debug,
+      action: uiActions.debug,
+      description: actionDescriptions.debug,
     },
   ];
 
@@ -296,118 +223,97 @@ function createShortcuts(): ShortcutCategories {
   // Special keys that don't change between platforms
   const special = {
     Escape: {
-      action: () => Actions.ui.closeOutputPanel(),
-      description: ActionDescriptions.closeOutput,
+      action: () => uiActions.closeOutputPanel(),
+      description: actionDescriptions.closeOutput,
       displayKeys: ["Esc"],
     },
   };
 
   return { common, mac, other, special };
-}
+};
 
-/**
- * Shortcut manager singleton
- */
-export const ShortcutManager = (() => {
-  // State
-  const state: ShortcutState = {
-    currentOS: ShortcutUtils.isMac ? "MacOS" : "Other",
-    isMac: ShortcutUtils.isMac,
-    shortcuts: createShortcuts(),
-  };
-
-  const listeners: Array<() => void> = [];
-
-  // Core functionality
-  function handleKeyboardEvent(event: KeyboardEvent): void {
-    // Handle Escape key with priority
-    if (event.key === "Escape" && Actions.ui.closeOutputPanel()) {
-      event.preventDefault();
-      return;
-    }
-
-    // Handle Enter with modifiers
-    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      Actions.ui.compile();
-      return;
-    }
-
-    // Handle other shortcuts
-    const normalizedKey = ShortcutUtils.normalizeKey(event);
-    const { common, mac, other, special } = state.shortcuts;
-
-    // Find matching shortcut from relevant maps
-    const shortcut =
-      special[normalizedKey] ||
-      common[normalizedKey] ||
-      (state.isMac ? mac : other)[normalizedKey];
-
-    if (shortcut) {
-      event.preventDefault();
-      shortcut.action();
-    }
+// Handler for keyboard shortcuts
+export const handleKeyboardEvent = (
+  event: KeyboardEvent,
+  shortcuts: ShortcutCategories
+): void => {
+  // Handle Escape key with priority
+  if (event.key === "Escape" && uiActions.closeOutputPanel()) {
+    event.preventDefault();
+    return;
   }
 
-  // UI rendering
-  function renderShortcutsList(): void {
-    const container = DOM.get(DomElementId.SHORTCUTS_CONTENT);
-    if (!container) return;
-
-    const createListItem = ({
-      displayKeys,
-      description,
-    }: ShortcutDefinition): string =>
-      `${displayKeys
-        .map((key) => `<kbd>${key}</kbd>`)
-        .join(" + ")} - ${description}`;
-
-    const ul = document.createElement("ul");
-    const { common, special } = state.shortcuts;
-    const platformShortcuts = state.isMac
-      ? state.shortcuts.mac
-      : state.shortcuts.other;
-
-    // Render all shortcut definitions
-    [
-      ...Object.values(common),
-      ...Object.values(platformShortcuts),
-      ...Object.values(special),
-    ].forEach((shortcut) => {
-      const li = document.createElement("li");
-      li.innerHTML = createListItem(shortcut);
-      ul.appendChild(li);
-    });
-
-    container.innerHTML = "";
-    container.appendChild(ul);
+  // Handle Enter with modifiers
+  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    uiActions.compile();
+    return;
   }
 
-  // Public API
-  function initialize(): () => void {
-    renderShortcutsList();
+  // Handle other shortcuts
+  const normalizedKey = normalizeKey(event);
+  const { common, mac, other, special } = shortcuts;
 
-    document.addEventListener("keydown", handleKeyboardEvent);
+  // Find matching shortcut from relevant maps
+  const shortcut =
+    special[normalizedKey] ||
+    common[normalizedKey] ||
+    (isMac ? mac : other)[normalizedKey];
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyboardEvent);
-    };
+  if (shortcut) {
+    event.preventDefault();
+    shortcut.action();
   }
+};
 
-  return {
-    initialize,
-    getState: () => ({ ...state }),
-    subscribe: (listener: () => void) => {
-      listeners.push(listener);
-      return () => {
-        const index = listeners.indexOf(listener);
-        if (index > -1) listeners.splice(index, 1);
-      };
-    },
-  };
-})();
+// Create array of shortcut items for UI rendering
+export const createShortcutItems = (
+  shortcuts: ShortcutCategories
+): ShortcutDefinition[] => {
+  const { common, special } = shortcuts;
+  const platformShortcuts = isMac ? shortcuts.mac : shortcuts.other;
 
-// Auto-initialize
-if (typeof document !== "undefined") {
-  document.addEventListener("DOMContentLoaded", ShortcutManager.initialize);
-}
+  return [
+    ...Object.values(common),
+    ...Object.values(platformShortcuts),
+    ...Object.values(special),
+  ] as ShortcutDefinition[];
+};
+
+// Initialize shortcut listener - returns cleanup function
+export const initializeShortcuts = (): (() => void) => {
+  const shortcuts = createShortcuts();
+  const handler = (event: KeyboardEvent) =>
+    handleKeyboardEvent(event, shortcuts);
+
+  document.addEventListener("keydown", handler);
+  return () => document.removeEventListener("keydown", handler);
+};
+
+// Render shortcuts list to DOM - could be adapted to React component
+export const renderShortcutsList = (containerId: string): void => {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const shortcuts = createShortcuts();
+  const shortcutItems = createShortcutItems(shortcuts);
+
+  const createListItem = ({
+    displayKeys,
+    description,
+  }: ShortcutDefinition): string =>
+    `${displayKeys
+      .map((key) => `<kbd>${key}</kbd>`)
+      .join(" + ")} - ${description}`;
+
+  const ul = document.createElement("ul");
+
+  shortcutItems.forEach((shortcut) => {
+    const li = document.createElement("li");
+    li.innerHTML = createListItem(shortcut);
+    ul.appendChild(li);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(ul);
+};

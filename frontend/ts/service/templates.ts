@@ -2,51 +2,53 @@ import { TemplateCache } from "../types";
 import axios from "axios";
 import { getEditorService } from "./editor";
 
-// Cache object
-const cache: TemplateCache = {
-  lists: {},
-  contents: {},
+// Template state that could be converted to React state/context
+const templateState = {
+  cache: {
+    lists: {},
+    contents: {},
+  } as TemplateCache,
+  initialized: false,
+  TIMEOUT: 5000, // 5 seconds
 };
-
-// Default timeout for axios operations
-const TIMEOUT = 5000; // 5 seconds
-let initialized = false;
 
 /**
  * Load template list for a specific language
  */
-async function loadTemplateList(language: string): Promise<string[]> {
+const loadTemplateList = async (language: string): Promise<string[]> => {
   // Return cached list if available
-  if (cache.lists[language]) return cache.lists[language];
+  if (templateState.cache.lists[language])
+    return templateState.cache.lists[language];
 
   try {
     const response = await axios.get(`/api/templates/${language}`, {
-      timeout: TIMEOUT,
+      timeout: templateState.TIMEOUT,
     });
-    cache.lists[language] = response.data.list;
+    templateState.cache.lists[language] = response.data.list;
     return response.data.list;
   } catch (error: unknown) {
     console.error(`Failed to load template list for ${language}:`, error);
     return [];
   }
-}
+};
 
 /**
  * Load template content for a specific language and template name
  */
-async function loadTemplateContent(
+const loadTemplateContent = async (
   language: string,
   templateName: string
-): Promise<string> {
+): Promise<string> => {
   const cacheKey = `${language}:${templateName}`;
-  if (cache.contents[cacheKey]) return cache.contents[cacheKey];
+  if (templateState.cache.contents[cacheKey])
+    return templateState.cache.contents[cacheKey];
 
   try {
     const response = await axios.get<string>(
       `/api/templates/${language}/${encodeURIComponent(templateName)}`,
-      { timeout: TIMEOUT }
+      { timeout: templateState.TIMEOUT }
     );
-    cache.contents[cacheKey] = response.data;
+    templateState.cache.contents[cacheKey] = response.data;
     return response.data;
   } catch (error: unknown) {
     console.error(
@@ -57,14 +59,14 @@ async function loadTemplateContent(
       error instanceof Error ? error.message : "Unknown error"
     }`;
   }
-}
+};
 
 /**
  * Update template dropdown and load selected template
  */
-export async function updateTemplateList(
+export const updateTemplateList = async (
   forceLoadTemplate = false
-): Promise<void> {
+): Promise<void> => {
   const languageSelect = document.getElementById(
     "language"
   ) as HTMLSelectElement;
@@ -110,7 +112,7 @@ export async function updateTemplateList(
 
     // Load template content during initialization or when explicitly asked to load
     if (
-      !initialized ||
+      !templateState.initialized ||
       forceLoadTemplate ||
       document.activeElement === languageSelect
     ) {
@@ -121,12 +123,12 @@ export async function updateTemplateList(
     templateSelect.innerHTML = "<option>Failed to load templates</option>";
     templateSelect.disabled = false;
   }
-}
+};
 
 /**
  * Load the currently selected template
  */
-export async function loadSelectedTemplate(): Promise<void> {
+export const loadSelectedTemplate = async (): Promise<void> => {
   const editorService = getEditorService();
   const languageSelect = document.getElementById(
     "language"
@@ -156,19 +158,19 @@ export async function loadSelectedTemplate(): Promise<void> {
       }`
     );
   }
-}
+};
 
 // Event handler for language change - ensure exposed for external calls
-export function handleLanguageChange(): void {
+export const handleLanguageChange = (): void => {
   updateTemplateList(true);
-}
+};
 
 // Initialize templates on app startup but don't set up event listeners here
-export function initializeTemplates(): void {
+export const initializeTemplates = (): void => {
   updateTemplateList().then(() => {
-    initialized = true;
+    templateState.initialized = true;
   });
-}
+};
 
 // Export functions for use in other modules
 export default {

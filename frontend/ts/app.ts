@@ -1,36 +1,24 @@
 // Import utility functions
 import { takeCodeSnap } from "./service/snapshot";
 import { debounce } from "lodash-es";
-import { themeStoreInstance } from "./ui/themes";
+import { themeStore } from "./ui/themes";
 import { showNotification } from "./service/notification";
 import CompileSocketManager from "./ws/compileSocket";
 import DebugSocketManager from "./ws/debugSocket";
 import apiService from "./service/api";
-import { getEditorService, getEditorActions } from "./service/editor";
+import { getEditorService } from "./service/editor";
 import {
   handleLanguageChange,
   loadSelectedTemplate,
   initializeTemplates,
 } from "./service/templates";
-import {
-  CompileOptions,
-  CompileStateUpdater,
-  DebugStateUpdater,
-  UIState,
-  DOMElements,
-  CompilationState,
-} from "./types";
+import { CompileOptions, DOMElements, DomElementId } from "./types";
+import { initializeShortcuts, renderShortcutsList } from "./service/shortcuts";
 
-// ------------------------------------------------------------
-// Services - These will become React hooks/services
-// ------------------------------------------------------------
+// DOM Utilities - Will become React hooks/state
 
-/**
- * DOM Service - handles DOM interactions
- * In React, these would be handled by component state and refs
- */
-export class DOMService {
-  static getElements(): DOMElements {
+export const domUtils = {
+  getElements: (): DOMElements => {
     return {
       template: document.getElementById("template"),
       vimMode: document.getElementById("vimMode") as HTMLInputElement,
@@ -51,69 +39,64 @@ export class DOMService {
         "optimization"
       ) as HTMLSelectElement,
     };
-  }
+  },
 
-  static createLoadingElement(text: string): HTMLDivElement {
-    const loadingDiv = document.createElement("div");
-    loadingDiv.className = "loading";
-    loadingDiv.textContent = text;
-    return loadingDiv;
-  }
-
-  static showLoadingInOutput(text: string): void {
+  showLoadingInOutput: (text: string): void => {
     const output = document.getElementById("output");
     if (output) {
       output.innerHTML = `<div class='loading'>${text}</div>`;
     }
-  }
+  },
 
-  static setOutput(html: string): void {
+  setOutput: (html: string): void => {
     const output = document.getElementById("output");
     if (output) {
       output.innerHTML = html;
     }
-  }
+  },
 
-  static showOutputPanel(): void {
+  clearOutput: (): void => {
+    domUtils.setOutput("");
+  },
+
+  showOutputPanel: (): void => {
     const outputPanel = document.getElementById("outputPanel");
     if (!outputPanel) return;
 
     const isZenMode = document.body.classList.contains("zen-mode-active");
-
-    // Display the panel
     outputPanel.style.display = "flex";
     document.querySelector(".editor-panel")?.classList.add("with-output");
 
-    // If in Zen Mode, we need special positioning
     if (isZenMode) {
-      // Make sure editor refreshes to adjust for new layout
       getEditorService().refresh();
     }
-  }
+  },
 
-  static hideOutputPanel(): void {
+  hideOutputPanel: (): void => {
     const outputPanel = document.getElementById("outputPanel");
     if (!outputPanel) return;
 
     outputPanel.style.display = "none";
     document.querySelector(".editor-panel")?.classList.remove("with-output");
 
-    // Clear output content when hiding the panel
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = "";
-    }
+    // Clear output content when hiding
+    domUtils.clearOutput();
 
-    // If in Zen Mode, make sure we reset any inline styles
     const isZenMode = document.body.classList.contains("zen-mode-active");
     if (isZenMode) {
-      // Make sure editor refreshes to adjust for new layout
       getEditorService().refresh();
     }
-  }
+  },
 
-  static getCompileOptions(): CompileOptions {
-    const elements = this.getElements();
+  refreshEditor: (): void => {
+    setTimeout(() => {
+      const editorService = getEditorService();
+      editorService.refreshAll();
+    }, 10);
+  },
+
+  getCompileOptions: (): CompileOptions => {
+    const elements = domUtils.getElements();
     const editorService = getEditorService();
     return {
       code: editorService.getValue(),
@@ -121,221 +104,70 @@ export class DOMService {
       compiler: elements.compiler?.value || "gcc",
       optimization: elements.optimization?.value || "O0",
     };
-  }
-}
+  },
 
-// ------------------------------------------------------------
-// State Management - Will become React Context/Redux
-// ------------------------------------------------------------
+  // Error output formatter
+  formatErrorOutput: (error: any): string => {
+    return `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+  },
 
-/**
- * Store - React-like state management
- * In React, this would be replaced by useState, useReducer, or Redux
- */
-export class AppState {
-  private state: UIState;
-  private listeners: Array<(state: UIState) => void>;
+  // Render shortcuts list in the DOM
+  renderShortcutsList: (): void => {
+    renderShortcutsList(DomElementId.SHORTCUTS_CONTENT);
+  },
+};
 
-  constructor() {
-    this.state = {
-      isOutputVisible: false,
-      isLoading: false,
-      loadingMessage: "",
-      compilationState: CompilationState.IDLE,
-      theme: localStorage.getItem("cincout-theme") || "default",
-      vimMode: localStorage.getItem("cincout-vim-mode") === "true",
-      isDebuggingActive: false,
-    };
-    this.listeners = [];
-  }
-
-  setState(partialState: Partial<UIState>): void {
-    this.state = { ...this.state, ...partialState };
-    this.notifyListeners();
-  }
-
-  getState(): UIState {
-    return { ...this.state };
-  }
-
-  subscribe(listener: (state: UIState) => void): () => void {
-    this.listeners.push(listener);
-    return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
-    };
-  }
-
-  private notifyListeners(): void {
-    this.listeners.forEach((listener) => listener(this.state));
-  }
-}
-
-// UI State adapter for CompileSocketManager
-class CompileStateAdapter implements CompileStateUpdater {
-  private appState: AppState;
-
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
-
-  updateCompilationState(state: string): void {
-    switch (state) {
-      case "idle":
-        this.appState.setState({
-          compilationState: CompilationState.IDLE,
-        });
-        break;
-      case "compiling":
-        this.appState.setState({
-          compilationState: CompilationState.COMPILING,
-        });
-        break;
-      case "running":
-        this.appState.setState({
-          compilationState: CompilationState.RUNNING,
-        });
-        break;
-    }
-  }
-
-  updateProcessRunning(running: boolean): void {
-    this.appState.setState({ isProcessRunning: running });
-  }
-
-  showOutput(): void {
-    DOMService.showOutputPanel();
-    this.appState.setState({ isOutputVisible: true });
-  }
-
-  refreshEditor(): void {
-    setTimeout(() => getEditorService().refresh(), 10);
-  }
-}
-
-// UI State adapter for DebugSocketManager
-class DebugStateAdapter implements DebugStateUpdater {
-  private appState: AppState;
-
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
-
-  updateDebugState(state: string): void {
-    switch (state) {
-      case "idle":
-        this.appState.setState({
-          compilationState: CompilationState.IDLE,
-        });
-        break;
-      case "compiling":
-        this.appState.setState({
-          compilationState: CompilationState.COMPILING,
-        });
-        break;
-      case "running":
-        this.appState.setState({
-          compilationState: CompilationState.RUNNING,
-        });
-        break;
-    }
-  }
-
-  setDebuggingActive(active: boolean): void {
-    this.appState.setState({ isDebuggingActive: active });
-  }
-
-  showOutput(): void {
-    DOMService.showOutputPanel();
-    this.appState.setState({ isOutputVisible: true });
-  }
-
-  refreshEditor(): void {
-    setTimeout(() => getEditorService().refresh(), 10);
-  }
-}
-
-// ------------------------------------------------------------
-// Feature Controllers - Will become React components/custom hooks
-// ------------------------------------------------------------
-
-/**
- * CodeActionsController - Manages code-related actions
- * In React, this would become custom hooks (useCodeActions)
- */
-export class CodeActionsController {
-  private appState: AppState;
-  private compileSocketManager: CompileSocketManager | null = null;
-
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
-
-  setCompileSocketManager(manager: CompileSocketManager): void {
-    this.compileSocketManager = manager;
-  }
-
-  async viewAssembly(options: CompileOptions): Promise<void> {
+// Code Actions - Will become React hooks
+export const codeActions = {
+  viewAssembly: async (options: CompileOptions): Promise<void> => {
     const editorService = getEditorService();
 
-    // Show output panel
-    DOMService.showOutputPanel();
-    DOMService.showLoadingInOutput("Generating assembly code...");
+    domUtils.showOutputPanel();
+    domUtils.showLoadingInOutput("Generating assembly code...");
 
     try {
       const data = await apiService.fetchAssembly(options);
 
-      // Create a container for assembly display
       const output = document.getElementById("output");
       if (output) {
         output.innerHTML = '<div id="assembly-view-container"></div>';
         const container = document.getElementById("assembly-view-container");
 
-        // Use the assemblyView to display the assembly code
         const assemblyView = editorService.getAssemblyView();
         if (assemblyView && container) {
           editorService.setAssemblyValue(data.trim());
-          // Append the CodeMirror instance to our container
           container.appendChild(assemblyView.getWrapperElement());
           setTimeout(() => assemblyView.refresh(), 10);
-        } else {
-          // Fallback if the CodeMirror instance is not available
-          output.innerHTML = `<pre class="assembly-output">${data.trim()}</pre>`;
         }
       }
     } catch (error) {
       console.error("Assembly view error:", error);
-      DOMService.setOutput(
-        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`
-      );
+      domUtils.setOutput(domUtils.formatErrorOutput(error));
     }
-  }
+  },
 
-  async runMemCheck(options: CompileOptions): Promise<void> {
-    // Show output panel
-    DOMService.showOutputPanel();
-    DOMService.showLoadingInOutput("Running memory check...");
+  runMemCheck: async (options: CompileOptions): Promise<void> => {
+    domUtils.showOutputPanel();
+    domUtils.showLoadingInOutput("Running memory check...");
 
     try {
       const data = await apiService.runMemCheck(options);
-      DOMService.setOutput(
+      domUtils.setOutput(
         `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`
       );
     } catch (error) {
       console.error("Memcheck error:", error);
-      DOMService.setOutput(
-        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`
-      );
+      domUtils.setOutput(domUtils.formatErrorOutput(error));
     }
-  }
+  },
 
-  async formatCode(code: string, lang: string): Promise<void> {
+  formatCode: async (code: string, lang: string): Promise<void> => {
     const editorService = getEditorService();
     const cursor = editorService.getCursor();
 
     try {
       const data = await apiService.formatCode(code, lang);
 
-      // Apply formatting changes while preserving editor state
       const formattedData = data.replace(/^\n+/, "").replace(/\n+$/, "");
       const scrollInfo = editorService.getScrollInfo();
 
@@ -348,7 +180,6 @@ export class CodeActionsController {
       }
       editorService.refresh();
 
-      // Show success notification
       showNotification("success", "Code formatted successfully", 2000, {
         top: "50%",
         left: "50%",
@@ -360,17 +191,15 @@ export class CodeActionsController {
         left: "50%",
       });
     }
-  }
+  },
 
-  async runStyleCheck(code: string, lang: string): Promise<void> {
-    // Show output panel
-    DOMService.showOutputPanel();
-    DOMService.showLoadingInOutput("Running style check...");
+  runStyleCheck: async (code: string, lang: string): Promise<void> => {
+    domUtils.showOutputPanel();
+    domUtils.showLoadingInOutput("Running style check...");
 
     try {
       const data = await apiService.runStyleCheck(code, lang);
 
-      // Process and format the output
       const lines = data.split("\n");
       const formattedLines = lines
         .map((line) => {
@@ -381,316 +210,221 @@ export class CodeActionsController {
         })
         .filter((line) => line);
 
-      DOMService.setOutput(
+      domUtils.setOutput(
         `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join(
           "\n"
         )}</div>`
       );
     } catch (error) {
-      DOMService.setOutput(
-        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`
-      );
+      domUtils.setOutput(domUtils.formatErrorOutput(error));
     }
-  }
-}
+  },
+};
 
-/**
- * DebugController - Manages GDB debugging actions
- * In React, this would become custom hooks (useDebugActions)
- */
-export class DebugController {
-  private appState: AppState;
-  private debugSocketManager: DebugSocketManager | null = null;
-
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
-
-  setDebugSocketManager(manager: DebugSocketManager): void {
-    this.debugSocketManager = manager;
-  }
-
-  async startDebugSession(options: CompileOptions): Promise<void> {
-    if (!this.debugSocketManager) return;
-
-    await this.debugSocketManager.startDebugSession(options);
-  }
-
-  async sendDebugCommand(command: string): Promise<void> {
-    if (!this.debugSocketManager) return;
-
-    await this.debugSocketManager.sendDebugCommand(command);
-  }
-
-  cleanup(): void {
-    if (!this.debugSocketManager) return;
-
-    this.debugSocketManager.cleanup();
-  }
-}
-
-/**
- * EditorSettingsController - Manages editor settings
- * In React, this would become a custom hook (useEditorSettings)
- */
-export class EditorSettingsController {
-  private appState: AppState;
-
-  constructor(appState: AppState) {
-    this.appState = appState;
-  }
-
-  setTheme(theme: string): void {
-    this.appState.setState({ theme });
+// Settings Manager - Will become React context/state
+export const editorSettings = {
+  setTheme: (theme: string): void => {
     localStorage.setItem("cincout-theme", theme);
-    themeStoreInstance.setTheme(theme);
-  }
+    themeStore.setTheme(theme);
+  },
 
-  setVimMode(enabled: boolean): void {
-    this.appState.setState({ vimMode: enabled });
+  setVimMode: (enabled: boolean): void => {
     localStorage.setItem("cincout-vim-mode", enabled.toString());
     getEditorService().setOption("keyMap", enabled ? "vim" : "default");
-  }
-}
+  },
 
-// ------------------------------------------------------------
-// Main Application Class
-// ------------------------------------------------------------
+  loadSavedSettings: (): void => {
+    const elements = domUtils.getElements();
 
-/**
- * Main App Controller
- * In React, this would be App component
- */
-export class CinCoutApp {
-  private appState: AppState;
-  private compileSocketManager: CompileSocketManager;
-  private debugSocketManager: DebugSocketManager;
-  private codeActions: CodeActionsController;
-  private debugController: DebugController;
-  private editorSettings: EditorSettingsController;
-
-  constructor() {
-    // Initialize state
-    this.appState = new AppState();
-
-    // Create state adapters
-    const compileStateAdapter = new CompileStateAdapter(this.appState);
-    const debugStateAdapter = new DebugStateAdapter(this.appState);
-
-    // Initialize managers with adapters
-    this.compileSocketManager = new CompileSocketManager(compileStateAdapter);
-    this.debugSocketManager = new DebugSocketManager(debugStateAdapter);
-
-    // Initialize controllers with managers
-    this.codeActions = new CodeActionsController(this.appState);
-    this.codeActions.setCompileSocketManager(this.compileSocketManager);
-
-    this.debugController = new DebugController(this.appState);
-    this.debugController.setDebugSocketManager(this.debugSocketManager);
-
-    this.editorSettings = new EditorSettingsController(this.appState);
-  }
-
-  init(): void {
-    document.addEventListener("DOMContentLoaded", () => {
-      initializeTemplates();
-      this.setupEventListeners();
-    });
-  }
-
-  private setupEventListeners(): void {
-    // Get all DOM elements once
-    const elements = DOMService.getElements();
-
-    // Setup event listeners for all elements
-    this.setupTemplateListeners(elements);
-    this.setupEditorActionListeners(elements);
-    this.setupCompilationListeners(elements);
-    this.setupSettingsListeners(elements);
-  }
-
-  private setupTemplateListeners(elements: DOMElements): void {
-    // Template change handler
-    if (elements.template) {
-      elements.template.addEventListener("change", () => {
-        loadSelectedTemplate();
-      });
-    }
-
-    // Language change handler
-    if (elements.language) {
-      elements.language.addEventListener("change", () => {
-        handleLanguageChange();
-      });
-    }
-  }
-
-  private setupEditorActionListeners(elements: DOMElements): void {
-    // Code snapshot button
-    if (elements.codesnap) {
-      elements.codesnap.addEventListener("click", debounce(takeCodeSnap, 300));
-    }
-
-    // Format button
-    if (elements.format) {
-      elements.format.addEventListener(
-        "click",
-        debounce(() => {
-          const editorService = getEditorService();
-          const code = editorService.getValue();
-          const lang = elements.language?.value || "c";
-          this.codeActions.formatCode(code, lang);
-        }, 300)
-      );
-    }
-
-    // Style check button
-    if (elements.styleCheck) {
-      elements.styleCheck.addEventListener(
-        "click",
-        debounce(() => {
-          const editorService = getEditorService();
-          const code = editorService.getValue();
-          const lang = elements.language?.value || "c";
-          this.codeActions.runStyleCheck(code, lang);
-        }, 300)
-      );
-    }
-
-    // Zen Mode button
-    const zenModeButton = document.getElementById("zenMode");
-    if (zenModeButton) {
-      zenModeButton.addEventListener("click", () => {
-        const actions = getEditorActions();
-        if (actions && actions.toggleZenMode) {
-          actions.toggleZenMode();
-        } else {
-          // Fallback implementation if Actions is not available
-          const editorService = getEditorService();
-          const editor = editorService.getEditor();
-          if (!editor) return;
-
-          const editorWrapper = editor.getWrapperElement();
-          editorWrapper.classList.toggle("zen-mode");
-          document.body.classList.toggle("zen-mode-active");
-          document
-            .querySelector(".container")
-            ?.classList.toggle("zen-container");
-          document.querySelector(".header")?.classList.toggle("hidden-zen");
-          document
-            .querySelector(".main-container")
-            ?.classList.toggle("zen-mode-container");
-          document
-            .querySelector(".editor-panel")
-            ?.classList.toggle("zen-mode-panel");
-          document
-            .querySelector(".panel-header")
-            ?.classList.toggle("zen-mode-minimized");
-
-          // Toggle icon
-          const icon = zenModeButton.querySelector("i");
-          if (icon) {
-            icon.classList.toggle("fa-expand");
-            icon.classList.toggle("fa-compress");
-          }
-
-          // Force editor refresh
-          setTimeout(() => editorService.refresh(), 100);
-        }
-      });
-    }
-  }
-
-  private setupCompilationListeners(elements: DOMElements): void {
-    // Compile button
-    if (elements.compile) {
-      elements.compile.addEventListener(
-        "click",
-        debounce(() => {
-          const options = DOMService.getCompileOptions();
-          this.compileSocketManager.compile(options);
-        }, 300)
-      );
-    }
-
-    // Debug button
-    if (elements.debug) {
-      elements.debug.addEventListener(
-        "click",
-        debounce(() => {
-          const options = DOMService.getCompileOptions();
-          this.debugController.startDebugSession(options);
-        }, 300)
-      );
-    }
-
-    // Close output panel
-    if (elements.closeOutput) {
-      elements.closeOutput.addEventListener("click", () => {
-        // Clean up both socket managers
-        this.compileSocketManager.cleanup();
-        this.debugController.cleanup();
-        DOMService.hideOutputPanel();
-        this.appState.setState({ isOutputVisible: false });
-      });
-    }
-
-    // View Assembly button
-    if (elements.viewAssembly) {
-      elements.viewAssembly.addEventListener(
-        "click",
-        debounce(() => {
-          const options = DOMService.getCompileOptions();
-          this.codeActions.viewAssembly(options);
-        }, 300)
-      );
-    }
-
-    // Memory check button
-    if (elements.memcheck) {
-      elements.memcheck.addEventListener(
-        "click",
-        debounce(() => {
-          const options = DOMService.getCompileOptions();
-          this.codeActions.runMemCheck(options);
-        }, 300)
-      );
-    }
-  }
-
-  private setupSettingsListeners(elements: DOMElements): void {
-    // Theme selection
+    // Load theme
     if (elements.themeSelect) {
-      elements.themeSelect.addEventListener("change", () => {
-        if (elements.themeSelect) {
-          this.editorSettings.setTheme(elements.themeSelect.value);
-        }
-      });
-
-      // Initialize with saved theme
-      if (elements.themeSelect) {
-        elements.themeSelect.value = this.appState.getState().theme;
-        this.editorSettings.setTheme(elements.themeSelect.value);
-      }
+      const savedTheme = localStorage.getItem("cincout-theme") || "default";
+      elements.themeSelect.value = savedTheme;
+      editorSettings.setTheme(savedTheme);
     }
 
-    // Vim mode toggle
+    // Load vim mode
     if (elements.vimMode) {
-      elements.vimMode.addEventListener("change", () => {
-        if (elements.vimMode) {
-          this.editorSettings.setVimMode(elements.vimMode.checked);
-        }
-      });
+      const savedVimMode = localStorage.getItem("cincout-vim-mode") === "true";
+      elements.vimMode.checked = savedVimMode;
+      editorSettings.setVimMode(savedVimMode);
+    }
+  },
+};
 
-      // Initialize with saved vim mode
-      if (elements.vimMode) {
-        elements.vimMode.checked = this.appState.getState().vimMode;
-        this.editorSettings.setVimMode(elements.vimMode.checked);
-      }
+// UI Actions - Will become React components
+const toggleZenMode = (): void => {
+  const editorService = getEditorService();
+  const editor = editorService.getEditor();
+  if (!editor) return;
+
+  const editorWrapper = editor.getWrapperElement();
+  const isZenMode = editorWrapper.classList.contains("zen-mode");
+  const outputPanel = document.getElementById("outputPanel");
+
+  // Toggle zen mode classes
+  const elements = {
+    editor: editorWrapper,
+    body: document.body,
+    container: document.querySelector(".container"),
+    header: document.querySelector(".header"),
+    mainContainer: document.querySelector(".main-container"),
+    editorPanel: document.querySelector(".editor-panel"),
+    panelHeader: document.querySelector(".panel-header"),
+  };
+
+  elements.editor.classList.toggle("zen-mode");
+  elements.body.classList.toggle("zen-mode-active");
+  elements.container?.classList.toggle("zen-container");
+  elements.header?.classList.toggle("hidden-zen");
+  elements.mainContainer?.classList.toggle("zen-mode-container");
+  elements.editorPanel?.classList.toggle("zen-mode-panel");
+  elements.panelHeader?.classList.toggle("zen-mode-minimized");
+
+  // Manage output panel in zen mode
+  if (outputPanel && outputPanel.style.display !== "none") {
+    if (isZenMode) {
+      // Reset output panel styles
+      outputPanel.style.position = "";
+      outputPanel.style.top = "";
+      outputPanel.style.right = "";
+      outputPanel.style.bottom = "";
+      outputPanel.style.width = "";
+      outputPanel.style.zIndex = "";
     }
   }
-}
 
-// Initialize app on load
-const app = new CinCoutApp();
-app.init();
+  // Update button icon
+  const zenButton = document.getElementById("zenMode")?.querySelector("i");
+  if (zenButton) {
+    zenButton.classList.toggle("fa-expand");
+    zenButton.classList.toggle("fa-compress");
+  }
+
+  // Force editor refresh
+  setTimeout(() => editorService.refresh(), 100);
+};
+
+// Application Initialization - Will become React components
+export const initApp = () => {
+  // Initialize socket managers with shared configuration
+  const socketConfig = {
+    showOutput: domUtils.showOutputPanel.bind(domUtils),
+    refreshEditor: domUtils.refreshEditor.bind(domUtils),
+  };
+
+  // Create socket managers
+  const compileSocketManager = new CompileSocketManager(socketConfig);
+  const debugSocketManager = new DebugSocketManager(socketConfig);
+
+  // Debug actions
+  const debugActions = {
+    startDebugSession: async (options: CompileOptions): Promise<void> => {
+      await debugSocketManager.startDebugSession(options);
+    },
+
+    cleanup: (): void => {
+      debugSocketManager.cleanup();
+    },
+  };
+
+  // Set up all event listeners
+  const setupEventListeners = () => {
+    const elements = domUtils.getElements();
+
+    // Initialize shortcuts system
+    initializeShortcuts();
+    domUtils.renderShortcutsList();
+
+    // Template and language handlers
+    elements.template?.addEventListener("change", loadSelectedTemplate);
+    elements.language?.addEventListener("change", handleLanguageChange);
+
+    // Code action buttons
+    elements.codesnap?.addEventListener("click", debounce(takeCodeSnap, 300));
+
+    elements.format?.addEventListener(
+      "click",
+      debounce(() => {
+        const editorService = getEditorService();
+        const code = editorService.getValue();
+        const lang = elements.language?.value || "c";
+        codeActions.formatCode(code, lang);
+      }, 300)
+    );
+
+    elements.styleCheck?.addEventListener(
+      "click",
+      debounce(() => {
+        const editorService = getEditorService();
+        const code = editorService.getValue();
+        const lang = elements.language?.value || "c";
+        codeActions.runStyleCheck(code, lang);
+      }, 300)
+    );
+
+    // Zen Mode
+    const zenModeButton = document.getElementById("zenMode");
+    zenModeButton?.addEventListener("click", toggleZenMode);
+
+    // Compilation buttons
+    elements.compile?.addEventListener(
+      "click",
+      debounce(() => {
+        const options = domUtils.getCompileOptions();
+        compileSocketManager.compile(options);
+      }, 300)
+    );
+
+    elements.debug?.addEventListener(
+      "click",
+      debounce(() => {
+        const options = domUtils.getCompileOptions();
+        debugActions.startDebugSession(options);
+      }, 300)
+    );
+
+    elements.closeOutput?.addEventListener("click", () => {
+      compileSocketManager.cleanup();
+      debugActions.cleanup();
+      domUtils.hideOutputPanel();
+    });
+
+    elements.viewAssembly?.addEventListener(
+      "click",
+      debounce(() => {
+        const options = domUtils.getCompileOptions();
+        codeActions.viewAssembly(options);
+      }, 300)
+    );
+
+    elements.memcheck?.addEventListener(
+      "click",
+      debounce(() => {
+        const options = domUtils.getCompileOptions();
+        codeActions.runMemCheck(options);
+      }, 300)
+    );
+
+    // Settings
+    elements.themeSelect?.addEventListener("change", () => {
+      editorSettings.setTheme(elements.themeSelect?.value || "default");
+    });
+
+    elements.vimMode?.addEventListener("change", () => {
+      editorSettings.setVimMode(!!elements.vimMode?.checked);
+    });
+
+    // Load saved settings
+    editorSettings.loadSavedSettings();
+  };
+
+  // Initialize the application when DOM is loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    initializeTemplates();
+    setupEventListeners();
+  });
+};
+
+// Start the application
+initApp();

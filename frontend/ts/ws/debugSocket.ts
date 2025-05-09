@@ -1,9 +1,9 @@
 /**
  * DebugSocket - Module handling GDB debugging-related Socket.IO communication
  */
-import { getTerminalService } from "./terminal";
-import { CompileOptions, DebugStateUpdater } from "./types";
-import { socketManager, SocketEvents } from "./websocket";
+import { getTerminalService } from "../service/terminal";
+import { CompileOptions, DebugStateUpdater } from "../types";
+import { socketManager, SocketEvents } from "./webSocketManager";
 
 /**
  * DebugSocketManager handles the Socket.IO communication for GDB debugging

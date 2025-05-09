@@ -2,7 +2,7 @@
  * API Service - handles all API calls
  */
 import axios from "axios";
-import { CompileOptions } from "./types";
+import { CompileOptions } from "../types";
 
 /**
  * API Service Implementation

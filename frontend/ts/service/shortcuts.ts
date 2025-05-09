@@ -4,7 +4,7 @@ import {
   ShortcutDefinition,
   ShortcutCategories,
   ShortcutState,
-} from "./types";
+} from "../types";
 import { getEditorService } from "./editor";
 
 /**

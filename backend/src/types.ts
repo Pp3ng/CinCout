@@ -175,43 +175,10 @@ export interface WebSocketMessage {
  */
 export interface SessionSocket extends Socket {
   sessionId: string;
-  isAlive?: boolean; // For heartbeat checking
+  isAlive?: boolean;
+  id: string;
 }
 
-/**
- * Socket event types enum
- */
-export enum SocketEvents {
-  // Connection lifecycle events
-  CONNECT = "connect",
-  DISCONNECT = "disconnect",
-
-  // Compilation events
-  COMPILE = "compile",
-  COMPILING = "compiling",
-  COMPILE_SUCCESS = "compile_success",
-  COMPILE_ERROR = "compile_error",
-
-  // Execution events
-  OUTPUT = "output",
-  INPUT = "input",
-  EXIT = "exit",
-
-  // Session management
-  SESSION_CREATED = "session_created",
-  CLEANUP = "cleanup",
-  CLEANUP_COMPLETE = "cleanup_complete",
-
-  // Error handling
-  ERROR = "error",
-
-  // GDB Debugging events
-  DEBUG_START = "debug_start",
-  DEBUG_COMMAND = "debug_command",
-  DEBUG_RESPONSE = "debug_response",
-  DEBUG_ERROR = "debug_error",
-  DEBUG_EXIT = "debug_exit",
-}
 
 // ==========================================
 // Service Interfaces - For Dependency Injection

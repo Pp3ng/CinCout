@@ -1,7 +1,7 @@
 // Import types from centralized type definition
-import { PanelState } from "./types";
-import { getEditorService } from "./editor";
-import { WebSocketManager } from "./websocket";
+import { PanelState } from "../types";
+import { getEditorService } from "../service/editor";
+import { WebSocketManager } from "../ws/webSocketManager";
 
 // Component structure designed from React perspective
 class LayoutManager {

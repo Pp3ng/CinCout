@@ -6,13 +6,12 @@ import * as pty from "node-pty";
 import { DirResult } from "tmp";
 import { v4 as uuidv4 } from "uuid";
 import { Socket } from "socket.io";
+import { ISessionService, Session, SessionSocket } from "../types";
 import {
-  ISessionService,
-  Session,
-  SessionSocket,
+  socketEvents,
+  webSocketManager,
   SocketEvents,
-} from "../types";
-import { socketEvents, webSocketManager } from "./webSocketHandler";
+} from "../ws/webSocketManager";
 
 /**
  * Session Service Implementation
@@ -38,11 +37,18 @@ export class SessionService implements ISessionService {
    */
   initSessionService(): void {
     // Clean up sessions when sockets disconnect
-    socketEvents.on("socket-disconnect", ({ sessionId }) => {
-      if (sessionId && this.sessions.has(sessionId)) {
-        this.terminateSession(sessionId);
+    socketEvents.on(
+      "socket-disconnect",
+      ({ sessionId, socketId }: { sessionId: string; socketId: string }) => {
+        if (sessionId && this.sessions.has(sessionId)) {
+          const session = this.sessions.get(sessionId);
+
+          if (session && (!session.socketId || session.socketId === socketId)) {
+            this.terminateSession(sessionId);
+          }
+        }
       }
-    });
+    );
 
     // Set up interval to clean up stale sessions
     if (this.cleanupInterval) {

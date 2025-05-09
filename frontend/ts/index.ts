@@ -16,20 +16,19 @@ import "codemirror/addon/fold/brace-fold";
 import "codemirror/addon/fold/comment-fold";
 import "codemirror/addon/hint/show-hint";
 
-import { showNotification } from "./utils";
+import { showNotification } from "./service/notification";
 
-import "./themes"; // Theme functionality
-import "./templates"; // Code templates
-import "./layout"; // Layout management
-import "./selector"; // UI selection handling
-import "./shortcuts"; // Keyboard shortcuts
-import "./websocket"; // WebSocket communication
-import "./compileSocket"; // Compilation WebSocket handling
-import "./terminal"; // Terminal functionality
-import "./handlers"; // Event handlers
-import "./editor"; // Main editor functionality (depends on most other modules)
+import "./ui/themes";
+import "./service/templates";
+import "./ui/layout";
+import "./ui/selector";
+import "./service/shortcuts";
+import "./ws/webSocketManager";
+import "./ws/compileSocket";
+import "./service/terminal";
+import "./service/editor";
+import "./app";
 
-// Easter Egg
 document.addEventListener("DOMContentLoaded", () => {
   const el = document.getElementById("title-easter-egg");
   if (!el) return;

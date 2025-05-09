@@ -1,5 +1,5 @@
 // Custom Select Component
-import { SelectOption } from "./types";
+import { SelectOption } from "../types";
 
 class CustomSelect {
   private container: HTMLElement;

@@ -1,9 +1,9 @@
 /**
  * CompileSocket - Module handling compilation-related Socket.IO communication
  */
-import { getTerminalService } from "./terminal";
-import { CompileOptions, CompileStateUpdater } from "./types";
-import { socketManager, SocketEvents } from "./websocket";
+import { getTerminalService } from "../service/terminal";
+import { CompileOptions, CompileStateUpdater } from "../types";
+import { socketManager, SocketEvents } from "./webSocketManager";
 
 /**
  * CompileSocketManager handles the Socket.IO communication for code compilation

@@ -1,16 +1,17 @@
 // Import utility functions
-import { takeCodeSnap, showNotification } from "./utils";
+import { takeCodeSnap } from "./service/snapshot";
 import { debounce } from "lodash-es";
-import { themeStoreInstance } from "./themes";
-import CompileSocketManager from "./compileSocket";
-import DebugSocketManager from "./debugSocket";
-import apiService from "./apiService";
-import { getEditorService, getEditorActions } from "./editor";
+import { themeStoreInstance } from "./ui/themes";
+import { showNotification } from "./service/notification";
+import CompileSocketManager from "./ws/compileSocket";
+import DebugSocketManager from "./ws/debugSocket";
+import apiService from "./service/api";
+import { getEditorService, getEditorActions } from "./service/editor";
 import {
   handleLanguageChange,
   loadSelectedTemplate,
   initializeTemplates,
-} from "./templates";
+} from "./service/templates";
 import {
   CompileOptions,
   CompileStateUpdater,

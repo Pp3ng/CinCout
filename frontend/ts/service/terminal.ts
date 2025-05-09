@@ -1,7 +1,7 @@
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { TerminalDomElements, TerminalOptions } from "./types";
-import { socketManager, SocketEvents } from "./websocket";
+import { TerminalDomElements, TerminalOptions } from "../types";
+import { socketManager, SocketEvents } from "../ws/webSocketManager";
 
 // Import the CSS with the correct path for the new @xterm package
 import "@xterm/xterm/css/xterm.css";
@@ -11,7 +11,7 @@ import "@xterm/xterm/css/xterm.css";
  */
 export class TerminalService {
   private static instance: TerminalService;
-  
+
   // Component state
   private terminal: Terminal | null = null;
   private fitAddon: FitAddon | null = null;

@@ -1,6 +1,6 @@
 // Socket.IO communication module
 import { io, Socket } from "socket.io-client";
-import { CompilationState } from "./types";
+import { CompilationState } from "../types";
 
 // Create a strongly-typed event system matching backend
 export enum SocketEvents {

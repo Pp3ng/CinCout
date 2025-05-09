@@ -1,4 +1,4 @@
-import { TemplateCache } from "./types";
+import { TemplateCache } from "../types";
 import axios from "axios";
 import { getEditorService } from "./editor";
 
@@ -62,7 +62,9 @@ async function loadTemplateContent(
 /**
  * Update template dropdown and load selected template
  */
-export async function updateTemplateList(forceLoadTemplate = false): Promise<void> {
+export async function updateTemplateList(
+  forceLoadTemplate = false
+): Promise<void> {
   const languageSelect = document.getElementById(
     "language"
   ) as HTMLSelectElement;
@@ -107,7 +109,11 @@ export async function updateTemplateList(forceLoadTemplate = false): Promise<voi
     templateSelect.selectedIndex = helloWorldIndex >= 0 ? helloWorldIndex : 0;
 
     // Load template content during initialization or when explicitly asked to load
-    if (!initialized || forceLoadTemplate || document.activeElement === languageSelect) {
+    if (
+      !initialized ||
+      forceLoadTemplate ||
+      document.activeElement === languageSelect
+    ) {
       await loadSelectedTemplate();
     }
   } catch (error: unknown) {
@@ -168,5 +174,5 @@ export function initializeTemplates(): void {
 export default {
   loadSelectedTemplate,
   handleLanguageChange,
-  initializeTemplates
+  initializeTemplates,
 };

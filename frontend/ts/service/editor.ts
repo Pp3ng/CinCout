@@ -1,5 +1,5 @@
 import CodeMirror from "codemirror";
-import { EditorInstances } from "./types";
+import { EditorInstances } from "../types";
 
 export class EditorService {
   private static instance: EditorService;
@@ -64,7 +64,10 @@ export class EditorService {
     }
   }
 
-  setOption<K extends keyof CodeMirror.EditorConfiguration>(key: K, value: CodeMirror.EditorConfiguration[K]): void {
+  setOption<K extends keyof CodeMirror.EditorConfiguration>(
+    key: K,
+    value: CodeMirror.EditorConfiguration[K]
+  ): void {
     if (this.editor) {
       this.editor.setOption(key, value);
     }
@@ -181,12 +184,11 @@ export const getEditorActions = (): EditorActions | null => {
 const initEditors = (): void => {
   try {
     const editorInstances = setupEditors();
-    
+
     const editorService = EditorService.getInstance();
     editorService.setEditors(editorInstances);
 
     setupFontZoomHandler(editorInstances.editor, editorInstances.assemblyView);
-    
   } catch (e) {
     console.error("Editor setup failed:", e);
   }

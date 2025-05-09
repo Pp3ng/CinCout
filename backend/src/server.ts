@@ -19,7 +19,7 @@ import { Context } from "koa";
 import { AppError } from "./types";
 
 // Routes & WebSockets
-import { setupCompileSocketHandlers } from "./ws/compile";
+import { setupSocketHandlers } from "./ws/webSocketManager";
 import formatRouter from "./routes/format";
 import styleCheckRouter from "./routes/styleCheck";
 import templatesRouter from "./routes/templates";
@@ -134,7 +134,7 @@ function startWorker() {
   server.headersTimeout = 65 * 1000; // Headers timeout (65 seconds)
 
   // Setup Socket.IO handlers
-  setupCompileSocketHandlers(server);
+  setupSocketHandlers(server);
 
   // Set up main router
   const apiRouter = new Router({ prefix: "/api" });

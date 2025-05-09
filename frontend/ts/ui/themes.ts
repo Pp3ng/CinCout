@@ -9,14 +9,14 @@ import "codemirror/theme/seti.css";
 import "codemirror/theme/the-matrix.css";
 
 // Import theme definitions from JSON file
-import themeDefinitions from "../config/themes.json";
+import themeDefinitions from "../../config/themes.json";
 
 // Import types from centralized types file
-import { ThemeMap, Theme, TerminalTheme } from "./types";
+import { ThemeMap, Theme, TerminalTheme } from "../types";
 
 // Import services
-import { getEditorService } from "./editor";
-import { getTerminalService } from "./terminal";
+import { getEditorService } from "../service/editor";
+import { getTerminalService } from "../service/terminal";
 
 // Theme management
 const createThemeStore = () => {

@@ -1,8 +1,7 @@
 import { TemplateCache } from "../types";
-import axios from "axios";
 import { getEditorService } from "./editor";
 
-// Template state that could be converted to React state/context
+// Template state
 const templateState = {
   cache: {
     lists: {},
@@ -21,11 +20,25 @@ const loadTemplateList = async (language: string): Promise<string[]> => {
     return templateState.cache.lists[language];
 
   try {
-    const response = await axios.get(`/api/templates/${language}`, {
-      timeout: templateState.TIMEOUT,
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      templateState.TIMEOUT
+    );
+
+    const response = await fetch(`/api/templates/${language}`, {
+      signal: controller.signal,
     });
-    templateState.cache.lists[language] = response.data.list;
-    return response.data.list;
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Failed to load templates: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    templateState.cache.lists[language] = data.list;
+    return data.list;
   } catch (error: unknown) {
     console.error(`Failed to load template list for ${language}:`, error);
     return [];
@@ -44,12 +57,26 @@ const loadTemplateContent = async (
     return templateState.cache.contents[cacheKey];
 
   try {
-    const response = await axios.get<string>(
-      `/api/templates/${language}/${encodeURIComponent(templateName)}`,
-      { timeout: templateState.TIMEOUT }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      templateState.TIMEOUT
     );
-    templateState.cache.contents[cacheKey] = response.data;
-    return response.data;
+
+    const response = await fetch(
+      `/api/templates/${language}/${encodeURIComponent(templateName)}`,
+      { signal: controller.signal }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Failed to load template: ${response.statusText}`);
+    }
+
+    const data = await response.text();
+    templateState.cache.contents[cacheKey] = data;
+    return data;
   } catch (error: unknown) {
     console.error(
       `Failed to load template ${templateName} for ${language}:`,
@@ -110,7 +137,7 @@ export const updateTemplateList = async (
     );
     templateSelect.selectedIndex = helloWorldIndex >= 0 ? helloWorldIndex : 0;
 
-    // Load template content during initialization or when explicitly asked to load
+    // Load template content when needed
     if (
       !templateState.initialized ||
       forceLoadTemplate ||
@@ -160,12 +187,12 @@ export const loadSelectedTemplate = async (): Promise<void> => {
   }
 };
 
-// Event handler for language change - ensure exposed for external calls
+// Event handler for language change
 export const handleLanguageChange = (): void => {
   updateTemplateList(true);
 };
 
-// Initialize templates on app startup but don't set up event listeners here
+// Initialize templates on app startup
 export const initializeTemplates = (): void => {
   updateTemplateList().then(() => {
     templateState.initialized = true;

@@ -57,7 +57,7 @@ export class DebugSocketManager {
 
     socketManager.on(SocketEvents.DEBUG_RESPONSE, (data) => {
       // Only process debug responses for debug session
-      if (socketManager.getSessionType() === 'debug' && data && data.output) {
+      if (socketManager.getSessionType() === "debug" && data && data.output) {
         // Send GDB output directly to terminal
         const terminalService = getTerminalService();
         terminalService.write(data.output);
@@ -66,7 +66,7 @@ export class DebugSocketManager {
 
     socketManager.on(SocketEvents.DEBUG_ERROR, (data) => {
       // Only process debug errors for debug session
-      if (socketManager.getSessionType() === 'debug') {
+      if (socketManager.getSessionType() === "debug") {
         console.error("Received debug error from server:", data.message);
         const terminalService = getTerminalService();
         terminalService.writeError(`\r\nError: ${data.message}\r\n`);
@@ -88,7 +88,7 @@ export class DebugSocketManager {
 
     socketManager.on(SocketEvents.ERROR, (data) => {
       // Only process general errors for debug session
-      if (socketManager.getSessionType() === 'debug') {
+      if (socketManager.getSessionType() === "debug") {
         console.error("Received error from server:", data.message);
         const terminalService = getTerminalService();
         terminalService.writeError(`\r\nError: ${data.message}\r\n`);
@@ -100,8 +100,9 @@ export class DebugSocketManager {
    * Clean up the Socket.IO connection and send cleanup request to server
    */
   cleanup(): void {
-    socketManager.cleanupSession()
-      .catch(error => console.error("Cleanup failed:", error));
+    socketManager
+      .cleanupSession()
+      .catch((error) => console.error("Cleanup failed:", error));
   }
 
   /**
@@ -121,9 +122,9 @@ export class DebugSocketManager {
       this.stateUpdater.showOutput();
 
       await socketManager.connect();
-      
+
       // Set session type to debug
-      socketManager.setSessionType('debug');
+      socketManager.setSessionType("debug");
 
       await socketManager.emit(SocketEvents.DEBUG_START, {
         code: options.code,
@@ -149,7 +150,7 @@ export class DebugSocketManager {
   async sendInput(input: string): Promise<void> {
     try {
       // For GDB commands, we need to add a newline
-      const inputWithNewline = input.endsWith('\n') ? input : input + '\n';
+      const inputWithNewline = input.endsWith("\n") ? input : input + "\n";
       await socketManager.sendInput(inputWithNewline);
     } catch (error) {
       console.error("Failed to send input to debug session:", error);

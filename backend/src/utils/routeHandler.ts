@@ -10,9 +10,9 @@ import { KoaRequestContext } from "../types";
  * @param {Function} handler - Async function to wrap
  * @returns {Function} Koa middleware function
  */
-export function koaHandler<T = any>(
+export const koaHandler = <T = any>(
   handler: (ctx: KoaRequestContext<T>) => Promise<void>
-): (ctx: Context, next: Next) => Promise<void> {
+): ((ctx: Context, next: Next) => Promise<void>) => {
   return async (ctx: Context, _next: Next) => {
     try {
       // Cast the context to our typed version
@@ -24,11 +24,8 @@ export function koaHandler<T = any>(
         error: error.message || "An unexpected error occurred",
       };
 
-      // Log the error
-      console.error("Route error:", error);
-
       // Emit the error to app-level error handler
       ctx.app.emit("error", error, ctx);
     }
   };
-}
+};

@@ -105,8 +105,9 @@ export class LeakDetectSocketManager {
    * Clean up the Socket.IO connection and send cleanup request to server
    */
   cleanup(): void {
-    socketManager.cleanupSession()
-      .catch(error => console.error("Cleanup failed:", error));
+    socketManager
+      .cleanupSession()
+      .catch((error) => console.error("Cleanup failed:", error));
   }
 
   /**

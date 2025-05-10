@@ -6,9 +6,5 @@
     "build:backend": "cd backend && npm install && npm run build",
     "clean": "rm -rf node_modules package-lock.json frontend/node_modules frontend/dist frontend/package-lock.json backend/node_modules backend/dist backend/package-lock.json",
     "start": "node backend/dist/server.bundle.js"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.5",
-    "typescript": "^5.3.3"
   }
 }

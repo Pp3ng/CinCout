@@ -60,7 +60,7 @@ export class CompileSocketManager {
     // Handle execution events
     socketManager.on(SocketEvents.OUTPUT, (data) => {
       // Only process output for compilation session
-      if (socketManager.getSessionType() === 'compilation') {
+      if (socketManager.getSessionType() === "compilation") {
         const terminalService = getTerminalService();
         terminalService.write(data.output);
       }
@@ -68,7 +68,7 @@ export class CompileSocketManager {
 
     socketManager.on(SocketEvents.ERROR, (data) => {
       // Only process errors for compilation session
-      if (socketManager.getSessionType() === 'compilation') {
+      if (socketManager.getSessionType() === "compilation") {
         console.error("Received error from server:", data.message);
         const terminalService = getTerminalService();
         terminalService.writeError(data.message);
@@ -87,8 +87,9 @@ export class CompileSocketManager {
    * Clean up the Socket.IO connection and send cleanup request to server
    */
   cleanup(): void {
-    socketManager.cleanupSession()
-      .catch(error => console.error("Cleanup failed:", error));
+    socketManager
+      .cleanupSession()
+      .catch((error) => console.error("Cleanup failed:", error));
   }
 
   /**
@@ -112,10 +113,10 @@ export class CompileSocketManager {
       this.showOutputMessage('<div class="loading">Connecting...</div>');
 
       await socketManager.connect();
-      
+
       // Set session type to compilation
-      socketManager.setSessionType('compilation');
-      
+      socketManager.setSessionType("compilation");
+
       this.showOutputMessage(
         '<div class="loading">Sending code for compilation...</div>'
       );

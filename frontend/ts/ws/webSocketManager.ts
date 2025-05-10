@@ -31,7 +31,7 @@ export enum SocketEvents {
   DEBUG_RESPONSE = "debug_response",
   DEBUG_ERROR = "debug_error",
   DEBUG_EXIT = "debug_exit",
-  
+
   // Memory leak detection events
   LEAK_CHECK = "leak_check",
   LEAK_CHECK_COMPILING = "leak_check_compiling",
@@ -123,23 +123,23 @@ export class WebSocketManager {
         this.isRunning = false;
         this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
       });
-      
+
       // Handle leak detection events
       this.socket.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
         this.isRunning = true;
         this.notifyListeners(SocketEvents.LEAK_CHECK_COMPILING, {});
       });
-      
+
       this.socket.on(SocketEvents.LEAK_CHECK_RUNNING, () => {
         this.isRunning = true;
         this.notifyListeners(SocketEvents.LEAK_CHECK_RUNNING, {});
       });
-      
+
       this.socket.on(SocketEvents.LEAK_CHECK_REPORT, (data: any) => {
         this.isRunning = false;
         this.notifyListeners(SocketEvents.LEAK_CHECK_REPORT, data);
       });
-      
+
       this.socket.on(SocketEvents.LEAK_CHECK_ERROR, (data: any) => {
         this.isRunning = false;
         this.notifyListeners(SocketEvents.LEAK_CHECK_ERROR, data);

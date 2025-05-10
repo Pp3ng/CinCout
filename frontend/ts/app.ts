@@ -493,8 +493,35 @@ export const initApp = () => {
   document.addEventListener("DOMContentLoaded", () => {
     initializeTemplates();
     setupEventListeners();
+    const el = document.getElementById("title-easter-egg");
+    if (!el) return;
+
+    let clicks = 0,
+      lastClick = 0,
+      timer: number | null = null;
+
+    el.addEventListener("click", () => {
+      const now = Date.now();
+
+      if (now - lastClick > 1500) clicks = 0;
+      if (timer) clearTimeout(timer);
+
+      clicks++;
+      lastClick = now;
+
+      if (clicks === 3) {
+        showNotification(
+          "info",
+          "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🤓",
+          4000,
+          { top: "50%", left: "50%" }
+        );
+        timer = window.setTimeout(() => (clicks = 0), 4000);
+      }
+    });
   });
 };
 
 // Start the application
 initApp();
+themeUtils.initializeThemeUI();

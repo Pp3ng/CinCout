@@ -53,14 +53,16 @@ export class ThemeManager {
   constructor(options: ThemeManagerOptions = {}) {
     this.storage = options.storage || localStorage;
     this.themeData = options.themeData || (themeDefinitions as ThemeMap);
-    
+
     // Get initial theme from options, storage, or fallback to default
     const savedTheme = this.storage.getItem(this.STORAGE_KEY);
     this.currentTheme = options.initialTheme || savedTheme || "default";
-    
+
     // Validate current theme exists
     if (!this.themeData[this.currentTheme]) {
-      console.warn(`Theme '${this.currentTheme}' not found, falling back to default`);
+      console.warn(
+        `Theme '${this.currentTheme}' not found, falling back to default`
+      );
       this.currentTheme = "default";
     }
   }
@@ -164,7 +166,7 @@ export class ThemeManager {
    */
   subscribe(listener: ThemeListener): () => void {
     this.listeners.add(listener);
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners.delete(listener);
@@ -195,4 +197,4 @@ export class ThemeManager {
 // Create a default instance for backwards compatibility
 const defaultManager = new ThemeManager();
 
-export default defaultManager; 
+export default defaultManager;

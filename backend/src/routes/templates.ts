@@ -18,9 +18,9 @@ const templateCache: Record<
 /**
  * Load template list for a specific language
  */
-async function loadTemplateList(lang: string): Promise<string[]> {
+const loadTemplateList = async (lang: string): Promise<string[]> => {
   // Check if templates are already cached
-  if (lang in templateCache && templateCache[lang]) {
+  if (templateCache[lang]?.list) {
     return templateCache[lang].list;
   }
 
@@ -37,29 +37,28 @@ async function loadTemplateList(lang: string): Promise<string[]> {
       .filter((file) => file.endsWith(".c") || file.endsWith(".cpp"))
       .map((file) => file.replace(/\.[^.]+$/, ""));
 
-    // Initialize cache entry if needed
-    if (!templateCache[lang]) {
-      templateCache[lang] = { list: templateNames, templates: {} };
-    } else {
-      templateCache[lang].list = templateNames;
-    }
+    // Initialize cache with destructuring for cleaner code
+    templateCache[lang] = {
+      list: templateNames,
+      templates: templateCache[lang]?.templates || {},
+    };
 
     return templateNames;
   } catch (error) {
     console.error(`Error loading template list for ${lang}:`, error);
     throw new AppError(`Failed to load template list for ${lang}`, 500);
   }
-}
+};
 
 /**
  * Load a specific template content
  */
-async function loadTemplateContent(
+const loadTemplateContent = async (
   lang: string,
   templateName: string
-): Promise<string> {
+): Promise<string> => {
   // Check if template is already cached
-  if (templateCache[lang]?.templates[templateName]) {
+  if (templateCache[lang]?.templates?.[templateName]) {
     return templateCache[lang].templates[templateName];
   }
 
@@ -69,8 +68,8 @@ async function loadTemplateContent(
   }
 
   const langDir = path.join(templatesDir, lang);
-  let fileName = `${templateName}.${lang === "cpp" ? "cpp" : "c"}`;
-  let filePath = path.join(langDir, fileName);
+  const fileExtension = lang === "cpp" ? "cpp" : "c";
+  const filePath = path.join(langDir, `${templateName}.${fileExtension}`);
 
   try {
     // Read template content
@@ -90,7 +89,7 @@ async function loadTemplateContent(
       500
     );
   }
-}
+};
 
 /**
  * Returns list of templates for a specified language

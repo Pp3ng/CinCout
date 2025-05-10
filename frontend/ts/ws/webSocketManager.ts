@@ -28,10 +28,16 @@ export enum SocketEvents {
 
   // GDB Debugging events
   DEBUG_START = "debug_start",
-  DEBUG_COMMAND = "debug_command",
   DEBUG_RESPONSE = "debug_response",
   DEBUG_ERROR = "debug_error",
   DEBUG_EXIT = "debug_exit",
+  
+  // Memory leak detection events
+  LEAK_CHECK = "leak_check",
+  LEAK_CHECK_COMPILING = "leak_check_compiling",
+  LEAK_CHECK_RUNNING = "leak_check_running",
+  LEAK_CHECK_REPORT = "leak_check_report",
+  LEAK_CHECK_ERROR = "leak_check_error",
 }
 
 /**
@@ -42,6 +48,7 @@ export class WebSocketManager {
   private sessionId: string | null = null;
   private eventHandlers: Map<string, Set<(data: any) => void>> = new Map();
   private isRunning: boolean = false;
+  private sessionType: string | null = null;
 
   /**
    * Connect to the Socket.IO server
@@ -116,6 +123,27 @@ export class WebSocketManager {
         this.isRunning = false;
         this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
       });
+      
+      // Handle leak detection events
+      this.socket.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
+        this.isRunning = true;
+        this.notifyListeners(SocketEvents.LEAK_CHECK_COMPILING, {});
+      });
+      
+      this.socket.on(SocketEvents.LEAK_CHECK_RUNNING, () => {
+        this.isRunning = true;
+        this.notifyListeners(SocketEvents.LEAK_CHECK_RUNNING, {});
+      });
+      
+      this.socket.on(SocketEvents.LEAK_CHECK_REPORT, (data: any) => {
+        this.isRunning = false;
+        this.notifyListeners(SocketEvents.LEAK_CHECK_REPORT, data);
+      });
+      
+      this.socket.on(SocketEvents.LEAK_CHECK_ERROR, (data: any) => {
+        this.isRunning = false;
+        this.notifyListeners(SocketEvents.LEAK_CHECK_ERROR, data);
+      });
 
       // Forward all other events to listeners
       [
@@ -140,7 +168,36 @@ export class WebSocketManager {
 
     this.socket.disconnect();
     this.sessionId = null;
+    this.sessionType = null;
     this.isRunning = false;
+  }
+
+  /**
+   * Common cleanup method for all socket managers
+   * Sends cleanup request and disconnects
+   * @returns {Promise<void>}
+   */
+  cleanupSession(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      try {
+        if (this.sessionId && this.isConnected()) {
+          this.emit(SocketEvents.CLEANUP)
+            .catch((e) => console.error("Error sending cleanup message:", e))
+            .finally(() => {
+              this.setSessionType(null);
+              this.disconnect();
+              resolve();
+            });
+        } else {
+          this.disconnect();
+          resolve();
+        }
+      } catch (error) {
+        console.error("Failed to handle cleanup:", error);
+        this.disconnect();
+        resolve();
+      }
+    });
   }
 
   /**
@@ -248,6 +305,22 @@ export class WebSocketManager {
    */
   sendInput(input: string): Promise<void> {
     return this.emit(SocketEvents.INPUT, { input });
+  }
+
+  /**
+   * Get session type
+   * @returns {string | null} Session type
+   */
+  getSessionType(): string | null {
+    return this.sessionType;
+  }
+
+  /**
+   * Set session type
+   * @param {string | null} type - Session type ('compilation', 'debug', 'leak_detection')
+   */
+  setSessionType(type: string | null): void {
+    this.sessionType = type;
   }
 }
 

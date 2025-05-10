@@ -84,6 +84,12 @@ export interface DebugStateUpdater {
   refreshEditor: () => void;
 }
 
+// Minimal DOM update functions for leak detection
+export interface LeakDetectStateUpdater {
+  showOutput: () => void;
+  refreshEditor: () => void;
+}
+
 // ==========================================
 // Terminal
 // ==========================================

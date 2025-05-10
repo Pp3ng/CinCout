@@ -279,5 +279,4 @@ const initCustomSelects = () => {
     ).observe(templateSelect, { childList: true });
   }
 };
-
 document.addEventListener("DOMContentLoaded", initCustomSelects);

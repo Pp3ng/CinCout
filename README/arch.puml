@@ -58,7 +58,7 @@ rectangle "Frontend (UI)" #E0F0FF {
   ' User actions - Based on handlers.ts
   package "Actions" {
     component "Compile & Run" as CompileAction
-    component "Memcheck" as MemcheckAction
+    component "Leak Detection" as LeakDetectAction
     component "Format" as FormatAction
     component "Style Check" as StyleCheckAction
     component "Assembly" as AssemblyAction
@@ -80,6 +80,7 @@ rectangle "Frontend (UI)" #E0F0FF {
   component "WebSocket Client" as WSClient
   component "Compile Socket" as CompileSocketMgr
   component "Debug Socket" as DebugSocketMgr
+  component "LeakDetect Socket" as LeakDetectSocketMgr
   component "HTTP Client" as HTTPClient
 }
 
@@ -93,7 +94,6 @@ rectangle "Backend (Server)" #F0F0FF {
   package "API Routes" as ApiRoutes {
     component "Assembly API" as AssemblyAPI
     component "Format API" as FormatAPI
-    component "Memcheck API" as MemcheckAPI
     component "Style Check API" as StyleAPI
     component "Templates API" as TemplatesAPI
   }
@@ -105,11 +105,19 @@ rectangle "Backend (Server)" #F0F0FF {
     component "Route Handler" as RouteHandler
     component "Session Service" as SessionService
     component "Debug Service" as DebugService
-    component "Memory Check" as MemcheckService
+    component "Memory Check Service" as MemcheckService
     component "Format" as FormatService
     component "Style Check" as StyleService
     component "Assembly" as AssemblyService
     component "PTY Service" as PTYService
+  }
+  
+  ' WebSocket Handlers
+  package "WebSocket Handlers" {
+    component "Base Socket Handler" as BaseSocketHandler
+    component "Compile Socket Handler" as CompileSocketHandler
+    component "Debug Socket Handler" as DebugSocketHandler
+    component "LeakDetect Socket Handler" as LeakDetectHandler
   }
   
   component "Session Manager" as SessionMgr
@@ -141,13 +149,14 @@ Browser --> Editor : Writes code
 AppController --> StateManager : Manages app state
 CodeActionsController --> CompileSocketMgr : Handles compile requests
 DebugController --> DebugSocketMgr : Handles debug requests
+AppController --> LeakDetectSocketMgr : Handles leak detection
 Editor --> ShortcutMgr : Registers keyboard shortcuts
 Editor --> TemplateSelector : Loads code templates
 
 ' Action flows
 CompileAction --> CodeActionsController : Triggers compilation
 DebugAction --> DebugController : Triggers debugging
-MemcheckAction --> HTTPClient : Makes HTTP request
+LeakDetectAction --> LeakDetectSocketMgr : Triggers leak detection
 FormatAction --> HTTPClient : Makes HTTP request
 StyleCheckAction --> HTTPClient : Makes HTTP request
 AssemblyAction --> HTTPClient : Makes HTTP request
@@ -158,12 +167,21 @@ WSServer --> WSClient : Bidirectional data
 HTTPClient --> ApiRoutes : RESTful requests
 ApiRoutes --> HTTPClient : JSON responses
 
+' WebSocket specialized handlers
+BaseSocketHandler <|-- CompileSocketHandler : extends
+BaseSocketHandler <|-- DebugSocketHandler : extends
+BaseSocketHandler <|-- LeakDetectHandler : extends
+
 ' Backend routing
 Koa --> RouteHandler : HTTP request handling
 WSServer --> WSHandler : WebSocket handling
+WSHandler --> CompileSocketHandler : Compilation messages
+WSHandler --> DebugSocketHandler : Debugging messages
+WSHandler --> LeakDetectHandler : Leak detection messages
 ApiRoutes --> Services : Service invocation
-WSHandler --> CompileService : Compilation requests
-WSHandler --> DebugService : Debugging requests
+CompileSocketHandler --> CompileService : Compilation requests
+DebugSocketHandler --> DebugService : Debugging requests
+LeakDetectHandler --> MemcheckService : Leak detection requests
 WSHandler --> SessionService : Session management
 
 ' Services to external tools
@@ -179,6 +197,7 @@ PTYService --> NodePTY : Terminal emulation
 ' File and resource management
 CompileService --> TempMgr : Creates temp files
 DebugService --> TempMgr : Debug files
+MemcheckService --> TempMgr : Memory check files
 TempMgr --> TempFiles : File storage
 SessionMgr --> Sessions : Session storage
 TemplatesAPI --> Templates : Retrieves templates
@@ -186,7 +205,9 @@ TemplatesAPI --> Templates : Retrieves templates
 ' Results flow back to frontend
 WSClient --> CompileSocketMgr : Compilation results
 WSClient --> DebugSocketMgr : Debug data
-CompileSocketMgr --> Display : Updates UI with results
+WSClient --> LeakDetectSocketMgr : Leak detection data
+CompileSocketMgr --> Display : Updates UI with compilation results
 DebugSocketMgr --> Terminal : Shows debug output
+LeakDetectSocketMgr --> Display : Shows leak detection results
 
 @enduml

@@ -24,23 +24,6 @@ class ApiService {
   }
 
   /**
-   * Run memory check on code
-   */
-  async runMemCheck(options: CompileOptions): Promise<string> {
-    try {
-      const response = await axios.post("/api/memcheck", options);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(
-          `Memcheck API error: ${error.response?.statusText || error.message}`
-        );
-      }
-      throw new Error("Memcheck API error: Unknown error");
-    }
-  }
-
-  /**
    * Format code using the API
    */
   async formatCode(code: string, lang: string): Promise<string> {

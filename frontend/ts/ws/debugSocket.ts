@@ -56,7 +56,8 @@ export class DebugSocketManager {
     });
 
     socketManager.on(SocketEvents.DEBUG_RESPONSE, (data) => {
-      if (data && data.output) {
+      // Only process debug responses for debug session
+      if (socketManager.getSessionType() === 'debug' && data && data.output) {
         // Send GDB output directly to terminal
         const terminalService = getTerminalService();
         terminalService.write(data.output);
@@ -64,9 +65,12 @@ export class DebugSocketManager {
     });
 
     socketManager.on(SocketEvents.DEBUG_ERROR, (data) => {
-      console.error("Received debug error from server:", data.message);
-      const terminalService = getTerminalService();
-      terminalService.writeError(`\r\nError: ${data.message}\r\n`);
+      // Only process debug errors for debug session
+      if (socketManager.getSessionType() === 'debug') {
+        console.error("Received debug error from server:", data.message);
+        const terminalService = getTerminalService();
+        terminalService.writeError(`\r\nError: ${data.message}\r\n`);
+      }
     });
 
     socketManager.on(SocketEvents.DEBUG_EXIT, (data) => {
@@ -83,9 +87,12 @@ export class DebugSocketManager {
     });
 
     socketManager.on(SocketEvents.ERROR, (data) => {
-      console.error("Received error from server:", data.message);
-      const terminalService = getTerminalService();
-      terminalService.writeError(`\r\nError: ${data.message}\r\n`);
+      // Only process general errors for debug session
+      if (socketManager.getSessionType() === 'debug') {
+        console.error("Received error from server:", data.message);
+        const terminalService = getTerminalService();
+        terminalService.writeError(`\r\nError: ${data.message}\r\n`);
+      }
     });
   }
 
@@ -93,18 +100,8 @@ export class DebugSocketManager {
    * Clean up the Socket.IO connection and send cleanup request to server
    */
   cleanup(): void {
-    try {
-      const sessionId = socketManager.getSessionId();
-      if (sessionId && socketManager.isConnected()) {
-        socketManager
-          .emit(SocketEvents.CLEANUP)
-          .catch((e) => console.error("Error sending cleanup message:", e));
-
-        socketManager.disconnect();
-      }
-    } catch (error) {
-      console.error("Failed to handle cleanup:", error);
-    }
+    socketManager.cleanupSession()
+      .catch(error => console.error("Cleanup failed:", error));
   }
 
   /**
@@ -124,6 +121,9 @@ export class DebugSocketManager {
       this.stateUpdater.showOutput();
 
       await socketManager.connect();
+      
+      // Set session type to debug
+      socketManager.setSessionType('debug');
 
       await socketManager.emit(SocketEvents.DEBUG_START, {
         code: options.code,
@@ -142,24 +142,15 @@ export class DebugSocketManager {
   }
 
   /**
-   * Send a GDB command to the debug session
-   * @param command GDB command to execute
-   */
-  async sendDebugCommand(command: string): Promise<void> {
-    try {
-      await socketManager.emit(SocketEvents.DEBUG_COMMAND, { command });
-    } catch (error) {
-      console.error("Failed to send debug command:", error);
-    }
-  }
-
-  /**
-   * Send standard input to the running program under GDB
+   * Send input to the running program under GDB
+   * This handles both GDB commands and program input
    * @param input Input to send
    */
   async sendInput(input: string): Promise<void> {
     try {
-      await socketManager.sendInput(input);
+      // For GDB commands, we need to add a newline
+      const inputWithNewline = input.endsWith('\n') ? input : input + '\n';
+      await socketManager.sendInput(inputWithNewline);
     } catch (error) {
       console.error("Failed to send input to debug session:", error);
     }

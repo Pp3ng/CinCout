@@ -13,7 +13,6 @@ import {
   ICompilationService,
   CompilationResult,
   AssemblyResult,
-  MemoryCheckResult,
   StyleCheckResult,
   FormatResult,
   DebugSessionResult,
@@ -313,17 +312,20 @@ export class CompilationService implements ICompilationService {
   }
 
   /**
-   * Run memory check on code
+   * Start leak detection process
+   * This compiles the code with debug info and prepares for valgrind execution
+   * but lets the socket handler manage the actual execution and result processing
+   *
    * @param {CompilationEnvironment} env - Compilation environment
    * @param {string} code - Source code
    * @param {CompilationOptions} options - Compilation options
-   * @returns {Promise<{success: boolean, report?: string, error?: string}>} Memory check result
+   * @returns {Promise<{success: boolean, valgrindLogFile?: string, error?: string}>} Leak detection preparation result
    */
-  async runMemoryCheck(
+  async startLeakDetectSession(
     env: CompilationEnvironment,
     code: string,
     options: CompilationOptions
-  ): Promise<MemoryCheckResult> {
+  ): Promise<{ success: boolean; valgrindLogFile?: string; error?: string }> {
     try {
       // Write code to source file
       this.writeCodeToFile(env.sourceFile, code);
@@ -350,48 +352,24 @@ export class CompilationService implements ICompilationService {
             : error instanceof Error
             ? error.message
             : String(error);
-        // Use the formatOutput method directly (no need for sanitizeOutput)
+        // Use the formatOutput method directly
         const formattedError = this.formatOutput(errorStr, "default");
         return { success: false, error: formattedError };
       }
 
       // Create valgrind log file path
-      const valgrindLog = path.join(env.tmpDir.name, "valgrind.log");
+      const valgrindLogFile = path.join(env.tmpDir.name, "valgrind.log");
 
-      // Run Valgrind
-      const valgrindCmd = `valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file="${valgrindLog}" "${env.outputFile}"`;
-
-      await this.executeCommand(valgrindCmd, { failOnError: false });
-
-      // Read Valgrind log
-      const valgrindOutput = fs.readFileSync(valgrindLog, "utf8");
-
-      // Extract important information
-      let report = "";
-      const lines = valgrindOutput.split("\n");
-      let startReading = false;
-
-      for (const line of lines) {
-        if (line.includes("HEAP SUMMARY:")) {
-          startReading = true;
-        }
-
-        if (
-          startReading &&
-          line.trim() !== "" &&
-          !line.includes("For lists of")
-        ) {
-          report += line + "\n";
-        }
-      }
-
-      // Format report
-      const formattedReport = this.formatOutput(report, "memcheck");
-      return { success: true, report: formattedReport };
+      // Return success and the path to the valgrind log file
+      // The actual valgrind execution will be done by the socket handler
+      return {
+        success: true,
+        valgrindLogFile: valgrindLogFile,
+      };
     } catch (error) {
       return {
         success: false,
-        error: `Error during memory check: ${error}`,
+        error: `Error preparing leak detection session: ${error}`,
       };
     }
   }

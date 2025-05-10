@@ -170,7 +170,6 @@ export const getEditorService = (): EditorService => {
 export interface EditorActions {
   toggleZenMode: () => void;
 }
-
 let globalActions: EditorActions | null = null;
 
 export const setEditorActions = (actions: EditorActions): void => {

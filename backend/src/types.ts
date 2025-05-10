@@ -106,15 +106,6 @@ export interface AssemblyResult {
 }
 
 /**
- * Memory check result
- */
-export interface MemoryCheckResult {
-  success: boolean;
-  report?: string;
-  error?: string;
-}
-
-/**
  * Style check result
  */
 export interface StyleCheckResult {
@@ -177,8 +168,8 @@ export interface SessionSocket extends Socket {
   sessionId: string;
   isAlive?: boolean;
   id: string;
+  on(event: string, listener: (...args: any[]) => void): this;
 }
-
 
 // ==========================================
 // Service Interfaces - For Dependency Injection
@@ -200,11 +191,11 @@ export interface ICompilationService {
     code: string,
     options: CompilationOptions
   ): Promise<AssemblyResult>;
-  runMemoryCheck(
+  startLeakDetectSession(
     env: CompilationEnvironment,
     code: string,
     options: CompilationOptions
-  ): Promise<MemoryCheckResult>;
+  ): Promise<{ success: boolean; valgrindLogFile?: string; error?: string }>;
   formatCode(code: string, style?: string): Promise<FormatResult>;
   runStyleCheck(code: string): Promise<StyleCheckResult>;
   startDebugSession(
@@ -260,16 +251,6 @@ export interface AssemblyRequest extends CodeRequest {}
 export interface FormatRequest extends CodeRequest {}
 
 /**
- * Memory check route request
- */
-export interface MemcheckRequest extends CodeRequest {}
-
-/**
  * Style check route request
  */
 export interface StyleCheckRequest extends CodeRequest {}
-
-/**
- * Debug route request
- */
-export interface DebugRequest extends CodeRequest {}

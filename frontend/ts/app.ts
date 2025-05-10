@@ -1,12 +1,13 @@
 // Import utility functions
 import { takeCodeSnap } from "./service/snapshot";
 import { debounce } from "lodash-es";
-import { themeStore } from "./ui/themes";
 import { showNotification } from "./service/notification";
 import CompileSocketManager from "./ws/compileSocket";
 import DebugSocketManager from "./ws/debugSocket";
+import LeakDetectSocketManager from "./ws/leakDetectSocket";
 import apiService from "./service/api";
 import { getEditorService } from "./service/editor";
+import { getTerminalService } from "./service/terminal";
 import {
   handleLanguageChange,
   loadSelectedTemplate,
@@ -14,6 +15,17 @@ import {
 } from "./service/templates";
 import { CompileOptions, DOMElements, DomElementId } from "./types";
 import { initializeShortcuts, renderShortcutsList } from "./service/shortcuts";
+import themeManager from "./ui/themeManager";
+
+// Import CSS for CodeMirror themes
+import "codemirror/theme/nord.css";
+import "codemirror/theme/dracula.css";
+import "codemirror/theme/monokai.css";
+import "codemirror/theme/material.css";
+import "codemirror/theme/ayu-dark.css";
+import "codemirror/theme/gruvbox-dark.css";
+import "codemirror/theme/seti.css";
+import "codemirror/theme/the-matrix.css";
 
 // DOM Utilities - Will become React hooks/state
 
@@ -146,21 +158,6 @@ export const codeActions = {
     }
   },
 
-  runMemCheck: async (options: CompileOptions): Promise<void> => {
-    domUtils.showOutputPanel();
-    domUtils.showLoadingInOutput("Running memory check...");
-
-    try {
-      const data = await apiService.runMemCheck(options);
-      domUtils.setOutput(
-        `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${data}</div>`
-      );
-    } catch (error) {
-      console.error("Memcheck error:", error);
-      domUtils.setOutput(domUtils.formatErrorOutput(error));
-    }
-  },
-
   formatCode: async (code: string, lang: string): Promise<void> => {
     const editorService = getEditorService();
     const cursor = editorService.getCursor();
@@ -221,11 +218,83 @@ export const codeActions = {
   },
 };
 
+// Theme functions - Will be replaced by React context
+export const themeUtils = {
+  applyThemeToDOM: (): void => {
+    const themeName = themeManager.getCurrentThemeName();
+
+    document.body.classList.add("theme-transitioning");
+
+    requestAnimationFrame(() => {
+      Object.entries(themeManager.getCssVariables()).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(key, value);
+      });
+
+      const editorService = getEditorService();
+      const editor = editorService.getEditor();
+      if (editor) {
+        editor.setOption(
+          "theme",
+          themeName === "default" ? "default" : themeName
+        );
+      }
+      const assemblyView = editorService.getAssemblyView();
+      if (assemblyView) {
+        assemblyView.setOption(
+          "theme",
+          themeName === "default" ? "default" : themeName
+        );
+      }
+
+      const terminal = getTerminalService().getTerminal();
+      if (terminal && terminal.options) {
+        terminal.options.theme = themeManager.getTerminalTheme();
+        terminal.refresh(0, terminal.rows - 1);
+      }
+      setTimeout(() => {
+        document.body.classList.remove("theme-transitioning");
+      }, 400);
+    });
+  },
+
+  initializeThemeUI: (): void => {
+    const themeSelect = document.getElementById(
+      "theme-select"
+    ) as HTMLSelectElement;
+    if (!themeSelect || themeSelect.options.length > 0) return;
+
+    Object.entries(themeManager.getThemes()).forEach(([key, theme]) => {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = theme.name;
+      themeSelect.appendChild(option);
+    });
+
+    themeSelect.value = themeManager.getCurrentThemeName();
+
+    themeSelect.addEventListener("change", (e) => {
+      themeManager.setTheme((e.target as HTMLSelectElement).value);
+    });
+
+    themeManager.subscribe(() => themeUtils.applyThemeToDOM());
+
+    themeUtils.applyThemeToDOM();
+
+    (window as any).getTerminalTheme =
+      themeManager.getTerminalTheme.bind(themeManager);
+  },
+
+  applyUserTheme: (): void => {
+    const savedTheme = localStorage.getItem("cincout-theme");
+    if (savedTheme) themeManager.setTheme(savedTheme);
+  },
+};
+
 // Settings Manager - Will become React context/state
 export const editorSettings = {
   setTheme: (theme: string): void => {
     localStorage.setItem("cincout-theme", theme);
-    themeStore.setTheme(theme);
+    themeManager.setTheme(theme);
   },
 
   setVimMode: (enabled: boolean): void => {
@@ -236,14 +305,6 @@ export const editorSettings = {
   loadSavedSettings: (): void => {
     const elements = domUtils.getElements();
 
-    // Load theme
-    if (elements.themeSelect) {
-      const savedTheme = localStorage.getItem("cincout-theme") || "default";
-      elements.themeSelect.value = savedTheme;
-      editorSettings.setTheme(savedTheme);
-    }
-
-    // Load vim mode
     if (elements.vimMode) {
       const savedVimMode = localStorage.getItem("cincout-vim-mode") === "true";
       elements.vimMode.checked = savedVimMode;
@@ -316,6 +377,7 @@ export const initApp = () => {
   // Create socket managers
   const compileSocketManager = new CompileSocketManager(socketConfig);
   const debugSocketManager = new DebugSocketManager(socketConfig);
+  const leakDetectSocketManager = new LeakDetectSocketManager(socketConfig);
 
   // Debug actions
   const debugActions = {
@@ -325,6 +387,17 @@ export const initApp = () => {
 
     cleanup: (): void => {
       debugSocketManager.cleanup();
+    },
+  };
+
+  // Leak detect actions
+  const leakDetectActions = {
+    startLeakDetection: async (options: CompileOptions): Promise<void> => {
+      await leakDetectSocketManager.startLeakDetection(options);
+    },
+
+    cleanup: (): void => {
+      leakDetectSocketManager.cleanup();
     },
   };
 
@@ -387,6 +460,7 @@ export const initApp = () => {
     elements.closeOutput?.addEventListener("click", () => {
       compileSocketManager.cleanup();
       debugActions.cleanup();
+      leakDetectActions.cleanup();
       domUtils.hideOutputPanel();
     });
 
@@ -402,15 +476,11 @@ export const initApp = () => {
       "click",
       debounce(() => {
         const options = domUtils.getCompileOptions();
-        codeActions.runMemCheck(options);
+        leakDetectActions.startLeakDetection(options);
       }, 300)
     );
 
     // Settings
-    elements.themeSelect?.addEventListener("change", () => {
-      editorSettings.setTheme(elements.themeSelect?.value || "default");
-    });
-
     elements.vimMode?.addEventListener("change", () => {
       editorSettings.setVimMode(!!elements.vimMode?.checked);
     });

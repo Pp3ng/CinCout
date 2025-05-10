@@ -24,7 +24,6 @@ import formatRouter from "./routes/format";
 import styleCheckRouter from "./routes/styleCheck";
 import templatesRouter from "./routes/templates";
 import assemblyRouter from "./routes/assembly";
-import memcheckRouter from "./routes/memcheck";
 
 // Determine number of worker processes
 const numCPUs = os.cpus().length;
@@ -159,11 +158,6 @@ function startWorker() {
     "/assembly",
     assemblyRouter.routes(),
     assemblyRouter.allowedMethods()
-  );
-  apiRouter.use(
-    "/memcheck",
-    memcheckRouter.routes(),
-    memcheckRouter.allowedMethods()
   );
 
   // Use the router middleware

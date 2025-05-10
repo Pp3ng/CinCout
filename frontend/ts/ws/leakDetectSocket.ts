@@ -1,21 +1,22 @@
 /**
- * CompileSocket - Module handling compilation-related Socket.IO communication
+ * LeakDetectSocket - Module handling memory leak detection Socket.IO communication
  */
 import { getTerminalService } from "../service/terminal";
-import { CompileOptions, CompileStateUpdater } from "../types";
+import { CompileOptions, LeakDetectStateUpdater } from "../types";
 import { socketManager, SocketEvents } from "./webSocketManager";
+import { domUtils } from "../app";
 
 /**
- * CompileSocketManager handles the Socket.IO communication for code compilation
+ * LeakDetectSocketManager handles the Socket.IO communication for memory leak detection
  */
-export class CompileSocketManager {
-  private stateUpdater: CompileStateUpdater;
+export class LeakDetectSocketManager {
+  private stateUpdater: LeakDetectStateUpdater;
 
   /**
-   * Create a new CompileSocketManager
+   * Create a new LeakDetectSocketManager
    * @param stateUpdater Interface to update UI based on socket events
    */
-  constructor(stateUpdater: CompileStateUpdater) {
+  constructor(stateUpdater: LeakDetectStateUpdater) {
     this.stateUpdater = stateUpdater;
     this.setupEventListeners();
   }
@@ -24,14 +25,17 @@ export class CompileSocketManager {
    * Set up event listeners for Socket.IO events
    */
   private setupEventListeners(): void {
-    // Handle compilation events
-    socketManager.on(SocketEvents.COMPILING, () => {
+    // Handle compilation phase
+    socketManager.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
       this.stateUpdater.showOutput();
-      this.showOutputMessage('<div class="loading">Compiling</div>');
+      domUtils.setOutput(
+        '<div class="loading">Compiling for leak detection...</div>'
+      );
       this.stateUpdater.refreshEditor();
     });
 
-    socketManager.on(SocketEvents.COMPILE_SUCCESS, () => {
+    // Handle leak detection running phase
+    socketManager.on(SocketEvents.LEAK_CHECK_RUNNING, () => {
       // Reset any existing terminal first
       const terminalService = getTerminalService();
       terminalService.dispose();
@@ -44,42 +48,56 @@ export class CompileSocketManager {
         outputPanel: document.getElementById("outputPanel"),
       });
 
-      // Initialize terminal
+      // Initialize terminal for valgrind interaction
       terminalService.setupTerminal();
-      this.stateUpdater.refreshEditor();
     });
 
-    socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
+    // Handle leak detection report
+    socketManager.on(SocketEvents.LEAK_CHECK_REPORT, (data) => {
       this.stateUpdater.showOutput();
-      this.showOutputMessage(
-        `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
+
+      // Display the report using domUtils.setOutput
+      domUtils.setOutput(
+        `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${
+          data.report || "No leaks detected."
+        }</div>`
       );
+
       socketManager.disconnect();
     });
 
-    // Handle execution events
+    // Handle leak detection errors
+    socketManager.on(SocketEvents.LEAK_CHECK_ERROR, (data) => {
+      this.stateUpdater.showOutput();
+      if (data.output) {
+        domUtils.setOutput(
+          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
+        );
+      } else if (data.message) {
+        domUtils.setOutput(
+          `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error:<br>${data.message}</div>`
+        );
+      }
+      socketManager.disconnect();
+    });
+
+    // Handle program output during leak detection
     socketManager.on(SocketEvents.OUTPUT, (data) => {
-      // Only process output for compilation session
-      if (socketManager.getSessionType() === 'compilation') {
+      // Only process output for leak detection session
+      if (socketManager.getSessionType() === "leak_detection") {
         const terminalService = getTerminalService();
         terminalService.write(data.output);
       }
     });
 
+    // Handle general errors
     socketManager.on(SocketEvents.ERROR, (data) => {
-      // Only process errors for compilation session
-      if (socketManager.getSessionType() === 'compilation') {
+      // Only process errors for leak detection session
+      if (socketManager.getSessionType() === "leak_detection") {
         console.error("Received error from server:", data.message);
         const terminalService = getTerminalService();
         terminalService.writeError(data.message);
       }
-    });
-
-    socketManager.on(SocketEvents.EXIT, (data) => {
-      // Display the exit message
-      const terminalService = getTerminalService();
-      terminalService.writeExitMessage(data.code);
-      socketManager.disconnect();
     });
   }
 
@@ -92,16 +110,16 @@ export class CompileSocketManager {
   }
 
   /**
-   * Compile code using Socket.IO communication
+   * Start leak detection using Socket.IO communication
    * @param options Compilation options including code, language, compiler, etc.
    */
-  async compile(options: CompileOptions): Promise<void> {
+  async startLeakDetection(options: CompileOptions): Promise<void> {
     if (socketManager.isProcessRunning()) {
       return;
     }
 
     if (options.code.trim() === "") {
-      this.showOutputMessage(
+      domUtils.setOutput(
         '<div class="error-output">Error: Code cannot be empty</div>'
       );
       return;
@@ -109,18 +127,18 @@ export class CompileSocketManager {
 
     try {
       this.stateUpdater.showOutput();
-      this.showOutputMessage('<div class="loading">Connecting...</div>');
+      domUtils.setOutput('<div class="loading">Connecting...</div>');
 
       await socketManager.connect();
-      
-      // Set session type to compilation
-      socketManager.setSessionType('compilation');
-      
-      this.showOutputMessage(
-        '<div class="loading">Sending code for compilation...</div>'
+
+      // Set session type to leak_detection
+      socketManager.setSessionType("leak_detection");
+
+      domUtils.setOutput(
+        '<div class="loading">Sending code for leak detection...</div>'
       );
 
-      await socketManager.emit(SocketEvents.COMPILE, {
+      await socketManager.emit(SocketEvents.LEAK_CHECK, {
         code: options.code,
         lang: options.lang,
         compiler: options.compiler,
@@ -128,7 +146,7 @@ export class CompileSocketManager {
       });
     } catch (error) {
       console.error("Socket operation failed:", error);
-      this.showOutputMessage(
+      domUtils.setOutput(
         '<div class="error-output">Error: Socket connection failed. Please try again.</div>'
       );
 
@@ -151,16 +169,6 @@ export class CompileSocketManager {
       console.error("Failed to send input:", error);
     }
   }
-
-  /**
-   * Display a message in the output panel
-   */
-  private showOutputMessage(html: string): void {
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = html;
-    }
-  }
 }
 
-export default CompileSocketManager;
+export default LeakDetectSocketManager;

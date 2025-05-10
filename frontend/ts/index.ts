@@ -17,11 +17,13 @@ import "codemirror/addon/fold/comment-fold";
 import "codemirror/addon/hint/show-hint";
 
 import { showNotification } from "./service/notification";
+import { themeUtils } from "./app";
 
-import "./ui/themes";
 import "./ui/layout";
 import "./ui/selector";
 import "./app";
+
+themeUtils.initializeThemeUI();
 
 document.addEventListener("DOMContentLoaded", () => {
   const el = document.getElementById("title-easter-egg");

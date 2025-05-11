@@ -106,9 +106,9 @@ export interface AssemblyResult {
 }
 
 /**
- * Style check result
+ * Lint code result
  */
-export interface StyleCheckResult {
+export interface LintCodeResult {
   success: boolean;
   report?: string;
   error?: string;
@@ -197,7 +197,7 @@ export interface ICompilationService {
     options: CompilationOptions
   ): Promise<{ success: boolean; valgrindLogFile?: string; error?: string }>;
   formatCode(code: string, style?: string): Promise<FormatResult>;
-  runStyleCheck(code: string): Promise<StyleCheckResult>;
+  runLintCode(code: string, lang: string): Promise<LintCodeResult>;
   startDebugSession(
     env: CompilationEnvironment,
     options: CompilationOptions
@@ -251,6 +251,6 @@ export interface AssemblyRequest extends CodeRequest {}
 export interface FormatRequest extends CodeRequest {}
 
 /**
- * Style check route request
+ * Lint code route request
  */
-export interface StyleCheckRequest extends CodeRequest {}
+export interface LintCodeRequest extends CodeRequest {}

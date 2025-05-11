@@ -70,42 +70,6 @@ h1 {
   }
 }
 
-/* GitHub icon */
-.github-icon {
-  width: 26px;
-  height: 26px;
-  transition: transform 0.3s, opacity 0.3s;
-  flex-shrink: 0;
-  border-radius: 50%;
-  box-shadow: var(--shadow-sm);
-}
-
-.github-icon:hover {
-  opacity: 0.9;
-  transform: scale(1.1);
-}
-
-/* Vim icon */
-.toggle-container img {
-  transition: transform 0.3s, opacity 0.3s;
-  flex-shrink: 0;
-}
-
-.toggle-container img:hover {
-  opacity: 0.9;
-  transform: scale(1.1);
-}
-
-/* Controls group */
-.controls {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: center;
-  height: auto;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
 /* Main container layout */
 .main-container {
   display: flex;
@@ -120,7 +84,8 @@ h1 {
 .panel {
   background: var(--bg-secondary);
   border-radius: var(--radius-sm);
-  padding: var(--spacing-xs) var(--spacing-xs) 0 var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs)
+    var(--spacing-xs);
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-sm);

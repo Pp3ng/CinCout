@@ -15,11 +15,8 @@
 @import "./components/buttons.css";
 @import "./components/dropdown.css";
 @import "./components/editor.css";
+@import "./components/output.css";
 @import "./components/terminal.css";
-
-/* Utils - Utilities, animations and helpers */
-@import "./utils/utilities.css";
-@import "./utils/animations.css";
 
 /* Responsive styles - Apply last for proper overrides */
 @import "./layout/responsive.css";

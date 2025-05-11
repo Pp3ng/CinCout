@@ -13,7 +13,7 @@ import {
   ICompilationService,
   CompilationResult,
   AssemblyResult,
-  StyleCheckResult,
+  LintCodeResult,
   FormatResult,
   DebugSessionResult,
 } from "../types";
@@ -174,7 +174,7 @@ export class CompilationService implements ICompilationService {
           break;
 
         case "style":
-          // Process style check output
+          // Process lint code output
           // No special pre-processing needed, just the common formatting
           break;
 
@@ -414,11 +414,12 @@ export class CompilationService implements ICompilationService {
   }
 
   /**
-   * Run style check on code
+   * Run lint code check on code
    * @param {string} code - Source code to check
-   * @returns {Promise<{success: boolean, report?: string, error?: string}>} Style check result
+   * @param {string} lang - Language type (c or cpp)
+   * @returns {Promise<{success: boolean, report?: string, error?: string}>} Lint code result
    */
-  async runStyleCheck(code: string): Promise<StyleCheckResult> {
+  async runLintCode(code: string): Promise<LintCodeResult> {
     // Create temporary directory
     const tmpDir = tmp.dirSync({
       prefix: "CinCout-Style-",
@@ -477,14 +478,14 @@ export class CompilationService implements ICompilationService {
             "<div class='output-block'><span style='color: #50fa7b; font-weight: bold;'><i class='fas fa-check-circle'></i> No issues found. Your code looks good!</span></div>",
         };
       } else {
-        // Apply formatting to style check output
+        // Apply formatting to lint code output
         const formattedOutput = this.formatOutput(output, "style");
         return { success: true, report: formattedOutput };
       }
     } catch (error) {
       return {
         success: false,
-        error: `Error checking style: ${error}`,
+        error: `Error linting code: ${error}`,
       };
     } finally {
       // Clean up

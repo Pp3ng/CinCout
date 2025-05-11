@@ -17,7 +17,7 @@ export const useLayout = () => {
   const actionButtons = [
     "#compile",
     "#viewAssembly",
-    "#styleCheck",
+    "#lintCode",
     "#memcheck",
     "#debug",
   ];

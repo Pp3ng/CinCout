@@ -33,7 +33,7 @@ export const uiActions = {
   viewAssembly: () =>
     document.getElementById(DomElementId.VIEW_ASSEMBLY)?.click(),
   formatCode: () => document.getElementById(DomElementId.FORMAT)?.click(),
-  styleCheck: () => document.getElementById(DomElementId.STYLE_CHECK)?.click(),
+  lintCode: () => document.getElementById(DomElementId.LINT_CODE)?.click(),
   memoryCheck: () =>
     document.getElementById(DomElementId.MEMORY_CHECK)?.click(),
   debug: () => document.getElementById(DomElementId.DEBUG)?.click(),
@@ -133,7 +133,7 @@ export const actionDescriptions = {
   zenMode: "Zen Mode",
   viewAssembly: "View assembly code",
   formatCode: "Format code",
-  styleCheck: "Style check",
+  lintCode: "Lint code",
   memoryCheck: "Memory check",
   debug: "Debug with GDB",
   closeOutput: "Close output panel",
@@ -188,8 +188,8 @@ export const createShortcuts = (): ShortcutCategories => {
       description: actionDescriptions.formatCode,
     },
     {
-      action: uiActions.styleCheck,
-      description: actionDescriptions.styleCheck,
+      action: uiActions.lintCode,
+      description: actionDescriptions.lintCode,
     },
     {
       action: uiActions.memoryCheck,

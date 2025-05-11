@@ -21,7 +21,7 @@ import { AppError } from "./types";
 // Routes & WebSockets
 import { setupSocketHandlers } from "./ws/webSocketManager";
 import formatRouter from "./routes/format";
-import styleCheckRouter from "./routes/styleCheck";
+import lintCodeRouter from "./routes/lintCode";
 import templatesRouter from "./routes/templates";
 import assemblyRouter from "./routes/assembly";
 
@@ -145,9 +145,9 @@ function startWorker() {
     formatRouter.allowedMethods()
   );
   apiRouter.use(
-    "/styleCheck",
-    styleCheckRouter.routes(),
-    styleCheckRouter.allowedMethods()
+    "/lintCode",
+    lintCodeRouter.routes(),
+    lintCodeRouter.allowedMethods()
   );
   apiRouter.use(
     "/templates",

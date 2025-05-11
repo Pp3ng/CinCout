@@ -14,7 +14,7 @@ import {
   initializeTemplates,
 } from "./service/templates";
 import { CompileOptions, DOMElements, DomElementId } from "./types";
-import { initializeShortcuts, renderShortcutsList } from "./service/shortcuts";
+import { initializeShortcuts, renderShortcutsList, isMac } from "./service/shortcuts";
 import themeManager from "./ui/themeManager";
 
 // Import CSS for CodeMirror themes
@@ -40,7 +40,7 @@ export const domUtils = {
       memcheck: document.getElementById("memcheck"),
       format: document.getElementById("format"),
       viewAssembly: document.getElementById("viewAssembly"),
-      styleCheck: document.getElementById("styleCheck"),
+      lintCode: document.getElementById("lintCode"),
       debug: document.getElementById("debug"),
       themeSelect: document.getElementById("theme-select") as HTMLSelectElement,
       outputPanel: document.getElementById("outputPanel"),
@@ -190,25 +190,25 @@ export const codeActions = {
     }
   },
 
-  runStyleCheck: async (code: string, lang: string): Promise<void> => {
+  runLintCode: async (code: string, lang: string): Promise<void> => {
     domUtils.showOutputPanel();
-    domUtils.showLoadingInOutput("Running style check...");
+    domUtils.showLoadingInOutput("Running lint code check...");
 
     try {
-      const data = await apiService.runStyleCheck(code, lang);
+      const data = await apiService.runLintCode(code, lang);
 
       const lines = data.split("\n");
       const formattedLines = lines
-        .map((line) => {
+        .map((line: string) => {
           if (line.trim()) {
             return `<div class="style-block" style="white-space: pre-wrap; overflow: visible;">${line}</div>`;
           }
           return "";
         })
-        .filter((line) => line);
+        .filter((line: string) => line);
 
       domUtils.setOutput(
-        `<div class="style-check-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join(
+        `<div class="lint-code-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join(
           "\n"
         )}</div>`
       );
@@ -300,6 +300,27 @@ export const editorSettings = {
   setVimMode: (enabled: boolean): void => {
     localStorage.setItem("cincout-vim-mode", enabled.toString());
     getEditorService().setOption("keyMap", enabled ? "vim" : "default");
+
+    // Update vim status visibility
+    const vimStatusElement = document.getElementById("vim-status");
+    if (vimStatusElement) {
+      if (enabled) {
+        vimStatusElement.style.display = "block";
+        vimStatusElement.textContent = "-- NORMAL --"; // Default initial mode
+
+        // Set up jk mapping for Escape in insert mode
+        const editor = getEditorService().getEditor();
+        if (editor) {
+          const CodeMirror = (editor as any).constructor;
+          if (CodeMirror && CodeMirror.Vim) {
+            // Map jk to Escape in insert mode
+            CodeMirror.Vim.map("jk", "<Esc>", "insert");
+          }
+        }
+      } else {
+        vimStatusElement.style.display = "none";
+      }
+    }
   },
 
   loadSavedSettings: (): void => {
@@ -319,51 +340,21 @@ const toggleZenMode = (): void => {
   const editor = editorService.getEditor();
   if (!editor) return;
 
-  const editorWrapper = editor.getWrapperElement();
-  const isZenMode = editorWrapper.classList.contains("zen-mode");
-  const outputPanel = document.getElementById("outputPanel");
+  const isEnteringZenMode = !document.body.classList.contains("zen-mode-active");
+  document.body.classList.toggle("zen-mode-active");
 
-  // Toggle zen mode classes
-  const elements = {
-    editor: editorWrapper,
-    body: document.body,
-    container: document.querySelector(".container"),
-    header: document.querySelector(".header"),
-    mainContainer: document.querySelector(".main-container"),
-    editorPanel: document.querySelector(".editor-panel"),
-    panelHeader: document.querySelector(".panel-header"),
-  };
-
-  elements.editor.classList.toggle("zen-mode");
-  elements.body.classList.toggle("zen-mode-active");
-  elements.container?.classList.toggle("zen-container");
-  elements.header?.classList.toggle("hidden-zen");
-  elements.mainContainer?.classList.toggle("zen-mode-container");
-  elements.editorPanel?.classList.toggle("zen-mode-panel");
-  elements.panelHeader?.classList.toggle("zen-mode-minimized");
-
-  // Manage output panel in zen mode
-  if (outputPanel && outputPanel.style.display !== "none") {
-    if (isZenMode) {
-      // Reset output panel styles
-      outputPanel.style.position = "";
-      outputPanel.style.top = "";
-      outputPanel.style.right = "";
-      outputPanel.style.bottom = "";
-      outputPanel.style.width = "";
-      outputPanel.style.zIndex = "";
-    }
-  }
-
-  // Update button icon
-  const zenButton = document.getElementById("zenMode")?.querySelector("i");
-  if (zenButton) {
-    zenButton.classList.toggle("fa-expand");
-    zenButton.classList.toggle("fa-compress");
-  }
-
-  // Force editor refresh
   setTimeout(() => editorService.refresh(), 100);
+  
+  // Show notification with shortcut hint when entering zen mode
+  if (isEnteringZenMode) {
+    const shortcutText = isMac ? "⌘+⇧+Z" : "Ctrl+Shift+Z";
+    showNotification(
+      "info", 
+      `Zen mode activated. Press ${shortcutText} to exit.`, 
+      4000, 
+      { top: "50%", left: "50%" }
+    );
+  }
 };
 
 // Application Initialization - Will become React components
@@ -426,13 +417,13 @@ export const initApp = () => {
       }, 300)
     );
 
-    elements.styleCheck?.addEventListener(
+    elements.lintCode?.addEventListener(
       "click",
       debounce(() => {
         const editorService = getEditorService();
         const code = editorService.getValue();
         const lang = elements.language?.value || "c";
-        codeActions.runStyleCheck(code, lang);
+        codeActions.runLintCode(code, lang);
       }, 300)
     );
 

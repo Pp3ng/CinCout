@@ -59,7 +59,7 @@ The project follows a clean separation between frontend and backend:
 | **Execution**     | Real-time Program       | PTY-based terminal for interactive programs  |
 |                   | Interactive Debugging   | GDB integration for debugging programs       |
 |                   | WebSocket Communication | Bidirectional real-time communication        |
-| **Code Analysis** | Style Checking          | Static code analysis with cppcheck           |
+| **Code Analysis** | Lint Code               | Static code analysis with cppcheck           |
 |                   | Memory Analysis         | Memory leak detection with Valgrind          |
 |                   | Code Formatting         | Automatic code formatting with clang-format  |
 | **UI/UX**         | Multiple Themes         | Various editor and terminal color schemes    |
@@ -80,7 +80,7 @@ The project follows a clean separation between frontend and backend:
 | Zen Mode         | Ctrl + Shift + Z | ⌘ + ⇧ + Z  |
 | View Assembly    | Alt + 1          | ^ + 1      |
 | Format Code      | Alt + 2          | ^ + 2      |
-| Style Check      | Alt + 3          | ^ + 3      |
+| Lint Code        | Alt + 3          | ^ + 3      |
 | Memory Check     | Alt + 4          | ^ + 4      |
 | Debug with GDB   | Alt + 5          | ^ + 5      |
 | Close Output     | ESC              | ESC        |

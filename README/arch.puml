@@ -60,7 +60,7 @@ rectangle "Frontend (UI)" #E0F0FF {
     component "Compile & Run" as CompileAction
     component "Leak Detection" as LeakDetectAction
     component "Format" as FormatAction
-    component "Style Check" as StyleCheckAction
+    component "Lint Code" as LintCodeAction
     component "Assembly" as AssemblyAction
     component "Debug" as DebugAction
     component "Zen Mode" as ZenModeAction
@@ -94,7 +94,7 @@ rectangle "Backend (Server)" #F0F0FF {
   package "API Routes" as ApiRoutes {
     component "Assembly API" as AssemblyAPI
     component "Format API" as FormatAPI
-    component "Style Check API" as StyleAPI
+    component "Lint Code API" as LintCodeAPI
     component "Templates API" as TemplatesAPI
   }
   
@@ -107,7 +107,7 @@ rectangle "Backend (Server)" #F0F0FF {
     component "Debug Service" as DebugService
     component "Memory Check Service" as MemcheckService
     component "Format" as FormatService
-    component "Style Check" as StyleService
+    component "Lint Code" as LintCodeService
     component "Assembly" as AssemblyService
     component "PTY Service" as PTYService
   }
@@ -158,7 +158,7 @@ CompileAction --> CodeActionsController : Triggers compilation
 DebugAction --> DebugController : Triggers debugging
 LeakDetectAction --> LeakDetectSocketMgr : Triggers leak detection
 FormatAction --> HTTPClient : Makes HTTP request
-StyleCheckAction --> HTTPClient : Makes HTTP request
+LintCodeAction --> HTTPClient : Makes HTTP request
 AssemblyAction --> HTTPClient : Makes HTTP request
 
 ' Frontend to backend
@@ -190,7 +190,7 @@ CompileService --> Clang : Alternative compiler
 DebugService --> GDB : Interactive debugging
 MemcheckService --> Valgrind : Memory checking
 FormatService --> ClangFormat : Code formatting
-StyleService --> Cppcheck : Style analysis
+LintCodeService --> Cppcheck : Lint code analysis
 AssemblyService --> GCC : Assembly generation
 PTYService --> NodePTY : Terminal emulation
 

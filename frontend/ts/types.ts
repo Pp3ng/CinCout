@@ -12,7 +12,7 @@ export interface DOMElements {
   memcheck: HTMLElement | null;
   format: HTMLElement | null;
   viewAssembly: HTMLElement | null;
-  styleCheck: HTMLElement | null;
+  lintCode: HTMLElement | null;
   debug: HTMLElement | null; // Added debug button
   themeSelect: HTMLSelectElement | null;
   outputPanel: HTMLElement | null;
@@ -177,7 +177,7 @@ export enum DomElementId {
   CLOSE_OUTPUT = "closeOutput",
   VIEW_ASSEMBLY = "viewAssembly",
   FORMAT = "format",
-  STYLE_CHECK = "styleCheck",
+  LINT_CODE = "lintCode",
   MEMORY_CHECK = "memcheck",
   DEBUG = "debug", // Added debug element ID
   OUTPUT_PANEL = "outputPanel",

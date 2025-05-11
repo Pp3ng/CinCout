@@ -112,17 +112,6 @@
 
 .dropdown-content a:hover .resource-icon {
   color: var(--accent);
-  animation: float 1s ease-in-out infinite alternate;
-}
-
-/* Floating animation for icons */
-@keyframes float {
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1.2);
-  }
-  100% {
-    transform: translateY(-5px) rotate(10deg) scale(1.3);
-  }
 }
 
 /* Shortcuts panel styling (which uses dropdown behavior) */

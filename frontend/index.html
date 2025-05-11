@@ -79,7 +79,16 @@
             </div>
           </div>
         </div>
-        <div class="controls">
+        <div
+          style="
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            height: auto;
+            flex-wrap: wrap;
+            min-width: 0;
+          "
+        >
           <select id="language">
             <option value="c">C</option>
             <option value="cpp">C++</option>
@@ -109,7 +118,13 @@
                 title="Vim Mode"
                 width="20"
                 height="20"
-                style="margin-right: 4px"
+                style="
+                  margin-right: 4px;
+                  transition: transform 0.3s, opacity 0.3s;
+                  flex-shrink: 0;
+                "
+                onmouseover="this.style.opacity='0.9'; this.style.transform='scale(1.1)'"
+                onmouseout="this.style.opacity='1'; this.style.transform='scale(1)'"
               />
             </a>
             <label class="toggle-switch">
@@ -121,7 +136,16 @@
             <img
               src="https://github.com/fluidicon.png"
               alt="GitHub"
-              class="github-icon"
+              style="
+                width: 26px;
+                height: 26px;
+                transition: transform 0.3s, opacity 0.3s;
+                flex-shrink: 0;
+                border-radius: 50%;
+                box-shadow: var(--shadow-sm);
+              "
+              onmouseover="this.style.opacity='0.9'; this.style.transform='scale(1.1)'"
+              onmouseout="this.style.opacity='1'; this.style.transform='scale(1)'"
             />
           </a>
         </div>
@@ -133,7 +157,7 @@
         <div class="panel editor-panel">
           <div class="panel-header">
             <div class="button-container">
-              <button id="styleCheck" class="action-btn">
+              <button id="lintCode" class="action-btn">
                 <i class="fas fa-check"></i> Lint Code
               </button>
               <button id="format" class="action-btn">
@@ -162,6 +186,7 @@
             </div>
           </div>
           <textarea id="code"></textarea>
+          <div id="vim-status" class="vim-status"></div>
         </div>
 
         <!-- Output panel (hidden initially) -->

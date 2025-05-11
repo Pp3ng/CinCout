@@ -111,15 +111,25 @@ const setupEditors = (): EditorInstances => {
     tabSize: 4,
     indentWithTabs: true,
     lineWrapping: true,
+    styleActiveLine: true,
     foldGutter: true,
     gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-    extraKeys: {
-      "Ctrl-Space": "autocomplete",
-    },
     foldOptions: {
       widget: "...",
     },
     theme: savedTheme !== "default" ? savedTheme : "default",
+  });
+
+  // Set up Vim mode change listener
+  (editor as any).on("vim-mode-change", function (data: { mode: string }) {
+    const vimStatusElement = document.getElementById("vim-status");
+    if (vimStatusElement) {
+      vimStatusElement.textContent = `-- ${data.mode.toUpperCase()} --`;
+      // Only show vim status when vim mode is active
+      const keyMap = editor.getOption("keyMap");
+      vimStatusElement.style.display =
+        keyMap && keyMap.startsWith("vim") ? "block" : "none";
+    }
   });
 
   // Assembly view - will create this but won't attach to DOM until needed
@@ -188,6 +198,18 @@ const initEditors = (): void => {
     editorService.setEditors(editorInstances);
 
     setupFontZoomHandler(editorInstances.editor, editorInstances.assemblyView);
+
+    // Initialize vim status based on current keyMap
+    const vimStatusElement = document.getElementById("vim-status");
+    if (vimStatusElement) {
+      const isVimEnabled = editorInstances.editor
+        .getOption("keyMap")
+        .startsWith("vim");
+      vimStatusElement.style.display = isVimEnabled ? "block" : "none";
+      if (isVimEnabled) {
+        vimStatusElement.textContent = "-- NORMAL --"; // Default initial mode
+      }
+    }
   } catch (e) {
     console.error("Editor setup failed:", e);
   }

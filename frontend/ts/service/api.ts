@@ -54,10 +54,10 @@ class ApiService {
   }
 
   /**
-   * Run style check on code
+   * Run lint code on code
    */
-  async runStyleCheck(code: string, lang: string): Promise<string> {
-    return this.post("styleCheck", { code, lang }, false);
+  async runLintCode(code: string, lang: string): Promise<string> {
+    return this.post("lintCode", { code, lang }, false);
   }
 }
 

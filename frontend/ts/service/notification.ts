@@ -82,7 +82,7 @@ function createCenteredNotification(
     padding: "10px 20px",
     borderRadius: "5px",
     zIndex: "9999",
-    fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+    fontFamily: "var(--font-mono)",
     boxShadow: "0 3px 10px rgba(0,0,0,0.2)",
     fontSize: "16px",
     textAlign: "center",
@@ -140,7 +140,7 @@ function createToastNotification(
     close: false,
     escapeMarkup: false,
     style: {
-      fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+      fontFamily: "var(--font-mono)",
       background: backgroundColor,
       ...positionStyle,
     },

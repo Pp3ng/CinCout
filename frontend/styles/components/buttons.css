@@ -12,9 +12,16 @@
   --btn-padding-x: calc(var(--spacing-sm) - 1px);
   --btn-padding-y: calc(var(--spacing-xs) - 1px);
   --btn-gap: var(--spacing-xs);
+  --btn-primary-gradient: linear-gradient(
+    45deg,
+    var(--accent),
+    var(--accent-hover)
+  );
+  --btn-shadow: var(--shadow-accent-sm);
+  --btn-shadow-hover: var(--shadow-accent-md);
 }
 
-/* Button container styles */
+/* Button containers */
 .button-container {
   display: flex;
   gap: calc(var(--spacing-sm) - 3px);
@@ -34,9 +41,7 @@
 
 /* Base button styles */
 button {
-  --btn-bg: linear-gradient(45deg, var(--accent), var(--accent-hover));
-  --btn-shadow: var(--shadow-accent-sm);
-  --btn-shadow-hover: var(--shadow-accent-md);
+  --btn-bg: var(--btn-primary-gradient);
 
   background: var(--btn-bg);
   color: var(--text-primary);
@@ -44,7 +49,6 @@ button {
   border: none;
   padding: var(--btn-padding-y) var(--btn-padding-x);
   border-radius: var(--radius-sm);
-  cursor: pointer;
   font-size: calc(var(--font-sm) - 1px);
   display: flex;
   align-items: center;
@@ -56,19 +60,10 @@ button {
   min-width: 0;
   box-shadow: var(--btn-shadow);
   transition: var(--btn-transition);
+  cursor: pointer;
 }
 
-/* Button variants */
-.primary-btn {
-  --btn-bg: linear-gradient(45deg, var(--accent), var(--accent-hover));
-}
-
-.secondary-btn {
-  --btn-bg: var(--bg-secondary);
-  border: 1px solid var(--border);
-}
-
-/* Hover effects */
+/* States */
 button:hover {
   transform: translateY(var(--btn-hover-y));
   box-shadow: var(--btn-shadow-hover);
@@ -82,7 +77,7 @@ button:active {
   transition: transform 0.1s ease;
 }
 
-/* Icon animations */
+/* Icon styles */
 button i,
 button svg {
   transition: transform 0.25s ease;
@@ -94,7 +89,7 @@ button:hover svg {
   transform: scale(1.2);
 }
 
-/* Special button styles */
+/* Special buttons */
 button#compile {
   --btn-bg: linear-gradient(45deg, #4caf50, #66bb6a);
   --btn-shadow: 0 2px 8px rgba(76, 175, 80, 0.5);
@@ -117,7 +112,6 @@ button#closeOutput:hover {
   box-shadow: var(--btn-shadow-hover);
 }
 
-/* Zen Mode button styles */
 button#zenMode {
   --btn-bg: linear-gradient(45deg, #3949ab, #5c6bc0);
   --btn-shadow: 0 2px 8px rgba(57, 73, 171, 0.5);
@@ -129,15 +123,7 @@ button#zenMode:hover {
   box-shadow: var(--btn-shadow-hover);
 }
 
-/* Disabled button state */
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Toggle switch styles */
+/* Toggle switch */
 .toggle-container {
   display: flex;
   align-items: center;
@@ -162,10 +148,7 @@ button:disabled {
 .slider {
   position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
@@ -196,6 +179,7 @@ input:checked + .slider:before {
   background-color: #fff;
 }
 
+/* Custom buttons */
 #toggle-shortcuts,
 #learn-btn,
 .dropdown-btn {

@@ -13,12 +13,13 @@
   transition: font-size var(--transition-fast);
 }
 
+.zen-mode-active {
+  overflow: hidden;
+}
+
 .zen-mode-active .CodeMirror {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   height: 100vh;
   width: 100vw;
   z-index: 9000;
@@ -31,39 +32,6 @@
 .zen-mode-active .button-container,
 .zen-mode-active #vim-status {
   display: none !important;
-}
-
-.zen-mode-active {
-  overflow: hidden;
-}
-
-/* CodeMirror cursor */
-.CodeMirror-cursor {
-  border-left: 1.5px solid currentColor;
-  animation: cursor-pulse 1.2s ease-in-out infinite alternate;
-}
-
-@keyframes cursor-pulse {
-  0% {
-    opacity: 1;
-    border-color: var(--accent);
-    transform: scaleY(1.05);
-  }
-  25% {
-    opacity: 0.85;
-  }
-  50% {
-    opacity: 0.7;
-    transform: scaleY(1);
-  }
-  75% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 1;
-    border-color: var(--accent);
-    transform: scaleY(1.05);
-  }
 }
 
 .CodeMirror-focused .CodeMirror-cursor {
@@ -80,44 +48,13 @@
   width: 0.55em;
 }
 
-/* Text selection */
-.CodeMirror-selected {
-  background-color: rgba(var(--accent-rgb), 0.2) !important;
-  transition: background-color var(--transition-fast);
-  border-radius: 2px;
-}
-
-/* Active line highlighting */
+/* Text selection and active line */
+.CodeMirror-selected,
 .CodeMirror-activeline-background {
   background-color: rgba(var(--accent-rgb), 0.2) !important;
-  transition: background-color var(--transition-fast);
 }
 
 /* Code folding */
-.CodeMirror-foldgutter {
-  width: 13.5px;
-}
-
-.CodeMirror-foldgutter-open,
-.CodeMirror-foldgutter-folded {
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.CodeMirror-foldgutter-open:hover,
-.CodeMirror-foldgutter-folded:hover {
-  color: var(--accent);
-  transform: scale(1.2);
-}
-
-.CodeMirror-foldgutter-open:after {
-  content: "▾";
-}
-
-.CodeMirror-foldgutter-folded:after {
-  content: "▸";
-}
 
 .CodeMirror-foldmarker {
   color: var(--accent);
@@ -139,15 +76,19 @@
 }
 
 /* Bracket matching */
-.CodeMirror-matchingbracket {
-  color: var(--accent) !important;
-  background-color: rgba(var(--accent-rgb), 0.15);
+.CodeMirror-matchingbracket,
+.CodeMirror-nonmatchingbracket {
   font-weight: bold;
   border-radius: var(--radius-sm);
   padding: 1px 2px;
-  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.4);
   text-decoration: none;
   transition: all var(--transition-fast);
+}
+
+.CodeMirror-matchingbracket {
+  color: var(--accent) !important;
+  background-color: rgba(var(--accent-rgb), 0.15);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.4);
   animation: bracket-glow 1.5s infinite alternate;
   text-shadow: 0 0 3px rgba(var(--accent-rgb), 0.4);
 }
@@ -155,48 +96,19 @@
 .CodeMirror-nonmatchingbracket {
   color: var(--error) !important;
   background-color: rgba(var(--error-rgb), 0.15);
-  font-weight: bold;
-  border-radius: var(--radius-sm);
-  padding: 1px 2px;
   box-shadow: 0 0 0 1px rgba(var(--error-rgb), 0.4);
-  transition: all var(--transition-fast);
   animation: error-pulse 1s infinite;
   text-shadow: 0 0 3px rgba(var(--error-rgb), 0.4);
 }
 
-.vim-status {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  padding: 4px 10px;
-  background-color: var(--bg-secondary);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: bold;
-  border-radius: 0;
-  border-top-right-radius: var(--radius-sm);
-  opacity: 1;
-  z-index: 100;
-  display: none;
-  transition: all var(--transition-normal);
-  letter-spacing: 0.5px;
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.vim-status:hover {
-  color: var(--accent-hover);
-}
-
-/* Bracket matching animation */
 @keyframes bracket-glow {
-  0% {
+  from {
     background-color: rgba(var(--accent-rgb), 0.1);
     box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.4),
       0 0 5px rgba(var(--accent-rgb), 0.2);
     text-shadow: 0 0 3px rgba(var(--accent-rgb), 0.3);
   }
-  100% {
+  to {
     background-color: rgba(var(--accent-rgb), 0.25);
     box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.7),
       0 0 10px rgba(var(--accent-rgb), 0.5);
@@ -204,9 +116,9 @@
   }
 }
 
-/* Non-matching bracket animation */
 @keyframes error-pulse {
-  0% {
+  0%,
+  100% {
     background-color: rgba(var(--error-rgb), 0.15);
     box-shadow: 0 0 0 1px rgba(var(--error-rgb), 0.4),
       0 0 5px rgba(var(--error-rgb), 0.2);
@@ -217,39 +129,5 @@
     box-shadow: 0 0 0 1px rgba(var(--error-rgb), 0.7),
       0 0 10px rgba(var(--error-rgb), 0.5);
     text-shadow: 0 0 5px rgba(var(--error-rgb), 0.6);
-  }
-  100% {
-    background-color: rgba(var(--error-rgb), 0.15);
-    box-shadow: 0 0 0 1px rgba(var(--error-rgb), 0.4),
-      0 0 5px rgba(var(--error-rgb), 0.2);
-    text-shadow: 0 0 3px rgba(var(--error-rgb), 0.3);
-  }
-}
-
-/* Bracket hover effects */
-.CodeMirror-matchingbracket:hover {
-  background-color: rgba(var(--accent-rgb), 0.3);
-  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.8),
-    0 0 15px rgba(var(--accent-rgb), 0.6);
-  text-shadow: 0 0 6px rgba(var(--accent-rgb), 0.7);
-}
-
-.CodeMirror-nonmatchingbracket:hover {
-  background-color: rgba(var(--error-rgb), 0.3);
-  box-shadow: 0 0 0 1px rgba(var(--error-rgb), 0.8),
-    0 0 15px rgba(var(--error-rgb), 0.6);
-  text-shadow: 0 0 6px rgba(var(--error-rgb), 0.7);
-}
-
-/* Bracket pulse animation (subtle effect) */
-@keyframes bracket-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.6);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0);
   }
 }

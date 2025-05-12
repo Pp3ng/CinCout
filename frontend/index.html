@@ -186,7 +186,30 @@
             </div>
           </div>
           <textarea id="code"></textarea>
-          <div id="vim-status" class="vim-status"></div>
+          <div
+            id="vim-status"
+            style="
+              position: absolute;
+              left: 0;
+              bottom: 0;
+              padding: 4px 10px;
+              background-color: var(--bg-secondary);
+              color: var(--accent);
+              font-family: var(--font-mono);
+              font-size: 13px;
+              font-weight: bold;
+              border-radius: 0;
+              border-top-right-radius: var(--radius-sm);
+              opacity: 1;
+              z-index: 100;
+              display: none;
+              transition: all var(--transition-normal);
+              letter-spacing: 0.5px;
+              box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+            "
+            onmouseover="this.style.color='var(--accent-hover)'"
+            onmouseout="this.style.color='var(--accent)'"
+          ></div>
         </div>
 
         <!-- Output panel (hidden initially) -->

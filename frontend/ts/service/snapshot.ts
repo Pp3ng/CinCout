@@ -26,7 +26,7 @@ export const takeCodeSnap = async (): Promise<void> => {
       position: "right" as const,
       className: "codesnap-loading",
       style: {
-        fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+        fontFamily: "var(--font-mono)",
         padding: "10px",
         borderRadius: "5px",
         background: "rgba(0,0,0,0.7)",

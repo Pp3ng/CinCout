@@ -19,36 +19,41 @@
 /* Base xterm styling */
 .xterm {
   height: 100%;
+}
+
+/* Apply common color and transition properties */
+.xterm,
+.xterm-screen,
+.xterm-rows,
+.xterm-rows > div {
   color: var(--text-primary) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .xterm-viewport {
   width: 100% !important;
-  transition: background-color 0.3s ease !important;
   background-color: var(--bg-primary) !important;
-  scrollbar-width: none; /* For Firefox */
-  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+  transition: background-color 0.3s ease !important;
+
+  /* Hide scrollbars across browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-/* Terminal interface theming */
-.xterm-screen {
-  transition: background-color 0.3s ease, color 0.3s ease;
-  color: var(--text-primary) !important;
-}
-
-.xterm-rows {
-  color: var(--text-primary) !important;
-}
-
-.xterm-rows > div {
-  color: var(--text-primary) !important;
+/* Hide webkit scrollbars */
+.xterm-viewport::-webkit-scrollbar,
+.xterm-viewport::-webkit-scrollbar-track,
+.xterm-viewport::-webkit-scrollbar-thumb,
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 /* Terminal cursor styling */
 .xterm-cursor {
   background-color: var(--accent) !important;
   color: var(--bg-primary) !important;
-  animation: cursor-blink 1s step-end infinite !important;
   opacity: 1;
   box-shadow: var(--shadow-accent-md) !important;
 }
@@ -58,11 +63,21 @@
   box-shadow: var(--shadow-accent-sm) !important;
 }
 
-/* Terminal selection styling */
 .xterm-selection {
   background-color: var(--accent) !important;
   opacity: 0.3;
   box-shadow: var(--shadow-accent-sm) !important;
+}
+
+.xterm-cursor-layer {
+  z-index: 5 !important;
+}
+
+/* Consistent cursor blinking behavior */
+.xterm.focus .xterm-cursor,
+.xterm .xterm-cursor,
+.xterm-cursor.xterm-cursor-blink {
+  animation: cursor-blink 1s step-end infinite !important;
 }
 
 @keyframes cursor-blink {
@@ -76,31 +91,4 @@
     opacity: 0;
     box-shadow: none !important;
   }
-}
-
-/* Hide default xterm scrollbar */
-.xterm-viewport::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
-}
-
-.xterm-viewport::-webkit-scrollbar-track,
-.xterm-viewport::-webkit-scrollbar-thumb,
-.xterm-viewport::-webkit-scrollbar-thumb:hover {
-  display: none;
-}
-
-.xterm-cursor-layer {
-  z-index: 5 !important;
-}
-
-/* Force cursor blinking even if terminal is focused or unfocused */
-.xterm.focus .xterm-cursor,
-.xterm .xterm-cursor {
-  animation: cursor-blink 1s step-end infinite !important;
-}
-
-.xterm-cursor.xterm-cursor-blink {
-  animation: cursor-blink 1s step-end infinite !important;
 }

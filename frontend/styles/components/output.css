@@ -114,12 +114,6 @@
   text-shadow: 0 0 3px rgba(var(--warning-rgb), 0.3);
 }
 
-.note-highlight {
-  color: var(--note);
-  font-style: italic;
-  text-shadow: 0 0 2px rgba(var(--note-rgb), 0.25);
-}
-
 /* Memory check specific styles */
 .memcheck-leak {
   border-left: 2px solid #ef4444;
@@ -152,17 +146,4 @@
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-normal);
   margin-bottom: var(--spacing-sm);
-}
-
-.leak-headline {
-  color: #ef4444;
-  font-weight: bold;
-  display: block;
-  margin: var(--spacing-md) 0 var(--spacing-sm);
-  padding: 6px 10px;
-  border-left: 3px solid #ef4444;
-  background-color: rgba(239, 68, 68, 0.05);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-normal);
 }

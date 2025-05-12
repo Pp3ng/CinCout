@@ -1,60 +1,53 @@
 // Custom Select Component
 
-// Embedded styles from select.css
+// Type definitions
+type SelectOption = {
+  value: string;
+  text: string;
+  selected: boolean;
+};
+
+// Track select elements that need refreshing
+const selectElements = new Map<string, HTMLElement>();
+
+// Inject styles only once
 const injectCustomSelectStyles = (): void => {
-  const styleElement = document.createElement("style");
-  styleElement.id = "custom-select-styles";
-  styleElement.textContent = `
+  if (document.getElementById("custom-select-styles")) return;
+
+  const css = `
     /* Base select styling */
     select {
       appearance: none;
       background: var(--bg-primary);
       color: var(--text-primary);
       border: 2px solid var(--border);
-      padding: 0px 10px 0px 8px;
+      padding: 0 10px 0 8px;
       border-radius: var(--radius-sm);
-      font-size: var(--font-xs);
-      cursor: pointer;
-      min-width: 0;
+      font: var(--font-xs) var(--font-mono);
       height: 28px;
-      background-image: none; /* Remove default arrow */
+      cursor: pointer;
       transition: all var(--transition-normal);
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
-      position: relative;
-      font-family: var(--font-mono);
       text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
     }
 
-    /* Specific widths for different select types */
-    select#language {
-      width: 55px;
-    }
-
-    select#compiler {
-      width: 70px;
-    }
-
-    select#template {
-      width: 140px;
-    }
-
-    select#optimization {
-      width: 130px;
-    }
+    /* Select widths */
+    select#language { width: 55px; }
+    select#compiler { width: 70px; }
+    select#template { width: 140px; }
+    select#optimization { width: 130px; }
 
     /* Select states */
-    select:hover {
+    select:hover, select:focus {
       border-color: var(--accent);
       box-shadow: var(--shadow-accent-sm);
-      animation: selectHover var(--transition-normal);
-    }
-
-    select:focus {
       outline: none;
-      border-color: var(--accent);
-      box-shadow: var(--shadow-accent-sm);
+    }
+    
+    select:hover {
+      animation: selectHover var(--transition-normal);
     }
 
     select option {
@@ -64,7 +57,7 @@ const injectCustomSelectStyles = (): void => {
       font-family: var(--font-mono);
     }
 
-    /* Custom select container for hover behavior */
+    /* Custom select container */
     .custom-select-container {
       position: relative;
       display: inline-block;
@@ -86,12 +79,10 @@ const injectCustomSelectStyles = (): void => {
       box-shadow: 0px 0px 1px rgba(var(--accent-rgb), 0.3);
     }
 
-    /* Arrow animation on hover */
     .custom-select-container:hover::after {
       transform: translateY(-55%) rotate(225deg);
       transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-      border-right: 1.5px solid var(--accent);
-      border-bottom: 1.5px solid var(--accent);
+      border-color: var(--accent);
       box-shadow: 0px 0px 2px rgba(var(--accent-rgb), 0.5);
     }
 
@@ -113,12 +104,10 @@ const injectCustomSelectStyles = (): void => {
       animation: fadeIn var(--transition-normal);
     }
 
-    /* Show options on hover */
     .custom-select-container:hover .select-options {
       display: block;
     }
 
-    /* Hide default select arrow and make it unclickable */
     .custom-select-container select {
       background-image: none;
       pointer-events: none;
@@ -151,57 +140,56 @@ const injectCustomSelectStyles = (): void => {
       text-shadow: 0 1px 1px rgba(var(--accent-rgb), 0.1);
     }
 
-    /* Select animation */
     @keyframes selectHover {
-      0% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-2px);
-      }
-      100% {
-        transform: translateY(0);
-      }
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
     }
   `;
 
-  // Add styles to the document
+  const styleElement = document.createElement("style");
+  styleElement.id = "custom-select-styles";
+  styleElement.textContent = css;
   document.head.appendChild(styleElement);
 };
 
-type CustomSelectInstance = {
-  refresh: () => void;
+// Create select container
+const createSelectContainer = (select: HTMLSelectElement): HTMLElement => {
+  const container = document.createElement("div");
+  container.className = "custom-select-container";
+  container.setAttribute("data-for", select.id);
+
+  const optionsContainer = document.createElement("div");
+  optionsContainer.className = "select-options";
+
+  if (select.parentNode) {
+    select.parentNode.insertBefore(container, select);
+    container.appendChild(select);
+    container.appendChild(optionsContainer);
+  }
+
+  return container;
 };
 
-const createCustomSelect = (
-  select: HTMLSelectElement
-): CustomSelectInstance => {
-  const container: HTMLElement =
+// Create custom select component
+const createCustomSelect = (select: HTMLSelectElement): void => {
+  // Get or create container
+  const container =
     select.parentNode instanceof Element &&
     select.parentNode.classList.contains("custom-select-container")
       ? (select.parentNode as HTMLElement)
-      : (() => {
-          const container = document.createElement("div");
-          container.className = "custom-select-container";
-          container.setAttribute("data-for", select.id);
+      : createSelectContainer(select);
 
-          const optionsContainer = document.createElement("div");
-          optionsContainer.className = "select-options";
+  // Store container reference for template select
+  if (select.id === "template") {
+    selectElements.set("template", container);
+  }
 
-          if (select.parentNode) {
-            select.parentNode.insertBefore(container, select);
-            container.appendChild(select);
-            container.appendChild(optionsContainer);
-          }
-
-          return container;
-        })();
-
-  const optionsContainer: HTMLElement = container.querySelector(
+  const optionsContainer = container.querySelector(
     ".select-options"
   ) as HTMLElement;
 
-  const buildOptions = () => {
+  // Build option list
+  const buildOptions = (): void => {
     optionsContainer.innerHTML = "";
 
     Array.from(select.options).forEach((option, index) => {
@@ -212,6 +200,7 @@ const createCustomSelect = (
       customOption.textContent = option.text;
       customOption.dataset.value = option.value;
 
+      // Click event
       customOption.addEventListener("click", () => {
         select.selectedIndex = index;
         select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -222,7 +211,8 @@ const createCustomSelect = (
     });
   };
 
-  const updateSelectedUI = () => {
+  // Update UI selection state
+  const updateSelectedUI = (): void => {
     const selectedIndex = select.selectedIndex;
     optionsContainer
       .querySelectorAll(".custom-option")
@@ -231,52 +221,51 @@ const createCustomSelect = (
       });
   };
 
-  const setupEventListeners = () => {
-    select.addEventListener("change", updateSelectedUI);
-
-    container.addEventListener("mouseenter", () => {
-      optionsContainer.style.display = "block";
-    });
-
-    container.addEventListener("mouseleave", () => {
-      setTimeout(() => {
-        if (!container.matches(":hover")) {
-          optionsContainer.style.display = "none";
-        }
-      }, 100);
-    });
+  // Refresh the custom select (rebuild options)
+  const refreshSelect = (): void => {
+    buildOptions();
+    updateSelectedUI();
   };
 
-  buildOptions();
-  setupEventListeners();
-  setTimeout(() => updateSelectedUI(), 0);
+  // Setup event listeners
+  select.addEventListener("change", updateSelectedUI);
 
-  return {
-    refresh: () => {
-      buildOptions();
-      updateSelectedUI();
-    },
-  };
-};
-
-const initCustomSelects = () => {
-  // Inject CSS styles
-  injectCustomSelectStyles();
-
-  const selectInstances = new Map<HTMLSelectElement, CustomSelectInstance>();
-
-  document.querySelectorAll("select").forEach((select) => {
-    const selectElement = select as HTMLSelectElement;
-    selectInstances.set(selectElement, createCustomSelect(selectElement));
+  container.addEventListener("mouseenter", () => {
+    optionsContainer.style.display = "block";
   });
 
-  const templateSelect = document.getElementById(
-    "template"
-  ) as HTMLSelectElement;
-  if (templateSelect && selectInstances.has(templateSelect)) {
-    new MutationObserver(() =>
-      selectInstances.get(templateSelect)?.refresh()
-    ).observe(templateSelect, { childList: true });
+  container.addEventListener("mouseleave", () => {
+    setTimeout(() => {
+      if (!container.matches(":hover")) {
+        optionsContainer.style.display = "none";
+      }
+    }, 100);
+  });
+
+  // Initialize
+  buildOptions();
+  setTimeout(updateSelectedUI, 0);
+
+  // Set up MutationObserver for template select element
+  if (select.id === "template") {
+    new MutationObserver(() => refreshSelect()).observe(select, {
+      childList: true,
+      subtree: true,
+    });
   }
 };
+
+// Initialize all select elements
+const initCustomSelects = (): void => {
+  // Inject styles
+  injectCustomSelectStyles();
+
+  // Initialize all select elements
+  document.querySelectorAll("select").forEach((select) => {
+    const selectElement = select as HTMLSelectElement;
+    createCustomSelect(selectElement);
+  });
+};
+
+// Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", initCustomSelects);

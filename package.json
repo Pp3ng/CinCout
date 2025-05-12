@@ -6,5 +6,11 @@
     "build:backend": "cd backend && npm install && npm run build",
     "clean": "rm -rf node_modules package-lock.json frontend/node_modules frontend/dist frontend/package-lock.json backend/node_modules backend/dist backend/package-lock.json",
     "start": "node backend/dist/server.bundle.js"
-  }
+  },
+  "description": "This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using `Typescript/Node.js` for the backend and `HTML/CSS/TypeScript` for the frontend. It provides a user-friendly interface with rich features.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pp3ng/cincout.git"
+  },
+  "homepage": "https://github.com/pp3ng/cincout#readme"
 }

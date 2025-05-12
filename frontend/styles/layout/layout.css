@@ -27,13 +27,7 @@
 /* Title styles */
 h1 {
   font-family: var(--font-mono);
-  background: linear-gradient(
-    45deg,
-    var(--accent),
-    var(--accent-hover),
-    var(--accent),
-    var(--accent-hover)
-  );
+  background: linear-gradient(45deg, var(--accent), var(--accent-hover)) 0% 50%;
   background-size: 300% 300%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -50,23 +44,18 @@ h1 {
 }
 
 @keyframes gradient-shift {
-  0% {
+  0%,
+  100% {
     background-position: 0% 50%;
     text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.2);
-  }
-  25% {
-    text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
   }
   50% {
     background-position: 100% 50%;
     text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.3);
   }
+  25%,
   75% {
     text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
-  }
-  100% {
-    background-position: 0% 50%;
-    text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.2);
   }
 }
 
@@ -84,8 +73,7 @@ h1 {
 .panel {
   background: var(--bg-secondary);
   border-radius: var(--radius-sm);
-  padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs)
-    var(--spacing-xs);
+  padding: var(--spacing-xs);
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-sm);
@@ -94,23 +82,24 @@ h1 {
   overflow: hidden;
 }
 
-/* Editor panel - initially full width */
-.editor-panel {
-  flex: 1;
+/* Editor and output panels */
+.editor-panel,
+.output-panel {
   transition: all 0.3s ease;
 }
 
-/* Editor panel when output is visible */
+.editor-panel {
+  flex: 1;
+}
+
 .editor-panel.with-output {
   flex: 0.6;
 }
 
-/* Output panel - fixed width when visible */
 .output-panel {
   flex: 0.4;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
 }
 
 /* Panel header styles */
@@ -118,7 +107,6 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: auto;
   min-height: 28px;
   margin-bottom: var(--spacing-xs);
   padding: 2px 6px;

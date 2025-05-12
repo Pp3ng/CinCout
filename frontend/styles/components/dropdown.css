@@ -3,18 +3,22 @@
  * Styles for dropdown menus and related components
  */
 
-/* Dropdown container */
-.dropdown {
+/* Dropdown and shortcut components */
+.dropdown,
+.shortcuts-panel {
   position: relative;
   display: inline-block;
+}
+
+.dropdown {
   z-index: var(--z-dropdown);
 }
 
-/* Dropdown button icon animation */
+/* Icons and animations */
 .dropdown-btn .fa-chevron-down {
   font-size: 0.7em;
   margin-left: 4px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dropdown:hover .fa-chevron-down {
@@ -22,27 +26,47 @@
   transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Dropdown content */
-.dropdown-content {
+.resource-icon {
+  width: 16px;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+/* Dropdown containers */
+.dropdown-content,
+.shortcuts-content {
   display: none;
-  font-family: var(--font-mono);
   position: absolute;
   background-color: var(--bg-secondary);
-  min-width: 220px;
   box-shadow: var(--shadow-md);
   border-radius: var(--radius-md);
-  z-index: var(--z-dropdown);
-  margin-top: 3px;
-  animation: fadeIn 0.3s ease;
   border: 1px solid var(--border);
+  z-index: var(--z-dropdown);
+}
+
+.dropdown-content {
+  min-width: 220px;
+  font-family: var(--font-mono);
+  margin-top: 3px;
   overflow: hidden;
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 0.3s, transform 0.3s;
   pointer-events: none;
+  animation: fadeIn 0.3s ease;
 }
 
-/* Hover area padding for easier access */
+.shortcuts-content {
+  top: 100%;
+  left: 0;
+  min-width: 250px;
+  max-width: 350px;
+  padding: 6px;
+  margin-top: 5px;
+  font-size: var(--font-xs);
+}
+
+/* Hover behaviors */
 .dropdown-content::before {
   content: "";
   position: absolute;
@@ -52,7 +76,6 @@
   height: 20px;
 }
 
-/* Show dropdown on hover */
 .dropdown:hover .dropdown-content {
   display: block;
   opacity: 1;
@@ -60,7 +83,6 @@
   pointer-events: auto;
 }
 
-/* Hover bridge between button and dropdown */
 .dropdown::after {
   content: "";
   position: absolute;
@@ -76,37 +98,21 @@
   display: block;
 }
 
-/* Icon animations */
-.resource-icon {
-  transition: all 0.3s ease;
-  width: 16px;
-  text-align: center;
-}
-
-/* Dropdown item styling */
+/* Link styling */
 .dropdown-content a {
-  position: relative;
   color: var(--text-primary);
   padding: 10px 12px;
-  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  text-decoration: none;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .dropdown-content a:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-accent-sm);
-}
-
-.dropdown-content a:active {
-  transform: translateY(0);
-  transition: transform 0.1s ease;
-}
-
-.dropdown-content a:has(.resource-icon):hover {
   background-color: transparent;
 }
 
@@ -114,32 +120,14 @@
   color: var(--accent);
 }
 
-/* Shortcuts panel styling (which uses dropdown behavior) */
-.shortcuts-panel {
-  position: relative;
-  display: inline-block;
+.dropdown-content a:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
 }
 
-.shortcuts-content {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background-color: var(--bg-secondary);
-  min-width: 250px;
-  max-width: 350px;
-  box-shadow: var(--shadow-md);
-  padding: 6px;
-  z-index: var(--z-dropdown);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  margin-top: 5px;
-  font-size: var(--font-xs);
-  transition: display var(--transition-slow), opacity var(--transition-normal);
-}
-
+/* Shortcuts lists */
 .shortcuts-content ul {
-  list-style-type: none;
+  list-style: none;
   padding: 0;
   margin: 0;
 }
@@ -149,26 +137,21 @@
   padding: 3px 0;
 }
 
-.shortcuts-content li:last-child {
-  border-bottom: none;
-}
-
+/* Keyboard shortcuts */
 .shortcuts-content kbd {
-  background-color: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
-  color: var(--accent);
   display: inline-block;
-  font-size: 0.85em;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  line-height: 1.2;
+  background-color: var(--bg-primary);
+  color: var(--accent);
+  font: 600 0.85em/1.2 var(--font-mono);
   padding: 2px 4px;
-  white-space: nowrap;
   margin: 0 2px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--glass-border);
-  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
   transform: translateY(0);
+  transition: transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .shortcuts-content kbd:hover {

@@ -29,6 +29,9 @@ RUN npm install pm2 -g
 # Create app directory
 WORKDIR /app
 
+# Create non-privileged user
+RUN adduser --disabled-password --gecos "" appuser
+
 # Copy only the exact files needed
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/backend/dist/server.bundle.js ./backend/dist/server.bundle.js
@@ -51,6 +54,9 @@ RUN echo '{\
 
 # Expose the port
 EXPOSE 9527
+
+# Switch to non-root user
+USER appuser
 
 # Start the server with PM2
 CMD ["pm2-runtime", "start", "ecosystem.config.json"]

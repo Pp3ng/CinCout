@@ -91,7 +91,6 @@ The project follows a clean separation between frontend and backend:
 - [x] Integrate `gdb` for debugging capabilities
 - [ ] Use `React` for the frontend instead of `Vanilla TypeScript`
 - [ ] Implement `clang-tidy` for code analysis
-- [ ] Add more themes and customization options
 - [ ] More modern `UI/UX` design
 - [ ] Add cloud storage for saving code snippets
 

@@ -1,10 +1,4 @@
-/*
- * main.css
- * Main entry point that imports all CSS files in the correct cascade order
- */
-
 /* Base styles - Reset, variables, and global elements */
-@import "./base/reset.css";
 @import "./base/variables.css";
 @import "./base/base.css";
 

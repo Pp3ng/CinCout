@@ -1,6 +1,9 @@
-/* Base styles - Reset, variables, and global elements */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 @import "./base/variables.css";
 @import "./base/base.css";
+
+@layer theme, base, components, utilities;
 
 /* Layout - Core layout structure */
 @import "./layout/layout.css";

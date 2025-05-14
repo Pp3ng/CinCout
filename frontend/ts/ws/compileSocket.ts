@@ -2,20 +2,20 @@
  * CompileSocket - Module handling compilation-related Socket.IO communication
  */
 import { getTerminalService } from "../service/terminal";
-import { CompileOptions, CompileStateUpdater } from "../types";
+import { CompileOptions, StateUpdater } from "../types";
 import { socketManager, SocketEvents } from "./webSocketManager";
 
 /**
  * CompileSocketManager handles the Socket.IO communication for code compilation
  */
 export class CompileSocketManager {
-  private stateUpdater: CompileStateUpdater;
+  private stateUpdater: StateUpdater;
 
   /**
    * Create a new CompileSocketManager
    * @param stateUpdater Interface to update UI based on socket events
    */
-  constructor(stateUpdater: CompileStateUpdater) {
+  constructor(stateUpdater: StateUpdater) {
     this.stateUpdater = stateUpdater;
     this.setupEventListeners();
   }
@@ -28,7 +28,6 @@ export class CompileSocketManager {
     socketManager.on(SocketEvents.COMPILING, () => {
       this.stateUpdater.showOutput();
       this.showOutputMessage('<div class="loading">Compiling</div>');
-      this.stateUpdater.refreshEditor();
     });
 
     socketManager.on(SocketEvents.COMPILE_SUCCESS, () => {
@@ -46,7 +45,6 @@ export class CompileSocketManager {
 
       // Initialize terminal
       terminalService.setupTerminal();
-      this.stateUpdater.refreshEditor();
     });
 
     socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {

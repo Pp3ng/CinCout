@@ -34,7 +34,7 @@
   margin-left: auto;
 }
 
-.output-panel .panel-header .button-container {
+.output-panel .button-container {
   width: 100%;
   justify-content: flex-end;
 }
@@ -123,15 +123,6 @@ button#zenMode:hover {
   box-shadow: var(--btn-shadow-hover);
 }
 
-/* Toggle switch */
-.toggle-container {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: var(--btn-height);
-  flex-shrink: 0;
-}
-
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -180,8 +171,6 @@ input:checked + .slider:before {
 }
 
 /* Custom buttons */
-#toggle-shortcuts,
-#learn-btn,
 .dropdown-btn {
   --btn-bg: var(--bg-secondary);
   --btn-shadow: var(--shadow-sm);
@@ -192,7 +181,6 @@ input:checked + .slider:before {
   border: 1px solid var(--border);
   padding: var(--btn-padding-y) var(--btn-padding-x);
   border-radius: var(--radius-sm);
-  cursor: pointer;
   font-size: var(--font-sm);
   display: flex;
   align-items: center;
@@ -204,8 +192,6 @@ input:checked + .slider:before {
   transition: var(--btn-transition);
 }
 
-#toggle-shortcuts:hover,
-#learn-btn:hover,
 .dropdown-btn:hover {
   border-color: var(--accent);
   background-color: rgba(var(--accent-rgb), 0.1);
@@ -213,8 +199,6 @@ input:checked + .slider:before {
   box-shadow: var(--btn-shadow-hover);
 }
 
-#toggle-shortcuts::before,
-#learn-btn::before,
 .dropdown-btn::before {
   content: "";
   position: absolute;
@@ -226,6 +210,4 @@ input:checked + .slider:before {
     transparent 50%,
     rgba(0, 0, 0, 0.05)
   );
-  pointer-events: none;
-  border-radius: inherit;
 }

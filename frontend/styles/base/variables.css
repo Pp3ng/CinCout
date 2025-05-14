@@ -33,7 +33,6 @@
   /* Transitions */
   --transition-fast: 120ms ease;
   --transition-normal: 250ms ease;
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Special effects */
   --glass-border: rgba(255, 255, 255, 0.08);
@@ -41,14 +40,9 @@
   /* Font sizes */
   --font-xs: 11.5px;
   --font-sm: 12.6px;
-  --font-lg: 16px;
-  --font-xl: 20px;
 
   /* Font families */
   --font-mono: "Fira Code", "JetBrains Mono", monospace;
-
-  /* Z-index layers */
-  --z-dropdown: 100;
 }
 
 /* Theme transition helpers */

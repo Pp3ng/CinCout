@@ -70,8 +70,3 @@ export const useLayout = () => {
     handleRunningProcess,
   };
 };
-
-document.addEventListener("DOMContentLoaded", () => {
-  const layout = useLayout();
-  layout.initialize();
-});

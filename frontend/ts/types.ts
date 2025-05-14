@@ -13,7 +13,7 @@ export interface DOMElements {
   format: HTMLElement | null;
   viewAssembly: HTMLElement | null;
   lintCode: HTMLElement | null;
-  debug: HTMLElement | null; // Added debug button
+  debug: HTMLElement | null;
   themeSelect: HTMLSelectElement | null;
   outputPanel: HTMLElement | null;
   closeOutput: HTMLElement | null;
@@ -60,34 +60,9 @@ export interface WebSocketMessage {
   [key: string]: any;
 }
 
-export interface CinCoutSocket {
-  init: (messageHandler: (eventName: string, data: any) => void) => void;
-  sendData: (data: any) => Promise<void>;
-  isConnected: () => boolean;
-  getSessionId: () => string | null;
-  setSessionId: (id: string) => void;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  setProcessRunning: (running: boolean) => void;
-  isProcessRunning: () => boolean;
-}
-
 // Minimal DOM update functions
-export interface CompileStateUpdater {
+export interface StateUpdater {
   showOutput: () => void;
-  refreshEditor: () => void;
-}
-
-// Minimal DOM update functions for debugging
-export interface DebugStateUpdater {
-  showOutput: () => void;
-  refreshEditor: () => void;
-}
-
-// Minimal DOM update functions for leak detection
-export interface LeakDetectStateUpdater {
-  showOutput: () => void;
-  refreshEditor: () => void;
 }
 
 // ==========================================
@@ -179,7 +154,7 @@ export enum DomElementId {
   FORMAT = "format",
   LINT_CODE = "lintCode",
   MEMORY_CHECK = "memcheck",
-  DEBUG = "debug", // Added debug element ID
+  DEBUG = "debug",
   OUTPUT_PANEL = "outputPanel",
   LANGUAGE = "language",
   SHORTCUTS_CONTENT = "shortcuts-content",
@@ -194,9 +169,6 @@ export interface ShortcutDefinition {
   displayKeys: string[];
 }
 
-// Mapping of key combos to shortcut definitions
-type ShortcutMap = Record<string, ShortcutDefinition>;
-
 // Categories of shortcuts
 export interface ShortcutCategories {
   common: ShortcutMap;
@@ -204,3 +176,6 @@ export interface ShortcutCategories {
   other: ShortcutMap;
   special: ShortcutMap;
 }
+
+// Mapping of key combos to shortcut definitions
+type ShortcutMap = Record<string, ShortcutDefinition>;

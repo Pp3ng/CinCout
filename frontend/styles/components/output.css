@@ -16,11 +16,9 @@
 }
 
 /* Output styling for different types */
-.highlighted-output,
 .memcheck-output,
 .lint-code-output,
-.error-output,
-.default-output {
+.error-output {
   margin: 0;
   padding: 6px;
   border-radius: var(--radius-sm);
@@ -99,19 +97,6 @@
   color: #8be9fd;
   font-weight: bold;
   text-shadow: 0 0 2px rgba(139, 233, 253, 0.3);
-}
-
-/* Highlighting for specific types of messages */
-.error-highlight {
-  color: var(--error);
-  font-weight: bold;
-  text-shadow: 0 0 3px rgba(var(--error-rgb), 0.3);
-}
-
-.warning-highlight {
-  color: var(--warning);
-  font-weight: bold;
-  text-shadow: 0 0 3px rgba(var(--warning-rgb), 0.3);
 }
 
 /* Memory check specific styles */

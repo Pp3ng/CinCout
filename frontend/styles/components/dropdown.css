@@ -8,10 +8,7 @@
 .shortcuts-panel {
   position: relative;
   display: inline-block;
-}
-
-.dropdown {
-  z-index: var(--z-dropdown);
+  z-index: 100;
 }
 
 /* Icons and animations */
@@ -136,7 +133,6 @@
   margin-bottom: 3px;
   padding: 3px 0;
 }
-
 /* Keyboard shortcuts */
 .shortcuts-content kbd {
   display: inline-block;

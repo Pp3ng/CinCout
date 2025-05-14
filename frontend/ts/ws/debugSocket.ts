@@ -2,20 +2,20 @@
  * DebugSocket - Module handling GDB debugging-related Socket.IO communication
  */
 import { getTerminalService } from "../service/terminal";
-import { CompileOptions, DebugStateUpdater } from "../types";
+import { CompileOptions, StateUpdater } from "../types";
 import { socketManager, SocketEvents } from "./webSocketManager";
 
 /**
  * DebugSocketManager handles the Socket.IO communication for GDB debugging
  */
 export class DebugSocketManager {
-  private stateUpdater: DebugStateUpdater;
+  private stateUpdater: StateUpdater;
 
   /**
    * Create a new DebugSocketManager
    * @param stateUpdater Interface to update UI based on socket events
    */
-  constructor(stateUpdater: DebugStateUpdater) {
+  constructor(stateUpdater: StateUpdater) {
     this.stateUpdater = stateUpdater;
     this.setupEventListeners();
   }
@@ -27,7 +27,6 @@ export class DebugSocketManager {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {
       this.stateUpdater.showOutput();
-      this.stateUpdater.refreshEditor();
     });
 
     // Handle debugging events

@@ -2,7 +2,7 @@
  * LeakDetectSocket - Module handling memory leak detection Socket.IO communication
  */
 import { getTerminalService } from "../service/terminal";
-import { CompileOptions, LeakDetectStateUpdater } from "../types";
+import { CompileOptions, StateUpdater } from "../types";
 import { socketManager, SocketEvents } from "./webSocketManager";
 import { domUtils } from "../app";
 
@@ -10,13 +10,13 @@ import { domUtils } from "../app";
  * LeakDetectSocketManager handles the Socket.IO communication for memory leak detection
  */
 export class LeakDetectSocketManager {
-  private stateUpdater: LeakDetectStateUpdater;
+  private stateUpdater: StateUpdater;
 
   /**
    * Create a new LeakDetectSocketManager
    * @param stateUpdater Interface to update UI based on socket events
    */
-  constructor(stateUpdater: LeakDetectStateUpdater) {
+  constructor(stateUpdater: StateUpdater) {
     this.stateUpdater = stateUpdater;
     this.setupEventListeners();
   }
@@ -31,7 +31,6 @@ export class LeakDetectSocketManager {
       domUtils.setOutput(
         '<div class="loading">Compiling for leak detection...</div>'
       );
-      this.stateUpdater.refreshEditor();
     });
 
     // Handle leak detection running phase

@@ -78,15 +78,6 @@ export class EditorService {
       this.assemblyView.setValue(value);
     }
   }
-
-  refreshAll(): void {
-    if (this.editor) {
-      this.editor.refresh();
-    }
-    if (this.assemblyView) {
-      this.assemblyView.refresh();
-    }
-  }
 }
 
 const setupEditors = (): EditorInstances => {
@@ -153,8 +144,6 @@ const setupFontZoomHandler = (
   const applyFontSize = () => {
     editor.getWrapperElement().style.fontSize = `${fontSize}px`;
     assemblyView.getWrapperElement().style.fontSize = `${fontSize}px`;
-    editor.refresh();
-    assemblyView.refresh();
   };
 
   applyFontSize();

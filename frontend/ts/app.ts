@@ -14,8 +14,14 @@ import {
   initializeTemplates,
 } from "./service/templates";
 import { CompileOptions, DOMElements, DomElementId } from "./types";
-import { initializeShortcuts, renderShortcutsList, isMac } from "./service/shortcuts";
+import {
+  initializeShortcuts,
+  renderShortcutsList,
+  isMac,
+} from "./service/shortcuts";
 import themeManager from "./ui/themeManager";
+import { initCustomSelects } from "./ui/selector";
+import { useLayout } from "./ui/layout";
 
 // Import CSS for CodeMirror themes
 import "codemirror/theme/nord.css";
@@ -98,13 +104,6 @@ export const domUtils = {
     if (isZenMode) {
       getEditorService().refresh();
     }
-  },
-
-  refreshEditor: (): void => {
-    setTimeout(() => {
-      const editorService = getEditorService();
-      editorService.refreshAll();
-    }, 10);
   },
 
   getCompileOptions: (): CompileOptions => {
@@ -340,18 +339,19 @@ const toggleZenMode = (): void => {
   const editor = editorService.getEditor();
   if (!editor) return;
 
-  const isEnteringZenMode = !document.body.classList.contains("zen-mode-active");
+  const isEnteringZenMode =
+    !document.body.classList.contains("zen-mode-active");
   document.body.classList.toggle("zen-mode-active");
 
   setTimeout(() => editorService.refresh(), 100);
-  
+
   // Show notification with shortcut hint when entering zen mode
   if (isEnteringZenMode) {
     const shortcutText = isMac ? "⌘+⇧+Z" : "Ctrl+Shift+Z";
     showNotification(
-      "info", 
-      `Zen mode activated. Press ${shortcutText} to exit.`, 
-      4000, 
+      "info",
+      `Zen mode activated. Press ${shortcutText} to exit.`,
+      4000,
       { top: "50%", left: "50%" }
     );
   }
@@ -362,7 +362,6 @@ export const initApp = () => {
   // Initialize socket managers with shared configuration
   const socketConfig = {
     showOutput: domUtils.showOutputPanel.bind(domUtils),
-    refreshEditor: domUtils.refreshEditor.bind(domUtils),
   };
 
   // Create socket managers
@@ -395,10 +394,6 @@ export const initApp = () => {
   // Set up all event listeners
   const setupEventListeners = () => {
     const elements = domUtils.getElements();
-
-    // Initialize shortcuts system
-    initializeShortcuts();
-    domUtils.renderShortcutsList();
 
     // Template and language handlers
     elements.template?.addEventListener("change", loadSelectedTemplate);
@@ -475,15 +470,10 @@ export const initApp = () => {
     elements.vimMode?.addEventListener("change", () => {
       editorSettings.setVimMode(!!elements.vimMode?.checked);
     });
-
-    // Load saved settings
-    editorSettings.loadSavedSettings();
   };
 
-  // Initialize the application when DOM is loaded
-  document.addEventListener("DOMContentLoaded", () => {
-    initializeTemplates();
-    setupEventListeners();
+  // Handle the title Easter egg
+  const setupEasterEgg = () => {
     const el = document.getElementById("title-easter-egg");
     if (!el) return;
 
@@ -510,9 +500,36 @@ export const initApp = () => {
         timer = window.setTimeout(() => (clicks = 0), 4000);
       }
     });
+  };
+
+  // Main initialization sequence when DOM is loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    // Step 1: Initialize theme system first
+    themeUtils.applyUserTheme();
+    themeUtils.initializeThemeUI();
+
+    // Step 2: Initialize UI components
+    initializeTemplates();
+    initCustomSelects();
+
+    // Step 3: Initialize layout system
+    const layout = useLayout();
+    layout.initialize();
+
+    // Step 4: Initialize shortcuts system
+    initializeShortcuts();
+    domUtils.renderShortcutsList();
+
+    // Step 5: Load saved settings (affects editor behavior)
+    editorSettings.loadSavedSettings();
+
+    // Step 6: Set up event listeners
+    setupEventListeners();
+
+    // Step 7: Set up Easter egg
+    setupEasterEgg();
   });
 };
 
 // Start the application
 initApp();
-themeUtils.initializeThemeUI();

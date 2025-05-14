@@ -4,6 +4,10 @@
  */
 
 /* Base CodeMirror container */
+
+@import "codemirror/lib/codemirror.css";
+@import "codemirror/addon/fold/foldgutter.css";
+
 .CodeMirror {
   height: 100%;
   border-radius: var(--radius-sm);

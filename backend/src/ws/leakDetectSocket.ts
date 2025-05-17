@@ -3,15 +3,19 @@
  * Implements Valgrind-based memory checking with WebSocket communication
  */
 import {
-  ICompilationService,
+  ICodeProcessingService,
   ISessionService,
   IWebSocketManager,
   SessionSocket,
   CompilationEnvironment,
 } from "../types";
-import { compilationService } from "../utils/compilationService";
+import { codeProcessingService } from "../utils/codeProcessingService";
 import { sessionService } from "../utils/sessionService";
-import { webSocketManager, SocketEvents, BaseSocketHandler } from "./webSocketManager";
+import {
+  webSocketManager,
+  SocketEvents,
+  BaseSocketHandler,
+} from "./webSocketManager";
 import path from "path";
 import fs from "fs-extra";
 
@@ -27,7 +31,7 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
    * @param webSocketManager - WebSocket manager
    */
   constructor(
-    compilationService: ICompilationService,
+    compilationService: ICodeProcessingService,
     sessionService: ISessionService,
     webSocketManager: IWebSocketManager
   ) {
@@ -240,7 +244,7 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
         }
 
         // Format report
-        const formattedReport = compilationService["formatOutput"](
+        const formattedReport = codeProcessingService["formatOutput"](
           report,
           "memcheck"
         );
@@ -320,7 +324,7 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
 
 // Create singleton instance with dependencies
 export const leakDetectHandler = new LeakDetectWebSocketHandler(
-  compilationService,
+  codeProcessingService,
   sessionService,
   webSocketManager
 );

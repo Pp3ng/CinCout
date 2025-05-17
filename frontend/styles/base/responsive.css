@@ -1,0 +1,23 @@
+/*
+ * responsive.css
+ * Media queries and responsive layout adjustments
+ */
+
+@media (max-width: 1200px) {
+  .main-container {
+    flex-direction: column;
+    height: auto;
+    min-height: auto;
+  }
+  .editor-panel,
+  .editor-panel.with-output {
+    flex: none;
+    width: 100%;
+    height: 45vh;
+  }
+  .output-panel {
+    flex: none;
+    width: 100%;
+    height: 35vh;
+  }
+}

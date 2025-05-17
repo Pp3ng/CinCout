@@ -12,7 +12,7 @@ export const normalizeKey = (event: KeyboardEvent): string => {
   if (key === "enter" || key === "escape")
     return key.charAt(0).toUpperCase() + key.slice(1);
 
-  // Build modifier string
+  // Build modifier string with array methods
   const modifiers = [
     event.ctrlKey && "ctrl",
     event.altKey && "alt",
@@ -27,26 +27,24 @@ export const normalizeKey = (event: KeyboardEvent): string => {
   return key.length === 1 || /^[0-9]$/.test(key) ? prefix + key : event.key;
 };
 
+// Helper to reduce DOM access repetition
+const clickElement = (id: string): void => document.getElementById(id)?.click();
+
 // Core UI actions - easily adaptable to React components
 export const uiActions = {
-  compile: () => document.getElementById(DomElementId.COMPILE)?.click(),
-  viewAssembly: () =>
-    document.getElementById(DomElementId.VIEW_ASSEMBLY)?.click(),
-  formatCode: () => document.getElementById(DomElementId.FORMAT)?.click(),
-  lintCode: () => document.getElementById(DomElementId.LINT_CODE)?.click(),
-  memoryCheck: () =>
-    document.getElementById(DomElementId.MEMORY_CHECK)?.click(),
-  debug: () => document.getElementById(DomElementId.DEBUG)?.click(),
-  takeCodeSnapshot: () =>
-    document.getElementById(DomElementId.CODESNAP)?.click(),
+  compile: () => clickElement(DomElementId.COMPILE),
+  viewAssembly: () => clickElement(DomElementId.VIEW_ASSEMBLY),
+  formatCode: () => clickElement(DomElementId.FORMAT),
+  lintCode: () => clickElement(DomElementId.LINT_CODE),
+  memoryCheck: () => clickElement(DomElementId.MEMORY_CHECK),
+  debug: () => clickElement(DomElementId.DEBUG),
+  syscallTrace: () => clickElement(DomElementId.SYSCALL),
+  takeCodeSnapshot: () => clickElement(DomElementId.CODESNAP),
   closeOutputPanel: (): boolean => {
     const outputPanel = document.getElementById(DomElementId.OUTPUT_PANEL);
-    if (outputPanel && outputPanel.style.display !== "none") {
-      document.getElementById(DomElementId.CLOSE_OUTPUT)?.click();
-      Promise.resolve().then(() => {
-        const editorService = getEditorService();
-        editorService.getEditor()?.focus();
-      });
+    if (outputPanel?.style.display !== "none") {
+      clickElement(DomElementId.CLOSE_OUTPUT);
+      Promise.resolve().then(() => getEditorService().getEditor()?.focus());
       return true;
     }
     return false;
@@ -56,14 +54,8 @@ export const uiActions = {
 // Editor-specific actions
 export const editorActions = {
   toggleCodeFolding: (): void => {
-    const editorService = getEditorService();
-    const editor = editorService.getEditor();
-    if (editor) {
-      const cursor = editorService.getCursor();
-      if (cursor) {
-        editor.foldCode(cursor);
-      }
-    }
+    const editor = getEditorService().getEditor();
+    editor?.foldCode(editor.getCursor());
   },
 
   saveCodeToFile: async (): Promise<void> => {
@@ -73,10 +65,11 @@ export const editorActions = {
 
     try {
       const code = editorService.getValue();
-      const languageElement = document.getElementById(
-        DomElementId.LANGUAGE
-      ) as HTMLSelectElement;
-      const fileType = languageElement?.value === "cpp" ? "cpp" : "c";
+      const fileType =
+        (document.getElementById(DomElementId.LANGUAGE) as HTMLSelectElement)
+          ?.value === "cpp"
+          ? "cpp"
+          : "c";
       const blob = new Blob([code], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
 
@@ -86,6 +79,7 @@ export const editorActions = {
         download: `code.${fileType}`,
       }).click();
 
+      // Clean up URL object
       setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error("Failed to save file:", error);
@@ -94,23 +88,24 @@ export const editorActions = {
 
   openCodeFromFile: async (): Promise<void> => {
     try {
+      // Create and click file input
       const fileInput = Object.assign(document.createElement("input"), {
         type: "file",
         accept: ".c,.cpp",
       });
       fileInput.click();
 
+      // Wait for file selection
       const file = await new Promise<File | null>((resolve) => {
         fileInput.onchange = (e) =>
-          resolve((e.target as HTMLInputElement).files?.[0] || null);
+          resolve((e.target as HTMLInputElement).files?.[0] ?? null);
         fileInput.oncancel = () => resolve(null);
       });
 
       if (!file) return;
 
-      const content = await file.text();
-      const editorService = getEditorService();
-      editorService.setValue(content);
+      // Load file content into editor
+      getEditorService().setValue(await file.text());
     } catch (error) {
       console.error("Failed to open file:", error);
     }
@@ -119,8 +114,7 @@ export const editorActions = {
 
 // View actions
 export const viewActions = {
-  toggleZenMode: (): void =>
-    document.getElementById(DomElementId.ZEN_MODE)?.click(),
+  toggleZenMode: () => clickElement(DomElementId.ZEN_MODE),
 };
 
 // Action descriptions - for UI rendering
@@ -136,6 +130,7 @@ export const actionDescriptions = {
   lintCode: "Lint code",
   memoryCheck: "Memory check",
   debug: "Debug with GDB",
+  syscallTrace: "Trace system calls",
   closeOutput: "Close output panel",
 };
 
@@ -177,42 +172,24 @@ export const createShortcuts = (): ShortcutCategories => {
     },
   };
 
-  // Define number action mappings only once
-  const numberActions = [
-    {
-      action: uiActions.viewAssembly,
-      description: actionDescriptions.viewAssembly,
-    },
-    {
-      action: uiActions.formatCode,
-      description: actionDescriptions.formatCode,
-    },
-    {
-      action: uiActions.lintCode,
-      description: actionDescriptions.lintCode,
-    },
-    {
-      action: uiActions.memoryCheck,
-      description: actionDescriptions.memoryCheck,
-    },
-    {
-      action: uiActions.debug,
-      description: actionDescriptions.debug,
-    },
-  ];
-
-  // Platform-specific mappings for number shortcuts
-  const mac: { [key: string]: ShortcutDefinition } = {};
-  const other: { [key: string]: ShortcutDefinition } = {};
+  // Define number action mappings with their descriptions
+  const numberActionPairs = [
+    [uiActions.viewAssembly, actionDescriptions.viewAssembly],
+    [uiActions.formatCode, actionDescriptions.formatCode],
+    [uiActions.lintCode, actionDescriptions.lintCode],
+    [uiActions.memoryCheck, actionDescriptions.memoryCheck],
+    [uiActions.debug, actionDescriptions.debug],
+    [uiActions.syscallTrace, actionDescriptions.syscallTrace],
+  ] as const;
 
   // Generate platform-specific shortcuts for numbers
-  numberActions.forEach(({ action, description }, index) => {
+  const mac: Record<string, ShortcutDefinition> = {};
+  const other: Record<string, ShortcutDefinition> = {};
+
+  // Map number keys to actions based on platform
+  numberActionPairs.forEach(([action, description], index) => {
     const num = index + 1;
-    mac[`ctrl+${num}`] = {
-      action,
-      description,
-      displayKeys: ["^", `${num}`],
-    };
+    mac[`ctrl+${num}`] = { action, description, displayKeys: ["^", `${num}`] };
     other[`alt+${num}`] = {
       action,
       description,
@@ -237,24 +214,23 @@ export const handleKeyboardEvent = (
   event: KeyboardEvent,
   shortcuts: ShortcutCategories
 ): void => {
-  // Handle Escape key with priority
+  // Priority handlers for common keys
   if (event.key === "Escape" && uiActions.closeOutputPanel()) {
     event.preventDefault();
     return;
   }
 
-  // Handle Enter with modifiers
   if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
     event.preventDefault();
     uiActions.compile();
     return;
   }
 
-  // Handle other shortcuts
+  // Find and execute matching shortcut
   const normalizedKey = normalizeKey(event);
   const { common, mac, other, special } = shortcuts;
 
-  // Find matching shortcut from relevant maps
+  // Look for shortcut in all collections
   const shortcut =
     special[normalizedKey] ||
     common[normalizedKey] ||
@@ -273,11 +249,12 @@ export const createShortcutItems = (
   const { common, special } = shortcuts;
   const platformShortcuts = isMac ? shortcuts.mac : shortcuts.other;
 
-  return [
-    ...Object.values(common),
-    ...Object.values(platformShortcuts),
-    ...Object.values(special),
-  ] as ShortcutDefinition[];
+  // Combine all shortcut collections into one array
+  return Object.values({
+    ...common,
+    ...platformShortcuts,
+    ...special,
+  });
 };
 
 // Initialize shortcut listener - returns cleanup function
@@ -298,22 +275,27 @@ export const renderShortcutsList = (containerId: string): void => {
   const shortcuts = createShortcuts();
   const shortcutItems = createShortcutItems(shortcuts);
 
-  const createListItem = ({
-    displayKeys,
-    description,
-  }: ShortcutDefinition): string =>
-    `${displayKeys
-      .map((key) => `<kbd>${key}</kbd>`)
-      .join(" + ")} - ${description}`;
+  // Create a styled keyboard key element
+  const createKeyElement = (key: string) => `
+    <kbd class="inline-block bg-[var(--bg-primary)] text-[var(--accent)] 
+      font-[600] text-[0.85em] leading-[1.2] font-mono py-[2px] px-[4px] 
+      m-[0_2px] rounded-[var(--radius-sm)] border border-[var(--accent)] 
+      shadow-[var(--shadow-sm)] whitespace-nowrap transform-gpu translate-y-0 
+      transition-[transform,box-shadow] duration-[var(--transition-fast)] 
+      hover:translate-y-[-1px] hover:shadow-[var(--shadow-md)]">${key}</kbd>
+  `;
 
-  const ul = document.createElement("ul");
+  // Create HTML for a shortcut item
+  const createListItem = ({ displayKeys, description }: ShortcutDefinition) => `
+    <li class="mb-[3px] py-[3px] px-0">
+      ${displayKeys.map(createKeyElement).join(" + ")} - ${description}
+    </li>
+  `;
 
-  shortcutItems.forEach((shortcut) => {
-    const li = document.createElement("li");
-    li.innerHTML = createListItem(shortcut);
-    ul.appendChild(li);
-  });
-
-  container.innerHTML = "";
-  container.appendChild(ul);
+  // Create the entire list at once
+  container.innerHTML = `
+    <ul class="list-none p-0 m-0">
+      ${shortcutItems.map(createListItem).join("")}
+    </ul>
+  `;
 };

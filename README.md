@@ -62,6 +62,7 @@ The project follows a clean separation between frontend and backend:
 | **Code Analysis** | Lint Code               | Static code analysis with cppcheck           |
 |                   | Memory Analysis         | Memory leak detection with Valgrind          |
 |                   | Code Formatting         | Automatic code formatting with clang-format  |
+|                   | System calls detection  | Identify system calls in code                |
 | **UI/UX**         | Multiple Themes         | Various editor and terminal color schemes    |
 |                   | Responsive Design       | Mobile-friendly interface and layout         |
 |                   | Keyboard Shortcuts      | Customized shortcuts for common actions      |
@@ -70,20 +71,21 @@ The project follows a clean separation between frontend and backend:
 
 ## Shortcut Keys 🔑
 
-| Action           | Windows/Linux    | macOS      |
-| ---------------- | ---------------- | ---------- |
-| Compile and Run  | Ctrl + Enter     | ⌘ + Return |
-| Save Code        | Ctrl + S         | ⌘ + S      |
-| Code Snapshot    | Ctrl + P         | ⌘ + P      |
-| Open Code File   | Ctrl + O         | ⌘ + O      |
-| Toggle Code Fold | Ctrl + K         | ⌘ + K      |
-| Zen Mode         | Ctrl + Shift + Z | ⌘ + ⇧ + Z  |
-| View Assembly    | Alt + 1          | ^ + 1      |
-| Format Code      | Alt + 2          | ^ + 2      |
-| Lint Code        | Alt + 3          | ^ + 3      |
-| Memory Check     | Alt + 4          | ^ + 4      |
-| Debug with GDB   | Alt + 5          | ^ + 5      |
-| Close Output     | ESC              | ESC        |
+| Action            | Windows/Linux    | macOS      |
+| ----------------- | ---------------- | ---------- |
+| Compile and Run   | Ctrl + Enter     | ⌘ + Return |
+| Save Code         | Ctrl + S         | ⌘ + S      |
+| Code Snapshot     | Ctrl + P         | ⌘ + P      |
+| Open Code File    | Ctrl + O         | ⌘ + O      |
+| Toggle Code Fold  | Ctrl + K         | ⌘ + K      |
+| Zen Mode          | Ctrl + Shift + Z | ⌘ + ⇧ + Z  |
+| View Assembly     | Alt + 1          | ^ + 1      |
+| Format Code       | Alt + 2          | ^ + 2      |
+| Lint Code         | Alt + 3          | ^ + 3      |
+| Memory Check      | Alt + 4          | ^ + 4      |
+| Debug with GDB    | Alt + 5          | ^ + 5      |
+| View System Calls | Alt + 6          | ^ + 6      |
+| Close Output      | ESC              | ESC        |
 
 ## Future Improvements 🚀
 

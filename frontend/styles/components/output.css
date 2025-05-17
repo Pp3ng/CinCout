@@ -1,6 +1,6 @@
 /*
  * output.css
- * Styles for the output panel
+ * Styles for output panel and related components
  */
 
 #output {
@@ -16,14 +16,11 @@
 }
 
 /* Output styling for different types */
-.memcheck-output,
-.lint-code-output,
 .error-output {
   margin: 0;
   padding: 6px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  line-height: 1.5;
 }
 
 /* Terminal loading indicator */
@@ -73,19 +70,6 @@
   background-color: rgba(255, 85, 85, 0.15);
 }
 
-.lint-code-output {
-  background-color: var(--bg-secondary);
-  border-left: 2px solid var(--accent);
-  box-shadow: var(--shadow-accent-sm);
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-normal);
-}
-
-.lint-code-output:hover {
-  box-shadow: var(--shadow-accent-md);
-  background-color: rgba(var(--accent-rgb), 0.05);
-}
-
 /* Line and column number highlighting */
 .line-number {
   color: #bd93f9;
@@ -99,36 +83,13 @@
   text-shadow: 0 0 2px rgba(139, 233, 253, 0.3);
 }
 
-/* Memory check specific styles */
-.memcheck-leak {
+/* Memory leak style */
+.leak {
   border-left: 2px solid #ef4444;
   background: rgba(239, 68, 68, 0.05);
   padding: var(--spacing-sm);
   margin: var(--spacing-sm) 0;
-  display: block;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-normal);
   position: relative;
-  overflow: hidden;
-}
-
-.memcheck-leak:hover {
-  background: rgba(239, 68, 68, 0.08);
-  transform: translateX(3px);
-  box-shadow: var(--shadow-md);
-}
-
-.memcheck-output {
-  background-color: var(--bg-secondary);
-  padding: var(--spacing-md);
-  font-family: var(--font-mono);
-  line-height: 1.5;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-normal);
-  margin-bottom: var(--spacing-sm);
 }

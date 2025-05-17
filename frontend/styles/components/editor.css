@@ -1,9 +1,7 @@
 /*
  * editor.css
- * Styles for the CodeMirror editor and related components
+ * Styles for CodeMirror editor and related components
  */
-
-/* Base CodeMirror container */
 
 @import "codemirror/lib/codemirror.css";
 @import "codemirror/addon/fold/foldgutter.css";
@@ -24,11 +22,6 @@
 .zen-mode-active .CodeMirror {
   position: fixed;
   inset: 0;
-  height: 100vh;
-  width: 100vw;
-  z-index: 9000;
-  border-radius: 0;
-  padding: var(--spacing-md);
 }
 
 .zen-mode-active .header,
@@ -63,14 +56,11 @@
 .CodeMirror-foldmarker {
   color: var(--accent);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-  font-family: Arial, sans-serif;
-  font-size: 0.9em;
   padding: 0 4px;
   border-radius: var(--radius-sm);
   background-color: rgba(var(--accent-rgb), 0.2);
   cursor: pointer;
   box-shadow: var(--shadow-accent-sm);
-  transition: all var(--transition-fast);
 }
 
 .CodeMirror-foldmarker:hover {

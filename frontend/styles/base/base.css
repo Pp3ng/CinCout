@@ -16,7 +16,6 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 0.85em;
-  min-height: 100vh;
   text-rendering: optimizeSpeed;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -27,11 +26,6 @@ body {
   max-width: 1600px;
   margin: 0 auto;
   padding: 0 5px;
-}
-
-/* Make images easier to work with */
-img {
-  display: block;
 }
 
 /* Global scrollbar styling */

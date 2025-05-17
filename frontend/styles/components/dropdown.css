@@ -1,21 +1,34 @@
 /*
- * dropdown.css
- * Styles for dropdown menus and related components
+ * dropdown.css - Super optimized
  */
 
-/* Dropdown and shortcut components */
+/* Dropdown buttons */
+.dropdown-btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-normal);
+}
+
+.dropdown-btn:hover {
+  border-color: var(--accent);
+  background-color: rgba(var(--accent-rgb), 0.1);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-accent-md);
+}
+
+/* Dropdowns structure */
 .dropdown,
 .shortcuts-panel {
   position: relative;
-  display: inline-block;
   z-index: 100;
 }
 
 /* Icons and animations */
 .dropdown-btn .fa-chevron-down {
   font-size: 0.7em;
-  margin-left: 4px;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dropdown:hover .fa-chevron-down {
@@ -25,8 +38,6 @@
 
 .resource-icon {
   width: 16px;
-  text-align: center;
-  transition: color 0.3s ease;
 }
 
 /* Dropdown containers */
@@ -44,73 +55,63 @@
 .dropdown-content {
   min-width: 220px;
   font-family: var(--font-mono);
-  margin-top: 3px;
   overflow: hidden;
-  opacity: 0;
   transform: translateY(-10px);
-  transition: opacity 0.3s, transform 0.3s;
-  pointer-events: none;
-  animation: fadeIn 0.3s ease;
+  transition: opacity var(--transition-normal),
+    transform var(--transition-normal);
+  animation: fadeIn var(--transition-normal);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .shortcuts-content {
-  top: 100%;
-  left: 0;
-  min-width: 250px;
-  max-width: 350px;
-  padding: 6px;
-  margin-top: 5px;
+  width: 250px;
+  padding: var(--spacing-sm);
   font-size: var(--font-xs);
 }
 
 /* Hover behaviors */
-.dropdown-content::before {
-  content: "";
-  position: absolute;
-  top: -20px;
-  left: 0;
-  width: 100%;
-  height: 20px;
-}
 
 .dropdown:hover .dropdown-content {
   display: block;
-  opacity: 1;
   transform: translateY(0);
-  pointer-events: auto;
 }
 
 .dropdown::after {
   content: "";
   position: absolute;
   display: none;
-  height: 20px;
   width: 100%;
-  bottom: -20px;
-  left: 0;
-  z-index: calc(var(--z-dropdown) - 1);
 }
 
 .dropdown:hover::after {
   display: block;
 }
 
-/* Link styling */
+/* Links */
 .dropdown-content a {
   color: var(--text-primary);
-  padding: 10px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
+  gap: var(--spacing-sm);
   text-decoration: none;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform var(--transition-normal),
+    box-shadow var(--transition-normal);
 }
 
 .dropdown-content a:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-accent-sm);
-  background-color: transparent;
 }
 
 .dropdown-content a:hover .resource-icon {
@@ -119,38 +120,5 @@
 
 .dropdown-content a:active {
   transform: translateY(0);
-  transition: transform 0.1s ease;
-}
-
-/* Shortcuts lists */
-.shortcuts-content ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.shortcuts-content li {
-  margin-bottom: 3px;
-  padding: 3px 0;
-}
-/* Keyboard shortcuts */
-.shortcuts-content kbd {
-  display: inline-block;
-  background-color: var(--bg-primary);
-  color: var(--accent);
-  font: 600 0.85em/1.2 var(--font-mono);
-  padding: 2px 4px;
-  margin: 0 2px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-sm);
-  white-space: nowrap;
-  transform: translateY(0);
-  transition: transform var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.shortcuts-content kbd:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast);
 }

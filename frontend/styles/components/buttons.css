@@ -3,37 +3,17 @@
  * Styles for buttons, toggles, and other interactive controls
  */
 
-:root {
-  --btn-transition: transform 0.25s ease, box-shadow 0.25s ease,
-    filter 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
-  --btn-hover-y: -1px;
-  --btn-active-y: 1px;
-  --btn-height: 24px;
-  --btn-padding-x: calc(var(--spacing-sm) - 1px);
-  --btn-padding-y: calc(var(--spacing-xs) - 1px);
-  --btn-gap: var(--spacing-xs);
-  --btn-primary-gradient: linear-gradient(
-    45deg,
-    var(--accent),
-    var(--accent-hover)
-  );
-  --btn-shadow: var(--shadow-accent-sm);
-  --btn-shadow-hover: var(--shadow-accent-md);
-}
-
 /* Button containers */
 .button-container {
   display: flex;
-  gap: calc(var(--spacing-sm) - 3px);
-  align-items: center;
+  gap: 4px;
   flex-wrap: wrap;
-  padding: calc(var(--spacing-xs) - 2px) 0;
+  padding: var(--spacing-xs);
 }
 
 .button-container.right-aligned {
   margin-left: auto;
 }
-
 .output-panel .button-container {
   width: 100%;
   justify-content: flex-end;
@@ -41,173 +21,71 @@
 
 /* Base button styles */
 button {
-  --btn-bg: var(--btn-primary-gradient);
-
-  background: var(--btn-bg);
+  background: linear-gradient(45deg, var(--accent), var(--accent-hover));
   color: var(--text-primary);
   font-family: var(--font-mono);
-  border: none;
-  padding: var(--btn-padding-y) var(--btn-padding-x);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
-  font-size: calc(var(--font-sm) - 1px);
+  font-size: var(--font-xs);
   display: flex;
   align-items: center;
-  gap: var(--btn-gap);
-  height: var(--btn-height);
-  white-space: nowrap;
-  position: relative;
-  overflow: hidden;
-  min-width: 0;
-  box-shadow: var(--btn-shadow);
-  transition: var(--btn-transition);
+  gap: var(--spacing-xs);
+  box-shadow: var(--shadow-accent-sm);
+  transition: var(--transition-normal);
   cursor: pointer;
 }
 
-/* States */
+/* States and icons */
 button:hover {
-  transform: translateY(var(--btn-hover-y));
-  box-shadow: var(--btn-shadow-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-accent-md);
   filter: brightness(1.1);
 }
 
 button:active {
-  transform: translateY(var(--btn-active-y));
-  box-shadow: var(--btn-shadow);
+  transform: translateY(1px);
+  box-shadow: var(--shadow-accent-sm);
   filter: brightness(0.95);
-  transition: transform 0.1s ease;
+  transition: transform var(--transition-fast);
 }
 
-/* Icon styles */
 button i,
 button svg {
-  transition: transform 0.25s ease;
-  font-size: 1.1em;
+  transition: transform var(--transition-normal);
 }
 
 button:hover i,
 button:hover svg {
-  transform: scale(1.2);
+  transform: scale(1.3);
 }
 
 /* Special buttons */
 button#compile {
-  --btn-bg: linear-gradient(45deg, #4caf50, #66bb6a);
-  --btn-shadow: 0 2px 8px rgba(76, 175, 80, 0.5);
-  --btn-shadow-hover: 0 4px 12px rgba(76, 175, 80, 0.7);
+  background: linear-gradient(45deg, #4caf50, #66bb6a);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.5);
 }
 
 button#compile:hover {
   background: linear-gradient(45deg, #66bb6a, #81c784);
-  box-shadow: var(--btn-shadow-hover);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.7);
 }
 
 button#closeOutput {
-  --btn-bg: linear-gradient(45deg, #993333, #cc4d4d);
-  --btn-shadow: 0 2px 8px rgba(153, 51, 51, 0.5);
-  --btn-shadow-hover: 0 4px 12px rgba(153, 51, 51, 0.7);
+  background: linear-gradient(45deg, #993333, #cc4d4d);
+  box-shadow: 0 2px 8px rgba(153, 51, 51, 0.5);
 }
 
 button#closeOutput:hover {
   background: linear-gradient(45deg, #b33c3c, #e65c5c);
-  box-shadow: var(--btn-shadow-hover);
+  box-shadow: 0 4px 12px rgba(153, 51, 51, 0.7);
 }
 
 button#zenMode {
-  --btn-bg: linear-gradient(45deg, #3949ab, #5c6bc0);
-  --btn-shadow: 0 2px 8px rgba(57, 73, 171, 0.5);
-  --btn-shadow-hover: 0 4px 12px rgba(57, 73, 171, 0.7);
+  background: linear-gradient(45deg, #3949ab, #5c6bc0);
+  box-shadow: 0 2px 8px rgba(57, 73, 171, 0.5);
 }
 
 button#zenMode:hover {
   background: linear-gradient(45deg, #5c6bc0, #7986cb);
-  box-shadow: var(--btn-shadow-hover);
-}
-
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 34px;
-  height: 18px;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: var(--bg-primary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 12px;
-  width: 12px;
-  left: 2px;
-  bottom: 2px;
-  background-color: var(--text-primary);
-  border-radius: 50%;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-input:checked + .slider {
-  background-color: var(--accent);
-  box-shadow: var(--shadow-accent-sm), inset 0 0 4px rgba(0, 0, 0, 0.2);
-}
-
-input:checked + .slider:before {
-  transform: translateX(16px);
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
-  background-color: #fff;
-}
-
-/* Custom buttons */
-.dropdown-btn {
-  --btn-bg: var(--bg-secondary);
-  --btn-shadow: var(--shadow-sm);
-  --btn-shadow-hover: var(--shadow-accent-md);
-
-  background: var(--btn-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  padding: var(--btn-padding-y) var(--btn-padding-x);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-sm);
-  display: flex;
-  align-items: center;
-  gap: var(--btn-gap);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--btn-shadow);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-  transition: var(--btn-transition);
-}
-
-.dropdown-btn:hover {
-  border-color: var(--accent);
-  background-color: rgba(var(--accent-rgb), 0.1);
-  transform: translateY(var(--btn-hover-y));
-  box-shadow: var(--btn-shadow-hover);
-}
-
-.dropdown-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.05) 50%,
-    transparent 50%,
-    rgba(0, 0, 0, 0.05)
-  );
+  box-shadow: 0 4px 12px rgba(57, 73, 171, 0.7);
 }

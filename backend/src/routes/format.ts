@@ -4,7 +4,7 @@
  */
 import Router from "koa-router";
 import { koaHandler } from "../utils/routeHandler";
-import { compilationService } from "../utils/compilationService";
+import { codeProcessingService } from "../utils/codeProcessingService";
 import { AppError, FormatRequest } from "../types";
 
 const router = new Router();
@@ -24,7 +24,7 @@ router.post(
     }
 
     // Format the code
-    const result = await compilationService.formatCode(code);
+    const result = await codeProcessingService.formatCode(code);
 
     if (result.success) {
       // Return formatted code

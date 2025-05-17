@@ -48,7 +48,7 @@ export class ThemeManager {
   private themeData: ThemeMap;
   private listeners: Set<ThemeListener> = new Set();
   private storage: Storage;
-  private STORAGE_KEY = "preferred-theme";
+  private STORAGE_KEY = "cincout-theme";
 
   constructor(options: ThemeManagerOptions = {}) {
     this.storage = options.storage || localStorage;

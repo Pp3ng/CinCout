@@ -1,19 +1,12 @@
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+@import "tailwindcss";
+
 @import "./base/variables.css";
 @import "./base/base.css";
+@import "./base/layout.css";
+@import "./base/responsive.css";
 
-@layer theme, base, components, utilities;
-
-/* Layout - Core layout structure */
-@import "./layout/layout.css";
-
-/* Components - Reusable UI elements */
 @import "./components/buttons.css";
 @import "./components/dropdown.css";
 @import "./components/editor.css";
 @import "./components/output.css";
 @import "./components/terminal.css";
-
-/* Responsive styles - Apply last for proper overrides */
-@import "./layout/responsive.css";

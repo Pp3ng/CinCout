@@ -63,6 +63,7 @@ rectangle "Frontend (UI)" #E0F0FF {
     component "Lint Code" as LintCodeAction
     component "Assembly" as AssemblyAction
     component "Debug" as DebugAction
+    component "Syscall Trace" as SyscallAction
     component "Zen Mode" as ZenModeAction
     component "Snapshot" as SnapshotAction
   }
@@ -81,6 +82,7 @@ rectangle "Frontend (UI)" #E0F0FF {
   component "Compile Socket" as CompileSocketMgr
   component "Debug Socket" as DebugSocketMgr
   component "LeakDetect Socket" as LeakDetectSocketMgr
+  component "Syscall Socket" as SyscallSocketMgr
   component "HTTP Client" as HTTPClient
 }
 
@@ -100,7 +102,7 @@ rectangle "Backend (Server)" #F0F0FF {
   
   ' Services - Based on backend/src/utils and backend/src/ws
   package "Services" {
-    component "Compilation Service" as CompileService
+    component "Code Processing Service" as CodeProcessingService
     component "WebSocket Handler" as WSHandler
     component "Route Handler" as RouteHandler
     component "Session Service" as SessionService
@@ -109,6 +111,7 @@ rectangle "Backend (Server)" #F0F0FF {
     component "Format" as FormatService
     component "Lint Code" as LintCodeService
     component "Assembly" as AssemblyService
+    component "Syscall Trace Service" as SyscallService
     component "PTY Service" as PTYService
   }
   
@@ -118,6 +121,7 @@ rectangle "Backend (Server)" #F0F0FF {
     component "Compile Socket Handler" as CompileSocketHandler
     component "Debug Socket Handler" as DebugSocketHandler
     component "LeakDetect Socket Handler" as LeakDetectHandler
+    component "Syscall Socket Handler" as SyscallHandler
   }
   
   component "Session Manager" as SessionMgr
@@ -132,6 +136,7 @@ rectangle "External Tools" #FFF8E0 {
   component "clang-format" as ClangFormat
   component "cppcheck" as Cppcheck
   component "GDB" as GDB
+  component "strace" as Strace
   component "Node-PTY" as NodePTY
 }
 
@@ -150,6 +155,7 @@ AppController --> StateManager : Manages app state
 CodeActionsController --> CompileSocketMgr : Handles compile requests
 DebugController --> DebugSocketMgr : Handles debug requests
 AppController --> LeakDetectSocketMgr : Handles leak detection
+AppController --> SyscallSocketMgr : Handles syscall tracing
 Editor --> ShortcutMgr : Registers keyboard shortcuts
 Editor --> TemplateSelector : Loads code templates
 
@@ -157,6 +163,7 @@ Editor --> TemplateSelector : Loads code templates
 CompileAction --> CodeActionsController : Triggers compilation
 DebugAction --> DebugController : Triggers debugging
 LeakDetectAction --> LeakDetectSocketMgr : Triggers leak detection
+SyscallAction --> SyscallSocketMgr : Triggers syscall tracing
 FormatAction --> HTTPClient : Makes HTTP request
 LintCodeAction --> HTTPClient : Makes HTTP request
 AssemblyAction --> HTTPClient : Makes HTTP request
@@ -171,6 +178,7 @@ ApiRoutes --> HTTPClient : JSON responses
 BaseSocketHandler <|-- CompileSocketHandler : extends
 BaseSocketHandler <|-- DebugSocketHandler : extends
 BaseSocketHandler <|-- LeakDetectHandler : extends
+BaseSocketHandler <|-- SyscallHandler : extends
 
 ' Backend routing
 Koa --> RouteHandler : HTTP request handling
@@ -178,26 +186,27 @@ WSServer --> WSHandler : WebSocket handling
 WSHandler --> CompileSocketHandler : Compilation messages
 WSHandler --> DebugSocketHandler : Debugging messages
 WSHandler --> LeakDetectHandler : Leak detection messages
+WSHandler --> SyscallHandler : Syscall tracing messages
 ApiRoutes --> Services : Service invocation
-CompileSocketHandler --> CompileService : Compilation requests
-DebugSocketHandler --> DebugService : Debugging requests
-LeakDetectHandler --> MemcheckService : Leak detection requests
+CompileSocketHandler --> CodeProcessingService : Compilation requests
+DebugSocketHandler --> CodeProcessingService : Debugging requests
+LeakDetectHandler --> CodeProcessingService : Leak detection requests
+SyscallHandler --> CodeProcessingService : Syscall tracing requests
 WSHandler --> SessionService : Session management
 
 ' Services to external tools
-CompileService --> GCC : Code compilation
-CompileService --> Clang : Alternative compiler
-DebugService --> GDB : Interactive debugging
-MemcheckService --> Valgrind : Memory checking
-FormatService --> ClangFormat : Code formatting
-LintCodeService --> Cppcheck : Lint code analysis
-AssemblyService --> GCC : Assembly generation
+CodeProcessingService --> GCC : Code compilation
+CodeProcessingService --> Clang : Alternative compiler
+CodeProcessingService --> GDB : Interactive debugging
+CodeProcessingService --> Valgrind : Memory checking
+CodeProcessingService --> ClangFormat : Code formatting
+CodeProcessingService --> Cppcheck : Lint code analysis
+CodeProcessingService --> GCC : Assembly generation
+CodeProcessingService --> Strace : System call tracing
 PTYService --> NodePTY : Terminal emulation
 
 ' File and resource management
-CompileService --> TempMgr : Creates temp files
-DebugService --> TempMgr : Debug files
-MemcheckService --> TempMgr : Memory check files
+CodeProcessingService --> TempMgr : Creates temp files
 TempMgr --> TempFiles : File storage
 SessionMgr --> Sessions : Session storage
 TemplatesAPI --> Templates : Retrieves templates
@@ -206,8 +215,10 @@ TemplatesAPI --> Templates : Retrieves templates
 WSClient --> CompileSocketMgr : Compilation results
 WSClient --> DebugSocketMgr : Debug data
 WSClient --> LeakDetectSocketMgr : Leak detection data
+WSClient --> SyscallSocketMgr : Syscall trace data
 CompileSocketMgr --> Display : Updates UI with compilation results
 DebugSocketMgr --> Terminal : Shows debug output
 LeakDetectSocketMgr --> Display : Shows leak detection results
+SyscallSocketMgr --> Display : Shows syscall tracing results
 
 @enduml

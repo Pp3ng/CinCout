@@ -297,6 +297,113 @@ export class SessionService implements ISessionService {
   }
 
   /**
+   * Start a new strace session
+   * @param {Socket} socket - Socket.IO connection
+   * @param {string} sessionId - Session ID
+   * @param {DirResult} tmpDir - Temporary directory
+   * @param {string} outputFile - Path to compiled executable
+   * @param {string} straceLogFile - Path to strace log file
+   * @returns {boolean} Success status
+   */
+  startStraceSession(
+    socket: Socket,
+    sessionId: string,
+    tmpDir: DirResult,
+    outputFile: string,
+    straceLogFile: string
+  ): boolean {
+    try {
+      // Set standard terminal size
+      const cols = 80;
+      const rows = 24;
+
+      // Build strace command with output redirection to file
+      // -f: trace child processes
+      // -o: output to file
+      const straceCmd = `strace -f -o "${straceLogFile}" "${outputFile}"`;
+
+      // Create PTY instance
+      const ptyProcess = this.createPtyProcess(straceCmd, {
+        name: "xterm-256color",
+        cols: cols,
+        rows: rows,
+        cwd: tmpDir.name,
+        env: {
+          ...(process.env as { [key: string]: string }),
+          TERM: "xterm-256color",
+        },
+      });
+
+      // Store session
+      this.sessions.set(sessionId, {
+        pty: ptyProcess,
+        tmpDir: tmpDir,
+        lastActivity: Date.now(),
+        dimensions: { cols, rows },
+        sessionType: "strace",
+        socketId: socket.id,
+        // Store strace log file path for reference
+        straceLogFile: straceLogFile,
+      });
+
+      // Handle PTY output
+      ptyProcess.onData((data: string) => {
+        try {
+          // Update last activity timestamp
+          this.updateSessionActivity(sessionId);
+
+          // Send program output to client
+          webSocketManager.emitToClient(socket, SocketEvents.STRACE_RESPONSE, {
+            output: data,
+          });
+        } catch (e) {
+          console.error(
+            `Error sending output for strace session ${sessionId}:`,
+            e
+          );
+        }
+      });
+
+      // Handle PTY exit
+      ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
+        try {
+          // Emit an event that will allow syscallSocket to process the strace results
+          socketEvents.emit("strace-session-exit", {
+            sessionId,
+            socketId: socket.id,
+            straceLogFile,
+            exitCode,
+          });
+        } catch (e) {
+          console.error(
+            `Error processing exit for strace session ${sessionId}:`,
+            e
+          );
+        }
+        // Do NOT clean up the session yet - we need to process the strace log file first
+        // The syscallSocket.processSyscallTracingResults method will handle cleanup
+      });
+
+      return true;
+    } catch (ptyError) {
+      console.error(
+        `Error creating PTY for strace session ${sessionId}:`,
+        ptyError
+      );
+      webSocketManager.emitToClient(socket, SocketEvents.STRACE_ERROR, {
+        message: `Error executing strace: ${(ptyError as Error).message}`,
+      });
+
+      // Clean up on error
+      if (tmpDir) {
+        tmpDir.removeCallback();
+      }
+
+      return false;
+    }
+  }
+
+  /**
    * Create a new session for a socket
    * @param {Socket} socket - Socket.IO socket
    * @returns {string} Generated session ID

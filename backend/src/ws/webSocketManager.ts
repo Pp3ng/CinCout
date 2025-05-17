@@ -5,7 +5,12 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { EventEmitter } from "events";
 import { Server } from "http";
-import { IWebSocketManager, SessionSocket, ISessionService, ICompilationService } from "../types";
+import {
+  IWebSocketManager,
+  SessionSocket,
+  ISessionService,
+  ICodeProcessingService,
+} from "../types";
 import { sessionService } from "../utils/sessionService";
 
 /**
@@ -47,17 +52,23 @@ export enum SocketEvents {
   LEAK_CHECK_RUNNING = "leak_check_running",
   LEAK_CHECK_REPORT = "leak_check_report",
   LEAK_CHECK_ERROR = "leak_check_error",
+
+  // Strace system call tracing events
+  STRACE_START = "strace_start",
+  STRACE_RESPONSE = "strace_response",
+  STRACE_ERROR = "strace_error",
+  STRACE_REPORT = "strace_report",
 }
 
 /**
  * Base class for socket handlers with common functionality
  */
 export abstract class BaseSocketHandler {
-  protected compilationService: ICompilationService;
+  protected compilationService: ICodeProcessingService;
   protected sessionService: ISessionService;
   protected webSocketManager: IWebSocketManager;
   protected handledSockets: Set<string> = new Set<string>();
-  
+
   /**
    * Create a new socket handler
    * @param compilationService - Compilation service
@@ -65,7 +76,7 @@ export abstract class BaseSocketHandler {
    * @param webSocketManager - WebSocket manager
    */
   constructor(
-    compilationService: ICompilationService,
+    compilationService: ICodeProcessingService,
     sessionService: ISessionService,
     webSocketManager: IWebSocketManager
   ) {
@@ -73,7 +84,7 @@ export abstract class BaseSocketHandler {
     this.sessionService = sessionService;
     this.webSocketManager = webSocketManager;
   }
-  
+
   /**
    * Send a message to a client
    * @param socket - Socket.IO socket
@@ -81,10 +92,14 @@ export abstract class BaseSocketHandler {
    * @param data - Data to send
    * @protected
    */
-  protected emitToClient(socket: SessionSocket, event: string, data: any): void {
+  protected emitToClient(
+    socket: SessionSocket,
+    event: string,
+    data: any
+  ): void {
     this.webSocketManager.emitToClient(socket, event, data);
   }
-  
+
   /**
    * Clean up a session
    * @param sessionId - Session ID
@@ -93,7 +108,7 @@ export abstract class BaseSocketHandler {
   protected cleanupSession(sessionId: string): void {
     this.sessionService.terminateSession(sessionId);
   }
-  
+
   /**
    * Handle cleanup requests
    * @param socket - Socket.IO connection
@@ -109,7 +124,7 @@ export abstract class BaseSocketHandler {
       this.emitToClient(socket, SocketEvents.CLEANUP_COMPLETE, {});
     }
   }
-  
+
   /**
    * Common setup for socket event handlers
    * @param socket - Socket.IO connection
@@ -128,21 +143,21 @@ export abstract class BaseSocketHandler {
     socket.on(SocketEvents.DISCONNECT, () => {
       this.handledSockets.delete(socket.id);
     });
-    
+
     // Set up cleanup handler
     socket.on(SocketEvents.CLEANUP, () => {
       this.handleCleanupRequest(socket);
     });
-    
+
     return true;
   }
-  
+
   /**
    * Handle cleanup request - to be implemented by subclasses
    * @param socket - Socket.IO connection
    */
   protected abstract handleCleanupRequest(socket: SessionSocket): void;
-  
+
   /**
    * Setup socket handlers - to be implemented by subclasses
    * @param socket - Socket.IO connection
@@ -198,6 +213,7 @@ export class WebSocketManager implements IWebSocketManager {
         setupCompileHandlers(sessionSocket);
         setupDebugHandlers(sessionSocket);
         setupLeakDetectHandlers(sessionSocket);
+        setupStraceHandlers(sessionSocket);
 
         // Handle disconnect
         socket.on(SocketEvents.DISCONNECT, () => {
@@ -219,6 +235,7 @@ export class WebSocketManager implements IWebSocketManager {
 
       return this.io;
     } catch (error) {
+      console.error("Socket.IO initialization error:", error);
       throw error;
     }
   }
@@ -237,22 +254,28 @@ export class WebSocketManager implements IWebSocketManager {
 }
 
 // Helper function to set up compile handlers
-async function setupCompileHandlers(socket: SessionSocket) {
+const setupCompileHandlers = async (socket: SessionSocket) => {
   const { compileHandler } = await import("./compileSocket");
   compileHandler.setupSocketHandlers(socket);
-}
+};
 
 // Helper function to set up debug handlers
-async function setupDebugHandlers(socket: SessionSocket) {
+const setupDebugHandlers = async (socket: SessionSocket) => {
   const { debugHandler } = await import("./debugSocket");
   debugHandler.setupSocketHandlers(socket);
-}
+};
 
 // Helper function to set up leak detection handlers
-async function setupLeakDetectHandlers(socket: SessionSocket) {
+const setupLeakDetectHandlers = async (socket: SessionSocket) => {
   const { leakDetectHandler } = await import("./leakDetectSocket");
   leakDetectHandler.setupSocketHandlers(socket);
-}
+};
+
+// Setup function for strace socket handlers
+const setupStraceHandlers = async (socket: SessionSocket) => {
+  const { straceHandler } = await import("./syscallSocket");
+  straceHandler.setupSocketHandlers(socket);
+};
 
 // Create singleton instance
 export const webSocketManager = new WebSocketManager();

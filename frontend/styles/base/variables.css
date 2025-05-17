@@ -1,18 +1,17 @@
 /* 
  * variables.css
- * Global CSS variables for the CinCout application
+ * Global CSS variables
  */
 
 :root {
   /* Spacing */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
+  --spacing-xs: 3px;
+  --spacing-sm: 7px;
+  --spacing-md: 15px;
 
   /* Border radius */
   --radius-sm: 6px;
   --radius-md: 9px;
-  --radius-lg: 20px;
 
   /* Shadows */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.08);
@@ -34,34 +33,10 @@
   --transition-fast: 120ms ease;
   --transition-normal: 250ms ease;
 
-  /* Special effects */
-  --glass-border: rgba(255, 255, 255, 0.08);
-
   /* Font sizes */
   --font-xs: 11.5px;
   --font-sm: 12.6px;
 
   /* Font families */
   --font-mono: "Fira Code", "JetBrains Mono", monospace;
-}
-
-/* Theme transition helpers */
-.theme-transitioning {
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.theme-transitioning * {
-  transition: background-color 0.3s ease, color 0.3s ease,
-    border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }

@@ -2,14 +2,18 @@
  * Socket.IO handler for GDB debugging
  */
 import {
-  ICompilationService,
+  ICodeProcessingService,
   ISessionService,
   IWebSocketManager,
   SessionSocket,
 } from "../types";
-import { compilationService } from "../utils/compilationService";
+import { codeProcessingService } from "../utils/codeProcessingService";
 import { sessionService } from "../utils/sessionService";
-import { webSocketManager, SocketEvents, BaseSocketHandler } from "./webSocketManager";
+import {
+  webSocketManager,
+  SocketEvents,
+  BaseSocketHandler,
+} from "./webSocketManager";
 
 /**
  * DebugWebSocketHandler handles debugging-related Socket.IO communication
@@ -22,7 +26,7 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
    * @param webSocketManager - WebSocket manager
    */
   constructor(
-    compilationService: ICompilationService,
+    compilationService: ICodeProcessingService,
     sessionService: ISessionService,
     webSocketManager: IWebSocketManager
   ) {
@@ -158,7 +162,7 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
 
 // Create singleton instance with dependencies
 export const debugHandler = new DebugWebSocketHandler(
-  compilationService,
+  codeProcessingService,
   sessionService,
   webSocketManager
 );

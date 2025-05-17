@@ -4,7 +4,7 @@
  */
 import Router from "koa-router";
 import { koaHandler } from "../utils/routeHandler";
-import { compilationService } from "../utils/compilationService";
+import { codeProcessingService } from "../utils/codeProcessingService";
 import { AppError, AssemblyRequest } from "../types";
 
 const router = new Router();
@@ -24,11 +24,11 @@ router.post(
     }
 
     // Create environment for assembly generation
-    const env = compilationService.createCompilationEnvironment(lang || "c");
+    const env = codeProcessingService.createCompilationEnvironment(lang || "c");
 
     try {
       // Generate assembly
-      const result = await compilationService.generateAssembly(env, code, {
+      const result = await codeProcessingService.generateAssembly(env, code, {
         lang: lang || "c",
         compiler,
         optimization,

@@ -38,6 +38,12 @@ export enum SocketEvents {
   LEAK_CHECK_RUNNING = "leak_check_running",
   LEAK_CHECK_REPORT = "leak_check_report",
   LEAK_CHECK_ERROR = "leak_check_error",
+
+  // Strace system call tracing events
+  STRACE_START = "strace_start",
+  STRACE_RESPONSE = "strace_response",
+  STRACE_ERROR = "strace_error",
+  STRACE_REPORT = "strace_report",
 }
 
 /**
@@ -124,6 +130,18 @@ export class WebSocketManager {
         this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
       });
 
+      // Handle strace session events
+      this.socket.on(SocketEvents.STRACE_START, (data: any) => {
+        this.isRunning = true;
+        this.notifyListeners(SocketEvents.STRACE_START, data);
+      });
+
+      // Add handler for strace report
+      this.socket.on(SocketEvents.STRACE_REPORT, (data: any) => {
+        this.isRunning = false;
+        this.notifyListeners(SocketEvents.STRACE_REPORT, data);
+      });
+
       // Handle leak detection events
       this.socket.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
         this.isRunning = true;
@@ -152,6 +170,8 @@ export class WebSocketManager {
         SocketEvents.CLEANUP_COMPLETE,
         SocketEvents.DEBUG_RESPONSE,
         SocketEvents.DEBUG_ERROR,
+        SocketEvents.STRACE_RESPONSE,
+        SocketEvents.STRACE_ERROR,
       ].forEach((event) => {
         this.socket?.on(event, (data: any) => {
           this.notifyListeners(event, data);
@@ -326,6 +346,3 @@ export class WebSocketManager {
 
 // Export singleton instance for use across the app
 export const socketManager = new WebSocketManager();
-
-// Export as window global for legacy support
-(window as any).CinCoutSocket = socketManager;

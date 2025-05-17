@@ -14,6 +14,7 @@ export interface DOMElements {
   viewAssembly: HTMLElement | null;
   lintCode: HTMLElement | null;
   debug: HTMLElement | null;
+  syscall: HTMLElement | null;
   themeSelect: HTMLSelectElement | null;
   outputPanel: HTMLElement | null;
   closeOutput: HTMLElement | null;
@@ -30,6 +31,7 @@ export interface DOMElements {
 export interface EditorInstances {
   editor: any; // CodeMirror.Editor
   assemblyView: any; // CodeMirror.Editor
+  straceView: any; // CodeMirror.Editor
 }
 
 // ==========================================
@@ -155,6 +157,7 @@ export enum DomElementId {
   LINT_CODE = "lintCode",
   MEMORY_CHECK = "memcheck",
   DEBUG = "debug",
+  SYSCALL = "syscall",
   OUTPUT_PANEL = "outputPanel",
   LANGUAGE = "language",
   SHORTCUTS_CONTENT = "shortcuts-content",

@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     valgrind \
     cppcheck \
     gdb \
+    strace \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

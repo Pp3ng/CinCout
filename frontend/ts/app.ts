@@ -5,8 +5,9 @@ import { showNotification } from "./service/notification";
 import CompileSocketManager from "./ws/compileSocket";
 import DebugSocketManager from "./ws/debugSocket";
 import LeakDetectSocketManager from "./ws/leakDetectSocket";
+import SyscallSocketManager from "./ws/syscallSocket";
 import apiService from "./service/api";
-import { getEditorService } from "./service/editor";
+import { getEditorService, initEditors } from "./service/editor";
 import { getTerminalService } from "./service/terminal";
 import {
   handleLanguageChange,
@@ -48,6 +49,7 @@ export const domUtils = {
       viewAssembly: document.getElementById("viewAssembly"),
       lintCode: document.getElementById("lintCode"),
       debug: document.getElementById("debug"),
+      syscall: document.getElementById("syscall"),
       themeSelect: document.getElementById("theme-select") as HTMLSelectElement,
       outputPanel: document.getElementById("outputPanel"),
       closeOutput: document.getElementById("closeOutput"),
@@ -61,33 +63,25 @@ export const domUtils = {
 
   showLoadingInOutput: (text: string): void => {
     const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = `<div class='loading'>${text}</div>`;
-    }
+    if (output) output.innerHTML = `<div class='loading'>${text}</div>`;
   },
 
   setOutput: (html: string): void => {
     const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = html;
-    }
+    if (output) output.innerHTML = html;
   },
 
-  clearOutput: (): void => {
-    domUtils.setOutput("");
-  },
+  clearOutput: (): void => domUtils.setOutput(""),
 
   showOutputPanel: (): void => {
     const outputPanel = document.getElementById("outputPanel");
     if (!outputPanel) return;
 
-    const isZenMode = document.body.classList.contains("zen-mode-active");
     outputPanel.style.display = "flex";
     document.querySelector(".editor-panel")?.classList.add("with-output");
 
-    if (isZenMode) {
+    document.body.classList.contains("zen-mode-active") &&
       getEditorService().refresh();
-    }
   },
 
   hideOutputPanel: (): void => {
@@ -96,14 +90,10 @@ export const domUtils = {
 
     outputPanel.style.display = "none";
     document.querySelector(".editor-panel")?.classList.remove("with-output");
-
-    // Clear output content when hiding
     domUtils.clearOutput();
 
-    const isZenMode = document.body.classList.contains("zen-mode-active");
-    if (isZenMode) {
+    document.body.classList.contains("zen-mode-active") &&
       getEditorService().refresh();
-    }
   },
 
   getCompileOptions: (): CompileOptions => {
@@ -111,9 +101,9 @@ export const domUtils = {
     const editorService = getEditorService();
     return {
       code: editorService.getValue(),
-      lang: elements.language?.value || "c",
-      compiler: elements.compiler?.value || "gcc",
-      optimization: elements.optimization?.value || "O0",
+      lang: elements.language?.value ?? "c",
+      compiler: elements.compiler?.value ?? "gcc",
+      optimization: elements.optimization?.value ?? "O0",
     };
   },
 
@@ -143,8 +133,8 @@ export const codeActions = {
       if (output) {
         output.innerHTML = '<div id="assembly-view-container"></div>';
         const container = document.getElementById("assembly-view-container");
-
         const assemblyView = editorService.getAssemblyView();
+
         if (assemblyView && container) {
           editorService.setAssemblyValue(data.trim());
           container.appendChild(assemblyView.getWrapperElement());
@@ -207,7 +197,7 @@ export const codeActions = {
         .filter((line: string) => line);
 
       domUtils.setOutput(
-        `<div class="lint-code-output" style="white-space: pre-wrap; overflow: visible;">${formattedLines.join(
+        `<div class="bg-[var(--bg-secondary)] border-l-2 border-[var(--accent)] shadow-[var(--shadow-accent-sm)] rounded-[var(--radius-sm)] m-0 p-[6px] font-[var(--font-mono)] leading-[1.5] transition-all duration-300 hover:shadow-[var(--shadow-accent-md)] hover:bg-[rgba(var(--accent-rgb),0.05)] whitespace-pre-wrap overflow-visible">${formattedLines.join(
           "\n"
         )}</div>`
       );
@@ -219,39 +209,59 @@ export const codeActions = {
 
 // Theme functions - Will be replaced by React context
 export const themeUtils = {
+  // Create and inject dynamic transition styles
+  createThemeTransitionStyles: (): HTMLStyleElement => {
+    // Remove existing style element if it exists
+    document.getElementById("theme-transition-styles")?.remove();
+
+    // Create new style element
+    const style = document.createElement("style");
+    style.id = "theme-transition-styles";
+    style.textContent = `
+      .theme-transition-active {
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
+      .theme-transition-active * {
+        transition: background-color 0.3s ease, color 0.3s ease,
+          border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+    `;
+
+    // Append to document head
+    document.head.appendChild(style);
+    return style;
+  },
+
   applyThemeToDOM: (): void => {
     const themeName = themeManager.getCurrentThemeName();
 
-    document.body.classList.add("theme-transitioning");
+    // Ensure transition styles are injected
+    themeUtils.createThemeTransitionStyles();
+
+    // Apply transition class
+    document.body.classList.add("theme-transition-active");
 
     requestAnimationFrame(() => {
+      // Apply CSS variables
       Object.entries(themeManager.getCssVariables()).forEach(([key, value]) => {
         document.documentElement.style.setProperty(key, value);
       });
 
+      // Apply theme to all editors
       const editorService = getEditorService();
-      const editor = editorService.getEditor();
-      if (editor) {
-        editor.setOption(
-          "theme",
-          themeName === "default" ? "default" : themeName
-        );
-      }
-      const assemblyView = editorService.getAssemblyView();
-      if (assemblyView) {
-        assemblyView.setOption(
-          "theme",
-          themeName === "default" ? "default" : themeName
-        );
-      }
+      editorService.applyThemeToAllEditors(themeName);
 
+      // Apply theme to terminal
       const terminal = getTerminalService().getTerminal();
       if (terminal && terminal.options) {
         terminal.options.theme = themeManager.getTerminalTheme();
         terminal.refresh(0, terminal.rows - 1);
       }
+
+      // Remove transition class after animation completes
       setTimeout(() => {
-        document.body.classList.remove("theme-transitioning");
+        document.body.classList.remove("theme-transition-active");
       }, 400);
     });
   },
@@ -260,25 +270,32 @@ export const themeUtils = {
     const themeSelect = document.getElementById(
       "theme-select"
     ) as HTMLSelectElement;
+    // Early return if select doesn't exist or is already populated
     if (!themeSelect || themeSelect.options.length > 0) return;
 
+    // Create options from themes
+    const fragment = document.createDocumentFragment();
     Object.entries(themeManager.getThemes()).forEach(([key, theme]) => {
       const option = document.createElement("option");
       option.value = key;
       option.textContent = theme.name;
-      themeSelect.appendChild(option);
+      fragment.appendChild(option);
     });
+    themeSelect.appendChild(fragment);
 
+    // Set current theme as selected
     themeSelect.value = themeManager.getCurrentThemeName();
 
-    themeSelect.addEventListener("change", (e) => {
-      themeManager.setTheme((e.target as HTMLSelectElement).value);
+    // Add change listener
+    themeSelect.addEventListener("change", ({ target }) => {
+      themeManager.setTheme((target as HTMLSelectElement).value);
     });
 
-    themeManager.subscribe(() => themeUtils.applyThemeToDOM());
-
+    // Subscribe to theme changes and apply initial theme
+    themeManager.subscribe(themeUtils.applyThemeToDOM);
     themeUtils.applyThemeToDOM();
 
+    // Expose terminal theme getter for external use
     (window as any).getTerminalTheme =
       themeManager.getTerminalTheme.bind(themeManager);
   },
@@ -368,6 +385,7 @@ export const initApp = () => {
   const compileSocketManager = new CompileSocketManager(socketConfig);
   const debugSocketManager = new DebugSocketManager(socketConfig);
   const leakDetectSocketManager = new LeakDetectSocketManager(socketConfig);
+  const syscallSocketManager = new SyscallSocketManager(socketConfig);
 
   // Debug actions
   const debugActions = {
@@ -391,80 +409,84 @@ export const initApp = () => {
     },
   };
 
+  // Syscall actions
+  const syscallActions = {
+    startSyscallTracing: async (options: CompileOptions): Promise<void> => {
+      await syscallSocketManager.startSyscallTracing(options);
+    },
+
+    cleanup: (): void => {
+      syscallSocketManager.cleanup();
+    },
+  };
+
   // Set up all event listeners
   const setupEventListeners = () => {
     const elements = domUtils.getElements();
+
+    // Helper function to add debounced click handler
+    const addDebouncedHandler = (
+      element: HTMLElement | null,
+      handler: () => void,
+      delay = 300
+    ) => {
+      element?.addEventListener("click", debounce(handler, delay));
+    };
 
     // Template and language handlers
     elements.template?.addEventListener("change", loadSelectedTemplate);
     elements.language?.addEventListener("change", handleLanguageChange);
 
     // Code action buttons
-    elements.codesnap?.addEventListener("click", debounce(takeCodeSnap, 300));
+    addDebouncedHandler(elements.codesnap, takeCodeSnap);
 
-    elements.format?.addEventListener(
-      "click",
-      debounce(() => {
-        const editorService = getEditorService();
-        const code = editorService.getValue();
-        const lang = elements.language?.value || "c";
-        codeActions.formatCode(code, lang);
-      }, 300)
-    );
+    addDebouncedHandler(elements.format, () => {
+      const editorService = getEditorService();
+      const code = editorService.getValue();
+      const lang = elements.language?.value ?? "c";
+      codeActions.formatCode(code, lang);
+    });
 
-    elements.lintCode?.addEventListener(
-      "click",
-      debounce(() => {
-        const editorService = getEditorService();
-        const code = editorService.getValue();
-        const lang = elements.language?.value || "c";
-        codeActions.runLintCode(code, lang);
-      }, 300)
-    );
+    addDebouncedHandler(elements.lintCode, () => {
+      const editorService = getEditorService();
+      const code = editorService.getValue();
+      const lang = elements.language?.value ?? "c";
+      codeActions.runLintCode(code, lang);
+    });
 
     // Zen Mode
-    const zenModeButton = document.getElementById("zenMode");
-    zenModeButton?.addEventListener("click", toggleZenMode);
+    document
+      .getElementById("zenMode")
+      ?.addEventListener("click", toggleZenMode);
 
     // Compilation buttons
-    elements.compile?.addEventListener(
-      "click",
-      debounce(() => {
-        const options = domUtils.getCompileOptions();
-        compileSocketManager.compile(options);
-      }, 300)
-    );
+    addDebouncedHandler(elements.compile, () => {
+      compileSocketManager.compile(domUtils.getCompileOptions());
+    });
 
-    elements.debug?.addEventListener(
-      "click",
-      debounce(() => {
-        const options = domUtils.getCompileOptions();
-        debugActions.startDebugSession(options);
-      }, 300)
-    );
+    addDebouncedHandler(elements.debug, () => {
+      debugActions.startDebugSession(domUtils.getCompileOptions());
+    });
 
     elements.closeOutput?.addEventListener("click", () => {
       compileSocketManager.cleanup();
       debugActions.cleanup();
       leakDetectActions.cleanup();
+      syscallActions.cleanup();
       domUtils.hideOutputPanel();
     });
 
-    elements.viewAssembly?.addEventListener(
-      "click",
-      debounce(() => {
-        const options = domUtils.getCompileOptions();
-        codeActions.viewAssembly(options);
-      }, 300)
-    );
+    addDebouncedHandler(elements.viewAssembly, () => {
+      codeActions.viewAssembly(domUtils.getCompileOptions());
+    });
 
-    elements.memcheck?.addEventListener(
-      "click",
-      debounce(() => {
-        const options = domUtils.getCompileOptions();
-        leakDetectActions.startLeakDetection(options);
-      }, 300)
-    );
+    addDebouncedHandler(elements.memcheck, () => {
+      leakDetectActions.startLeakDetection(domUtils.getCompileOptions());
+    });
+
+    addDebouncedHandler(elements.syscall, () => {
+      syscallActions.startSyscallTracing(domUtils.getCompileOptions());
+    });
 
     // Settings
     elements.vimMode?.addEventListener("change", () => {
@@ -477,27 +499,36 @@ export const initApp = () => {
     const el = document.getElementById("title-easter-egg");
     if (!el) return;
 
-    let clicks = 0,
-      lastClick = 0,
-      timer: number | null = null;
+    let clicks = 0;
+    let lastClick = 0;
+    let timer: number | undefined;
+
+    const TIMEOUT_MS = 1500;
+    const REQUIRED_CLICKS = 3;
+    const MESSAGE_DURATION_MS = 4000;
 
     el.addEventListener("click", () => {
       const now = Date.now();
 
-      if (now - lastClick > 1500) clicks = 0;
-      if (timer) clearTimeout(timer);
+      // Reset clicks if too much time has passed
+      if (now - lastClick > TIMEOUT_MS) {
+        clicks = 0;
+      }
+
+      // Clear previous timer if exists
+      timer && clearTimeout(timer);
 
       clicks++;
       lastClick = now;
 
-      if (clicks === 3) {
+      if (clicks === REQUIRED_CLICKS) {
         showNotification(
           "info",
           "🌌 The Answer to the Ultimate Question of Life, the Universe, and Everything is 42 🤓",
-          4000,
+          MESSAGE_DURATION_MS,
           { top: "50%", left: "50%" }
         );
-        timer = window.setTimeout(() => (clicks = 0), 4000);
+        timer = window.setTimeout(() => (clicks = 0), MESSAGE_DURATION_MS);
       }
     });
   };
@@ -511,6 +542,7 @@ export const initApp = () => {
     // Step 2: Initialize UI components
     initializeTemplates();
     initCustomSelects();
+    initEditors();
 
     // Step 3: Initialize layout system
     const layout = useLayout();

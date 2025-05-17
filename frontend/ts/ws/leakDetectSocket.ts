@@ -57,7 +57,7 @@ export class LeakDetectSocketManager {
 
       // Display the report using domUtils.setOutput
       domUtils.setOutput(
-        `<div class="memcheck-output" style="white-space: pre-wrap; overflow: visible;">${
+        `<div class="bg-[var(--bg-secondary)] p-[var(--spacing-md)] font-[var(--font-mono)] leading-[1.5] whitespace-pre-wrap rounded-[var(--radius-md)] border border-[var(--border)] shadow-[var(--shadow-sm)] mb-[var(--spacing-sm)]">${
           data.report || "No leaks detected."
         }</div>`
       );

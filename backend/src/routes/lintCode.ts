@@ -4,7 +4,7 @@
  */
 import Router from "koa-router";
 import { koaHandler } from "../utils/routeHandler";
-import { compilationService } from "../utils/compilationService";
+import { codeProcessingService } from "../utils/codeProcessingService";
 import { AppError, LintCodeRequest } from "../types";
 
 const router = new Router();
@@ -24,7 +24,7 @@ router.post(
     }
 
     // Run lint code check
-    const result = await compilationService.runLintCode(code);
+    const result = await codeProcessingService.runLintCode(code);
 
     if (result.success) {
       // Return formatted report

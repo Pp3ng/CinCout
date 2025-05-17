@@ -147,6 +147,7 @@ export interface Session {
   sessionType: string;
   socketId?: string; // Optional Socket.IO socket ID for reference
   isDebugSession?: boolean; // Whether this is a GDB debug session
+  straceLogFile?: string; // Path to strace log file (only for strace sessions)
 }
 
 // ==========================================
@@ -176,9 +177,9 @@ export interface SessionSocket extends Socket {
 // ==========================================
 
 /**
- * Compilation service interface
+ * Code processing service interface
  */
-export interface ICompilationService {
+export interface ICodeProcessingService {
   createCompilationEnvironment(lang: string): CompilationEnvironment;
   writeCodeToFile(filePath: string, code: string): void;
   compileCode(
@@ -196,6 +197,11 @@ export interface ICompilationService {
     code: string,
     options: CompilationOptions
   ): Promise<{ success: boolean; valgrindLogFile?: string; error?: string }>;
+  startSyscallSession(
+    env: CompilationEnvironment,
+    code: string,
+    options: CompilationOptions
+  ): Promise<{ success: boolean; straceLogFile?: string; error?: string }>;
   formatCode(code: string, style?: string): Promise<FormatResult>;
   runLintCode(code: string, lang: string): Promise<LintCodeResult>;
   startDebugSession(
@@ -221,6 +227,15 @@ export interface ISessionService {
     sessionId: string,
     tmpDir: DirResult,
     outputFile: string
+  ): boolean;
+
+  // Strace session method for syscall tracing
+  startStraceSession(
+    socket: Socket,
+    sessionId: string,
+    tmpDir: DirResult,
+    outputFile: string,
+    straceLogFile: string
   ): boolean;
   sendInputToSession(sessionId: string, input: string): boolean;
   terminateSession(sessionId: string): void;

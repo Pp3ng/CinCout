@@ -2,14 +2,18 @@
  * Socket.IO handler for code compilation and execution
  */
 import {
-  ICompilationService,
+  ICodeProcessingService,
   ISessionService,
   IWebSocketManager,
   SessionSocket,
 } from "../types";
-import { compilationService } from "../utils/compilationService";
+import { codeProcessingService } from "../utils/codeProcessingService";
 import { sessionService } from "../utils/sessionService";
-import { webSocketManager, SocketEvents, BaseSocketHandler } from "./webSocketManager";
+import {
+  webSocketManager,
+  SocketEvents,
+  BaseSocketHandler,
+} from "./webSocketManager";
 
 /**
  * CompileWebSocketHandler handles compilation-related Socket.IO communication
@@ -23,7 +27,7 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
    * @param webSocketManager - WebSocket manager
    */
   constructor(
-    compilationService: ICompilationService,
+    compilationService: ICodeProcessingService,
     sessionService: ISessionService,
     webSocketManager: IWebSocketManager
   ) {
@@ -181,7 +185,7 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
 
 // Create singleton instance with dependencies
 export const compileHandler = new CompileWebSocketHandler(
-  compilationService,
+  codeProcessingService,
   sessionService,
   webSocketManager
 );

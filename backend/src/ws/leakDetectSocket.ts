@@ -16,7 +16,6 @@ import {
   SocketEvents,
   BaseSocketHandler,
 } from "./webSocketManager";
-import path from "path";
 import fs from "fs-extra";
 
 /**
@@ -56,10 +55,9 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
     const env = this.compilationService.createCompilationEnvironment(lang);
 
     try {
-      this.compilationService.writeCodeToFile(env.sourceFile, code);
       this.emitToClient(socket, SocketEvents.LEAK_CHECK_COMPILING, {});
 
-      // Compile the code with debug info for better Valgrind output
+      // Prepare the leak detection environment using the specialized method
       this.compileCodeForLeakCheck(socket, env, code, {
         lang,
         compiler,
@@ -88,18 +86,14 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
     options: { lang: string; compiler?: string; optimization?: string }
   ): void {
     this.compilationService
-      .compileCode(env, code, {
-        ...options,
-        // Add debug info for better Valgrind output
-        // Allow user's optimization level to be used
-      })
+      .prepareLeakDetection(env, code, options)
       .then((result) => {
-        if (result.success) {
-          // Start a special leak detection session
-          this.startLeakDetectionSession(socket, env);
+        if (result.success && result.valgrindLogFile) {
+          // Execute a special leak detection session with the prepared valgrindLogFile
+          this.executeLeakDetectionSession(socket, env, result.valgrindLogFile);
         } else {
           this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-            output: result.error,
+            output: result.error || "Compilation failed with no specific error",
           });
           env.tmpDir.removeCallback();
         }
@@ -113,17 +107,17 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
   }
 
   /**
-   * Start a leak detection session
+   * Execute a leak detection session
    * @param socket - Socket.IO connection
    * @param env - Compilation environment
+   * @param valgrindLogFile - Path to the Valgrind log file
    * @private
    */
-  private startLeakDetectionSession(
+  private executeLeakDetectionSession(
     socket: SessionSocket,
-    env: CompilationEnvironment
+    env: CompilationEnvironment,
+    valgrindLogFile: string
   ): void {
-    const valgrindLogFile = path.join(env.tmpDir.name, "valgrind.log");
-
     // Let the client know we're running leak detection
     this.emitToClient(socket, SocketEvents.LEAK_CHECK_RUNNING, {});
 
@@ -246,7 +240,7 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
         // Format report
         const formattedReport = codeProcessingService["formatOutput"](
           report,
-          "memcheck"
+          "leakDetect"
         );
 
         // Send report to client

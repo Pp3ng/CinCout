@@ -60,6 +60,9 @@ function startWorker() {
     }
   });
 
+  // CORS middleware
+  app.use(cors());
+
   // Compression middleware
   app.use(
     compress({
@@ -75,14 +78,18 @@ function startWorker() {
       gzip: {
         level: 6,
       },
+      deflate: false,
     })
   );
 
-  // CORS middleware
-  app.use(cors());
-
-  // Body parser middleware
-  app.use(bodyParser());
+  // Body parser middleware - after compression for reduced data size
+  app.use(
+    bodyParser({
+      jsonLimit: "1mb",
+      formLimit: "1mb",
+      textLimit: "1mb",
+    })
+  );
 
   // Security middleware
   app.use(
@@ -117,9 +124,12 @@ function startWorker() {
     serve(path.join(__dirname, "../../frontend/dist"), {
       maxage: 86400000, // 1 day in milliseconds
       index: "index.html",
+      immutable: true, // Add immutable directive for improved caching
       setHeaders: (res: any, filepath: string) => {
-        if (filepath.endsWith(".js") || filepath.endsWith(".css")) {
-          res.setHeader("Cache-Control", "public, max-age=86400");
+        if (filepath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache");
+        } else if (filepath.endsWith(".js") || filepath.endsWith(".css")) {
+          res.setHeader("Cache-Control", "public, max-age=86400, immutable");
         }
       },
     })
@@ -188,7 +198,19 @@ function startWorker() {
 
   // Start server
   server.listen(port, () => {
-    console.log(`Worker ${process.pid} listening on port ${port}`);
+    // memory usage monitoring
+    const memoryCheckInterval = 30000; // 30 seconds
+    setInterval(() => {
+      const memoryUsage = process.memoryUsage();
+      const mbUsed = Math.round((memoryUsage.rss / 1024 / 1024) * 100) / 100;
+      if (mbUsed > 800) {
+        // 800 MB threshold
+        console.error(
+          `Worker ${process.pid} memory usage critical (${mbUsed} MB), exiting for restart`
+        );
+        process.exit(1); // Exit with error code so cluster manager will restart
+      }
+    }, memoryCheckInterval);
   });
 
   // Handle unexpected errors

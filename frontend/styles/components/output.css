@@ -15,13 +15,6 @@
   border-radius: var(--radius-sm);
 }
 
-/* Output styling for different types */
-.error-output {
-  margin: 0;
-  padding: 6px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-}
 
 /* Terminal loading indicator */
 .loading {
@@ -63,6 +56,7 @@
   box-shadow: var(--shadow-error-sm);
   border-radius: var(--radius-sm);
   transition: all var(--transition-normal);
+  padding: var(--spacing-sm);
 }
 
 .error-output:hover {
@@ -81,15 +75,4 @@
   color: #8be9fd;
   font-weight: bold;
   text-shadow: 0 0 2px rgba(139, 233, 253, 0.3);
-}
-
-/* Memory leak style */
-.leak {
-  border-left: 2px solid #ef4444;
-  background: rgba(239, 68, 68, 0.05);
-  padding: var(--spacing-sm);
-  margin: var(--spacing-sm) 0;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  position: relative;
 }

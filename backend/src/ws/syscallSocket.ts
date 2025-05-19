@@ -89,14 +89,14 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
     options: { lang: string; compiler?: string; optimization?: string }
   ): void {
     this.compilationService
-      .startSyscallSession(env, code, options)
+      .prepareSyscallTracing(env, code, options)
       .then((result) => {
         if (result.success) {
-          // Siganl to client
+          // Signal to client
           this.emitToClient(socket, SocketEvents.COMPILE_SUCCESS, {});
 
-          // Start a special syscall tracing session
-          this.startSyscallTracingSession(socket, env, result.straceLogFile!);
+          // Execute a special syscall tracing session
+          this.executeSyscallTracingSession(socket, env, result.straceLogFile!);
         } else {
           this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
             output: result.error,
@@ -113,13 +113,13 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
   }
 
   /**
-   * Start a syscall tracing session
+   * Execute a syscall tracing session
    * @param socket - Socket.IO connection
    * @param env - Compilation environment
    * @param straceLogFile - Path to the strace log file
    * @private
    */
-  private startSyscallTracingSession(
+  private executeSyscallTracingSession(
     socket: SessionSocket,
     env: CompilationEnvironment,
     straceLogFile: string
@@ -161,9 +161,9 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
         }
       );
 
-      // Use sessionService to start the strace session
+      // Use sessionService to execute the strace session
       if (
-        !this.sessionService.startStraceSession(
+        !this.sessionService.executeStraceSession(
           socket,
           sessionId,
           env.tmpDir,
@@ -171,7 +171,7 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
           straceLogFile
         )
       ) {
-        throw new Error("Failed to start strace session");
+        throw new Error("Failed to execute strace session");
       }
     } catch (error) {
       console.error(`Error creating strace session ${sessionId}:`, error);
@@ -209,15 +209,9 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
           return;
         }
 
-        // Format report
-        const formattedReport = codeProcessingService["formatOutput"](
-          straceOutput,
-          "strace"
-        );
-
         // Send report to client - this will cause the frontend to disconnect
         this.emitToClient(socket, SocketEvents.STRACE_REPORT, {
-          report: formattedReport,
+          report: straceOutput,
           exitCode: exitCode,
         });
       } else {

@@ -60,11 +60,11 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
 
       // Compile the code with debug flags
       this.compilationService
-        .startDebugSession(env, { lang, compiler, optimization: "-O0" })
+        .prepareDebugSession(env, { lang, compiler, optimization: "-O0" })
         .then((result) => {
           if (result.success) {
-            // Start debug session with GDB
-            const success = this.sessionService.startDebugSession(
+            // Execute debug session with GDB
+            const success = this.sessionService.executeDebugSession(
               socket,
               socket.sessionId,
               env.tmpDir,

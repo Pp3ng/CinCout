@@ -5,6 +5,7 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { EventEmitter } from "events";
 import { Server } from "http";
+import zlib from "zlib";
 import {
   IWebSocketManager,
   SessionSocket,
@@ -190,7 +191,18 @@ export class WebSocketManager implements IWebSocketManager {
           origin: "*",
           methods: ["GET", "POST"],
         },
-        transports: ["websocket", "polling"],
+        transports: ["websocket"],
+        // Enable compression
+        perMessageDeflate: {
+          threshold: 1024, // Only compress data if larger than 1KB
+          zlibDeflateOptions: {
+            level: 5,
+            memLevel: 8,
+            strategy: zlib.constants.Z_DEFAULT_STRATEGY,
+          },
+          serverNoContextTakeover: true, // Free up compression context after each message
+          clientNoContextTakeover: true, // Request clients to free compression context
+        },
       });
 
       // Set up connection handler

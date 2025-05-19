@@ -109,7 +109,11 @@ export const domUtils = {
 
   // Error output formatter
   formatErrorOutput: (error: any): string => {
-    return `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Error: ${error}</div>`;
+    const errorStr = String(error);
+    const errorMessage = errorStr.includes("API error:")
+      ? errorStr
+      : `Error: ${errorStr}`;
+    return `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${errorMessage}</div>`;
   },
 
   // Render shortcuts list in the DOM

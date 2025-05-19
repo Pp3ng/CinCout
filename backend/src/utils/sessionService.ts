@@ -92,14 +92,14 @@ export class SessionService implements ISessionService {
   }
 
   /**
-   * Start a new compilation session
+   * Execute a new compilation session
    * @param {Socket} socket - Socket.IO connection
    * @param {string} sessionId - Session ID
    * @param {DirResult} tmpDir - Temporary directory
    * @param {string} outputFile - Path to compiled executable
    * @returns {boolean} Success status
    */
-  startCompilationSession(
+  executeCompilationSession(
     socket: Socket,
     sessionId: string,
     tmpDir: DirResult,
@@ -177,14 +177,14 @@ export class SessionService implements ISessionService {
   }
 
   /**
-   * Start a new debug session with GDB
+   * Execute a new debug session with GDB
    * @param {Socket} socket - Socket.IO connection
    * @param {string} sessionId - Session ID
    * @param {DirResult} tmpDir - Temporary directory
    * @param {string} outputFile - Path to compiled executable
    * @returns {boolean} Success status
    */
-  startDebugSession(
+  executeDebugSession(
     socket: Socket,
     sessionId: string,
     tmpDir: DirResult,
@@ -297,7 +297,7 @@ export class SessionService implements ISessionService {
   }
 
   /**
-   * Start a new strace session
+   * Execute a new strace session
    * @param {Socket} socket - Socket.IO connection
    * @param {string} sessionId - Session ID
    * @param {DirResult} tmpDir - Temporary directory
@@ -305,7 +305,7 @@ export class SessionService implements ISessionService {
    * @param {string} straceLogFile - Path to strace log file
    * @returns {boolean} Success status
    */
-  startStraceSession(
+  executeStraceSession(
     socket: Socket,
     sessionId: string,
     tmpDir: DirResult,

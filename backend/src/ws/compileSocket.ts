@@ -107,9 +107,9 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
    */
   private runCompiledProgram(socket: SessionSocket, env: any): void {
     try {
-      // Start execution session
+      // Execute the compilation session
       if (
-        !this.sessionService.startCompilationSession(
+        !this.sessionService.executeCompilationSession(
           socket,
           socket.sessionId,
           env.tmpDir,
@@ -117,7 +117,7 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
         )
       ) {
         this.emitToClient(socket, SocketEvents.ERROR, {
-          message: "Failed to start execution session",
+          message: "Failed to execute compilation session",
         });
         env.tmpDir.removeCallback();
       }

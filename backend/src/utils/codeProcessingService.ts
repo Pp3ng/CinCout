@@ -142,12 +142,12 @@ export class CodeProcessingService implements ICodeProcessingService {
   }
 
   /**
-   * Start a GDB debug session for a program
+   * Prepare environment for GDB debug session
    * @param {CompilationEnvironment} env - Compilation environment
    * @param {CompilationOptions} options - Compilation options
    * @returns {Promise<DebugSessionResult>} Debug session result
    */
-  async startDebugSession(
+  async prepareDebugSession(
     env: CompilationEnvironment,
     options: CompilationOptions
   ): Promise<DebugSessionResult> {
@@ -179,13 +179,13 @@ export class CodeProcessingService implements ICodeProcessingService {
   }
 
   /**
-   * Start syscall tracing session for a program
+   * Prepare environment for syscall tracing
    * @param {CompilationEnvironment} env - Compilation environment
    * @param {string} code - Source code
    * @param {CompilationOptions} options - Compilation options
    * @returns {Promise<{success: boolean, straceLogFile?: string, error?: string}>} Syscall tracing preparation result
    */
-  async startSyscallSession(
+  async prepareSyscallTracing(
     env: CompilationEnvironment,
     code: string,
     options: CompilationOptions
@@ -361,7 +361,7 @@ export class CodeProcessingService implements ICodeProcessingService {
       return {
         success: true,
         report:
-          "<div class='output-block'><span style='color: #50fa7b; font-weight: bold;'><i class='fas fa-check-circle'></i> No issues found. Your code looks good!</span></div>",
+          "<div><span style='color: #50fa7b; font-weight: bold;'><i class='fas fa-check-circle'></i> No issues found. Your code looks good!</span></div>",
       };
     } else {
       // Apply formatting to lint code output
@@ -375,7 +375,7 @@ export class CodeProcessingService implements ICodeProcessingService {
   // =====================================
 
   /**
-   * Start leak detection process
+   * Prepare environment for leak detection
    * This compiles the code with debug info and prepares for valgrind execution
    * but lets the socket handler manage the actual execution and result processing
    *
@@ -384,7 +384,7 @@ export class CodeProcessingService implements ICodeProcessingService {
    * @param {CompilationOptions} options - Compilation options
    * @returns {Promise<{success: boolean, valgrindLogFile?: string, error?: string}>} Leak detection preparation result
    */
-  async startLeakDetectSession(
+  async prepareLeakDetection(
     env: CompilationEnvironment,
     code: string,
     options: CompilationOptions
@@ -493,7 +493,7 @@ export class CodeProcessingService implements ICodeProcessingService {
   /**
    * Format output for display
    * @param {string} text - Text to format
-   * @param {string} outputType - Type of output (default, memcheck, style, etc.)
+   * @param {string} outputType - Type of output (default, leakDetect, style, etc.)
    * @returns {string} Formatted HTML output
    * @private
    */
@@ -503,10 +503,10 @@ export class CodeProcessingService implements ICodeProcessingService {
     // Remove file paths from error messages
     text = text.replace(/[^:\s]+\.(cpp|c|h|hpp):/g, "");
 
-    // Only apply HTML sanitization and formatting for output types that need it
+    // Only apply HTML sanitization for outputs that need it
     if (
       outputType === "default" ||
-      outputType === "memcheck" ||
+      outputType === "leakDetect" ||
       outputType === "style"
     ) {
       // Basic HTML sanitization
@@ -515,13 +515,22 @@ export class CodeProcessingService implements ICodeProcessingService {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
 
-      // Process based on output type
-      if (outputType === "memcheck") {
-        text = this.formatMemcheckOutput(text);
-      }
+      // Apply common formatting for all output types
+      // Highlight error and warning messages
+      text = text
+        .replace(/error:/gi, '<span class="error-text">error:</span>')
+        .replace(/warning:/gi, '<span class="warning-text">warning:</span>')
 
-      // Common formatting for styled output types
-      text = this.applyCommonFormatting(text, outputType);
+        // Highlight line and column numbers
+        .replace(
+          /(\d+):(\d+):/g,
+          '<span class="line-number">$1</span>:<span class="column-number">$2</span>:'
+        );
+
+      // apply additional formatting for leak detection output
+      if (outputType === "leakDetect") {
+        text = this.formatLeakDetectOutput(text);
+      }
     }
 
     return text;
@@ -530,77 +539,104 @@ export class CodeProcessingService implements ICodeProcessingService {
   /**
    * Format Valgrind memcheck output
    * @param text - Raw memcheck text
-   * @returns Formatted memcheck output
-   * @private
+   * @returns Formatted memcheck text with advanced leak detection formatting applied
    */
-  private formatMemcheckOutput(text: string): string {
+  private formatLeakDetectOutput(text: string): string {
     // Pre-process memcheck output
-    return (
-      text
-        // Remove valgrind prefixes
-        .replace(/==\d+== /g, "")
-        // Clean up spacing
-        .replace(/\s+from\s+/g, " from ")
-        // Remove temporary directory paths - more robust regex to catch various forms
-        .replace(
-          /\(\/tmp\/CinCout-[^\/]+\/[^:)]+:[^\)]+\)/g,
-          "(program.c:LINE)"
-        )
-        .replace(
-          /by 0x[0-9a-fA-F]+: \w+ \(\/tmp\/CinCout-[^\/]+\/([^:)]+):(\d+)\)/g,
-          "by 0x...: (line: $2)"
-        )
-        // Remove all other path references
-        .replace(/in \/.*?\/([^\/]+)\)/g, "in $1)")
-        // Clean up whitespace
-        .replace(/^\s*\n/g, "")
-        .replace(/\n\s*\n/g, "\n")
-        // Mark line numbers for further processing
-        .replace(/\((?:program\.c|program\.cpp):(\d+)\)/g, "###LINE:$1###")
-        // Mark memory leaks
-        .replace(
-          /(\d+ bytes? in \d+ blocks? are definitely lost.*?)(?=\s*at|$)/g,
-          "###LEAK:$1###"
-        )
-    );
-  }
-
-  /**
-   * Apply common text formatting
-   * @param text - Raw text
-   * @param outputType - Type of output
-   * @returns Formatted text
-   * @private
-   */
-  private applyCommonFormatting(text: string, outputType: string): string {
-    // Highlight error and warning messages
     text = text
-      .replace(/error:/gi, '<span class="error-text">error:</span>')
-      .replace(/warning:/gi, '<span class="warning-text">warning:</span>');
+      // Remove valgrind prefixes
+      .replace(/==\d+== /g, "")
+      // Clean up spacing
+      .replace(/\s+from\s+/g, " from ")
 
-    // Highlight line and column numbers
-    text = text.replace(
-      /(\d+):(\d+):/g,
-      '<span class="line-number">$1</span>:<span class="column-number">$2</span>:'
-    );
+      // === Handle line number formats ===
 
-    // Format memcheck specific markers if present
-    if (
-      outputType === "memcheck" &&
-      (text.includes("HEAP SUMMARY") ||
-        text.includes("LEAK SUMMARY") ||
-        text.includes("###LINE") ||
-        text.includes("###LEAK"))
-    ) {
-      text = text
-        .replace(
-          /###LINE:(\d+)###/g,
-          '(line: <span class="line-number">$1</span>)'
-        )
-        .replace(/###LEAK:(.*?)###/g, '<div class="leak">$1</div>')
-        .trim() // Remove leading and trailing whitespace
-        .replace(/\n{2,}/g, "\n"); // Remove multiple newlines
-    }
+      // 1. First, standardize path formats with line numbers
+      // Remove temporary directory paths but preserve line numbers
+      .replace(/\(\/tmp\/CinCout-[^\/]+\/[^:)]+:(\d+)\)/g, "###LINE:$1###")
+
+      // 2. Handle various valgrind stack trace formats with line numbers
+      // Format: "by 0x1234: function_name (/tmp/CinCout-xxx/file.c:42)"
+      .replace(
+        /by 0x[0-9a-fA-F]+: (\w+) \(\/tmp\/CinCout-[^\/]+\/(?:[^:)]+):(\d+)\)/g,
+        "by 0x...: $1 ###LINE:$2###"
+      )
+
+      // 3. Handle the specific format: "by 0x10878B: leak_memory(int) 5)" - function with parameters
+      .replace(
+        /by (0x[0-9a-fA-F]+): ([a-zA-Z_][a-zA-Z0-9_]*\([^)]*\)) (\d+)\)/g,
+        "by $1: $2 ###LINE:$3###"
+      )
+
+      // 4. Handle format: "by 0x1087C3: leak_memory 7)"
+      .replace(
+        /by (0x[0-9a-fA-F]+): ([a-zA-Z_][a-zA-Z0-9_]*) (\d+)\)/g,
+        "by $1: $2 ###LINE:$3###"
+      )
+
+      // 5. Handle any remaining standard program file references
+      .replace(/\((?:program\.c|program\.cpp):(\d+)\)/g, "###LINE:$1###")
+
+      // 6. Handle any remaining format: "function_name 42)"
+      .replace(/: ([a-zA-Z_][a-zA-Z0-9_]*) (\d+)\)/g, ": $1 ###LINE:$2###")
+
+      // === Clean up and additional formatting ===
+
+      // Remove all other path references
+      .replace(/in \/.*?\/([^\/]+)\)/g, "in $1)")
+
+      // Clean up whitespace
+      .replace(/^\s*\n/g, "")
+      .replace(/\n\s*\n/g, "\n")
+
+      // Mark memory leaks and fix potential comma formatting issues in byte counts
+      .replace(
+        /([\d,]+ bytes? in \d+ blocks? are definitely lost.*?)(?=\s*at|$)/g,
+        function (_, leakText) {
+          // Clean up any commas in numbers and trim whitespace
+          return (
+            "###LEAK:" + leakText.replace(/(\d),(\d)/g, "$1$2").trim() + "###"
+          );
+        }
+      )
+
+      // Mark error summary for formatting
+      .replace(
+        /(ERROR SUMMARY:\s*(\d+) errors from \d+ contexts.*)/g,
+        function (_, text, errorCount) {
+          const count = parseInt(errorCount, 10);
+          // If there are errors, mark with ERROR_SUMMARY tag, otherwise mark with OK_SUMMARY tag
+          return count > 0
+            ? "###ERROR_SUMMARY:" + text + "###"
+            : "###OK_SUMMARY:" + text + "###";
+        }
+      )
+
+      // Replace line number markers with formatted HTML
+      .replace(
+        /###LINE:(\d+)###/g,
+        '(line: <span class="line-number">$1</span>)'
+      )
+
+      .replace(/###LEAK:(.*?)###/g, function (_, leakText) {
+        // style the leak text with a red border and background - without extra indentation
+        return `<div style="border-left: 2px solid #ef4444; background: rgba(239, 68, 68, 0.05); padding: 6px; margin: 6px 0; border-radius: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); position: relative;"><span style="color: #FF5555; font-weight: bold;">&#9888; Memory Leak:</span> ${leakText}</div>`;
+      })
+
+      // Format error summary - using red color for errors with proper styling
+      .replace(
+        /###ERROR_SUMMARY:(.*?)###/g,
+        '<div style="color: #FF5555; font-weight: bold; margin-top: 10px; border-top: 1px dashed rgba(255,85,85,0.3); padding-top: 8px;">$1</div>'
+      )
+
+      // Format ok summary - using green color for no errors
+      .replace(
+        /###OK_SUMMARY:(.*?)###/g,
+        '<div style="color: #50fa7b; font-weight: bold; margin-top: 8px;"><i class="fas fa-check-circle"></i> $1</div>'
+      )
+
+      .trim() // Remove leading and trailing whitespace
+      .replace(/\n{2,}/g, "\n"); // Remove multiple newlines
 
     return text;
   }

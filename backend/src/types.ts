@@ -192,19 +192,19 @@ export interface ICodeProcessingService {
     code: string,
     options: CompilationOptions
   ): Promise<AssemblyResult>;
-  startLeakDetectSession(
+  prepareLeakDetection(
     env: CompilationEnvironment,
     code: string,
     options: CompilationOptions
   ): Promise<{ success: boolean; valgrindLogFile?: string; error?: string }>;
-  startSyscallSession(
+  prepareSyscallTracing(
     env: CompilationEnvironment,
     code: string,
     options: CompilationOptions
   ): Promise<{ success: boolean; straceLogFile?: string; error?: string }>;
   formatCode(code: string, style?: string): Promise<FormatResult>;
   runLintCode(code: string, lang: string): Promise<LintCodeResult>;
-  startDebugSession(
+  prepareDebugSession(
     env: CompilationEnvironment,
     options: CompilationOptions
   ): Promise<DebugSessionResult>;
@@ -216,13 +216,13 @@ export interface ICodeProcessingService {
 export interface ISessionService {
   initSessionService(): void;
   createSession(socket: Socket): string;
-  startCompilationSession(
+  executeCompilationSession(
     socket: Socket,
     sessionId: string,
     tmpDir: DirResult,
     outputFile: string
   ): boolean;
-  startDebugSession(
+  executeDebugSession(
     socket: Socket,
     sessionId: string,
     tmpDir: DirResult,
@@ -230,7 +230,7 @@ export interface ISessionService {
   ): boolean;
 
   // Strace session method for syscall tracing
-  startStraceSession(
+  executeStraceSession(
     socket: Socket,
     sessionId: string,
     tmpDir: DirResult,

@@ -26,9 +26,7 @@ export class SyscallSocketManager {
     socketManager.on(SocketEvents.COMPILING, () => {
       if (socketManager.getSessionType() !== "strace") return;
       domUtils.showOutputPanel();
-      domUtils.setOutput(
-        '<div class="loading">Compiling for syscall tracing...</div>'
-      );
+      domUtils.showLoadingInOutput("Compiling for syscall tracing...");
     });
 
     // Handle strace events
@@ -144,16 +142,14 @@ export class SyscallSocketManager {
 
     try {
       domUtils.showOutputPanel();
-      domUtils.setOutput('<div class="loading">Connecting...</div>');
+      domUtils.showLoadingInOutput("Connecting...");
 
       await socketManager.connect();
 
       // Set session type to strace
       socketManager.setSessionType("strace");
 
-      domUtils.setOutput(
-        '<div class="loading">Setting up syscall tracing...</div>'
-      );
+      domUtils.showLoadingInOutput("Setting up syscall tracing...");
 
       // Emit strace start request to server
       socketManager

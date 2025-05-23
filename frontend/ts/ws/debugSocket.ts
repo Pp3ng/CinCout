@@ -25,6 +25,7 @@ export class DebugSocketManager {
     socketManager.on(SocketEvents.COMPILING, () => {
       if (socketManager.getSessionType() !== "debug") return;
       domUtils.showOutputPanel();
+      domUtils.showLoadingInOutput("Compiling for debug...");
     });
 
     // Handle debugging events

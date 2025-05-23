@@ -25,9 +25,7 @@ export class LeakDetectSocketManager {
     socketManager.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
       if (socketManager.getSessionType() !== "leak_detection") return;
       domUtils.showOutputPanel();
-      domUtils.setOutput(
-        '<div class="loading">Compiling for leak detection...</div>'
-      );
+      domUtils.showLoadingInOutput("Compiling for leak detection...");
     });
 
     // Handle leak detection running phase
@@ -110,16 +108,14 @@ export class LeakDetectSocketManager {
 
     try {
       domUtils.showOutputPanel();
-      domUtils.setOutput('<div class="loading">Connecting...</div>');
+      domUtils.showLoadingInOutput("Connecting...");
 
       await socketManager.connect();
 
       // Set session type to leak_detection
       socketManager.setSessionType("leak_detection");
 
-      domUtils.setOutput(
-        '<div class="loading">Sending code for leak detection...</div>'
-      );
+      domUtils.showLoadingInOutput("Sending code for leak detection...");
 
       await socketManager.emit(SocketEvents.LEAK_CHECK, {
         code: options.code,

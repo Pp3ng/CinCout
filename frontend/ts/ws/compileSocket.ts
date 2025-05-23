@@ -25,7 +25,7 @@ export class CompileSocketManager {
     socketManager.on(SocketEvents.COMPILING, () => {
       if (socketManager.getSessionType() !== "compilation") return;
       domUtils.showOutputPanel();
-      this.showOutputMessage('<div class="loading">Compiling</div>');
+      domUtils.showLoadingInOutput("Compiling");
     });
 
     socketManager.on(SocketEvents.COMPILE_SUCCESS, () => {
@@ -46,7 +46,7 @@ export class CompileSocketManager {
 
     socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
       domUtils.showOutputPanel();
-      this.showOutputMessage(
+      domUtils.setOutput(
         `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
       );
       socketManager.disconnect();
@@ -84,7 +84,7 @@ export class CompileSocketManager {
    */
   async compile(options: CompileOptions): Promise<void> {
     if (options.code.trim() === "") {
-      this.showOutputMessage(
+      domUtils.setOutput(
         '<div class="error-output">Error: Code cannot be empty</div>'
       );
       return;
@@ -92,16 +92,14 @@ export class CompileSocketManager {
 
     try {
       domUtils.showOutputPanel();
-      this.showOutputMessage('<div class="loading">Connecting...</div>');
+      domUtils.showLoadingInOutput("Connecting...");
 
       await socketManager.connect();
 
       // Set session type to compilation
       socketManager.setSessionType("compilation");
 
-      this.showOutputMessage(
-        '<div class="loading">Sending code for compilation...</div>'
-      );
+      domUtils.showLoadingInOutput("Sending code for compilation...");
 
       await socketManager.emit(SocketEvents.COMPILE, {
         code: options.code,
@@ -111,7 +109,7 @@ export class CompileSocketManager {
       });
     } catch (error) {
       console.error("Socket operation failed:", error);
-      this.showOutputMessage(
+      domUtils.setOutput(
         '<div class="error-output">Error: Socket connection failed. Please try again.</div>'
       );
 
@@ -120,16 +118,6 @@ export class CompileSocketManager {
       } catch (e) {
         console.error("Error disconnecting after failure:", e);
       }
-    }
-  }
-
-  /**
-   * Display a message in the output panel
-   */
-  private showOutputMessage(html: string): void {
-    const output = document.getElementById("output");
-    if (output) {
-      output.innerHTML = html;
     }
   }
 }

@@ -194,13 +194,6 @@ export class TerminalService {
    * Handle terminal input
    */
   private handleTerminalInput = (data: string): void => {
-    if (!socketManager.isProcessRunning() || !socketManager.isConnected()) {
-      console.log(
-        "Not sending terminal input: program not running or socket closed"
-      );
-      return;
-    }
-
     // Send all input characters to the server for PTY to handle
     socketManager
       .emit(SocketEvents.INPUT, {
@@ -238,33 +231,15 @@ export class TerminalService {
   writeExitMessage = (code: number): void => {
     if (!this.terminal) return;
 
-    // Create styled exit message based on exit code
-    let exitMessage = "";
-    const isSuccess = code === 0;
-
-    // Add newlines
-    exitMessage += "\r\n";
-
-    // Add styled message based on exit code
-    if (isSuccess) {
-      // Success message with exact green color
+    let exitMessage = "\r\n";
+    if (code === 0) {
       exitMessage += `\x1b[38;2;85;219;190m[Program successfully exited with code: ${code}]\x1b[0m`;
+    } else if (code > 128) {
+      exitMessage += `\x1b[31m[Program exited with code: ${code}, may have crashed (signal ${code - 128})]\x1b[0m`;
     } else {
-      if (code > 128) {
-        // For signals/crashes (codes > 128), use red
-        exitMessage += `\x1b[31m[Program exited with code: ${code}`;
-        exitMessage += `, may have crashed (signal ${code - 128})]\x1b[0m`;
-      } else {
-        // For other non-zero exit codes, use exact yellow color #e6cd69
-        exitMessage += `\x1b[38;2;230;205;105m[Program exited with code: ${code}`;
-        exitMessage += `, may have errors]\x1b[0m`;
-      }
+      exitMessage += `\x1b[38;2;230;205;105m[Program exited with code: ${code}, may have errors]\x1b[0m`;
     }
-
-    // Add final newline
     exitMessage += "\r\n";
-
-    // Write to terminal
     this.terminal.write(exitMessage);
   };
 
@@ -272,24 +247,11 @@ export class TerminalService {
    * Clean up the terminal
    */
   dispose = (): void => {
-    if (this.fitAddon) {
-      try {
-        this.fitAddon.dispose();
-        this.fitAddon = null;
-      } catch (e) {
-        console.error("Error disposing fit addon:", e);
-      }
-    }
-
-    if (this.terminal) {
-      try {
-        this.terminal.dispose();
-        this.terminal = null;
-        (window as any).terminal = null;
-      } catch (e) {
-        console.error("Error disposing terminal:", e);
-      }
-    }
+    this.fitAddon?.dispose();
+    this.fitAddon = null;
+    this.terminal?.dispose();
+    this.terminal = null;
+    (window as any).terminal = null;
   };
 
   /**

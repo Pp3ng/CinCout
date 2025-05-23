@@ -2,21 +2,18 @@
  * CompileSocket - Module handling compilation-related Socket.IO communication
  */
 import { getTerminalService } from "../service/terminal";
-import { CompileOptions, StateUpdater } from "../types";
+import { CompileOptions } from "../types";
 import { socketManager, SocketEvents } from "./webSocketManager";
+import { domUtils } from "../app";
 
 /**
  * CompileSocketManager handles the Socket.IO communication for code compilation
  */
 export class CompileSocketManager {
-  private stateUpdater: StateUpdater;
-
   /**
    * Create a new CompileSocketManager
-   * @param stateUpdater Interface to update UI based on socket events
    */
-  constructor(stateUpdater: StateUpdater) {
-    this.stateUpdater = stateUpdater;
+  constructor() {
     this.setupEventListeners();
   }
 
@@ -26,7 +23,7 @@ export class CompileSocketManager {
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       this.showOutputMessage('<div class="loading">Compiling</div>');
     });
 
@@ -34,8 +31,7 @@ export class CompileSocketManager {
       // Reset any existing terminal first
       const terminalService = getTerminalService();
       terminalService.dispose();
-
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
 
       // Set up the terminal with the correct DOM elements
       terminalService.setDomElements({
@@ -48,7 +44,7 @@ export class CompileSocketManager {
     });
 
     socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       this.showOutputMessage(
         `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
       );
@@ -82,23 +78,10 @@ export class CompileSocketManager {
   }
 
   /**
-   * Clean up the Socket.IO connection and send cleanup request to server
-   */
-  cleanup(): void {
-    socketManager
-      .cleanupSession()
-      .catch((error) => console.error("Cleanup failed:", error));
-  }
-
-  /**
    * Compile code using Socket.IO communication
    * @param options Compilation options including code, language, compiler, etc.
    */
   async compile(options: CompileOptions): Promise<void> {
-    if (socketManager.isProcessRunning()) {
-      return;
-    }
-
     if (options.code.trim() === "") {
       this.showOutputMessage(
         '<div class="error-output">Error: Code cannot be empty</div>'
@@ -107,7 +90,7 @@ export class CompileSocketManager {
     }
 
     try {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       this.showOutputMessage('<div class="loading">Connecting...</div>');
 
       await socketManager.connect();
@@ -136,18 +119,6 @@ export class CompileSocketManager {
       } catch (e) {
         console.error("Error disconnecting after failure:", e);
       }
-    }
-  }
-
-  /**
-   * Send input to the running program
-   * @param input Input to send
-   */
-  async sendInput(input: string): Promise<void> {
-    try {
-      await socketManager.sendInput(input);
-    } catch (error) {
-      console.error("Failed to send input:", error);
     }
   }
 

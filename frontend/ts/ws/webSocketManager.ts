@@ -53,7 +53,6 @@ export class WebSocketManager {
   private socket: Socket | null = null;
   private sessionId: string | null = null;
   private eventHandlers: Map<string, Set<(data: any) => void>> = new Map();
-  private isRunning: boolean = false;
   private sessionType: string | null = null;
 
   /**
@@ -78,7 +77,6 @@ export class WebSocketManager {
 
       // Setup core event handlers
       this.socket.once(SocketEvents.CONNECT, () => {
-        this.isRunning = true;
         resolve(this.socket as Socket);
       });
 
@@ -100,66 +98,54 @@ export class WebSocketManager {
       });
 
       this.socket.on(SocketEvents.COMPILING, () => {
-        this.isRunning = true;
         this.notifyListeners(SocketEvents.COMPILING, {});
       });
 
       this.socket.on(SocketEvents.COMPILE_SUCCESS, () => {
-        this.isRunning = true;
         this.notifyListeners(SocketEvents.COMPILE_SUCCESS, {});
       });
 
       this.socket.on(SocketEvents.COMPILE_ERROR, (data: any) => {
-        this.isRunning = false;
         this.notifyListeners(SocketEvents.COMPILE_ERROR, data);
       });
 
       this.socket.on(SocketEvents.EXIT, (data: any) => {
-        this.isRunning = false;
         this.notifyListeners(SocketEvents.EXIT, data);
       });
 
       // Handle debug session events
       this.socket.on(SocketEvents.DEBUG_START, (data: any) => {
-        this.isRunning = true;
         this.notifyListeners(SocketEvents.DEBUG_START, data);
       });
 
       this.socket.on(SocketEvents.DEBUG_EXIT, (data: any) => {
-        this.isRunning = false;
         this.notifyListeners(SocketEvents.DEBUG_EXIT, data);
       });
 
       // Handle strace session events
       this.socket.on(SocketEvents.STRACE_START, (data: any) => {
-        this.isRunning = true;
         this.notifyListeners(SocketEvents.STRACE_START, data);
       });
 
       // Add handler for strace report
       this.socket.on(SocketEvents.STRACE_REPORT, (data: any) => {
-        this.isRunning = false;
         this.notifyListeners(SocketEvents.STRACE_REPORT, data);
       });
 
       // Handle leak detection events
       this.socket.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
-        this.isRunning = true;
         this.notifyListeners(SocketEvents.LEAK_CHECK_COMPILING, {});
       });
 
       this.socket.on(SocketEvents.LEAK_CHECK_RUNNING, () => {
-        this.isRunning = true;
         this.notifyListeners(SocketEvents.LEAK_CHECK_RUNNING, {});
       });
 
       this.socket.on(SocketEvents.LEAK_CHECK_REPORT, (data: any) => {
-        this.isRunning = false;
         this.notifyListeners(SocketEvents.LEAK_CHECK_REPORT, data);
       });
 
       this.socket.on(SocketEvents.LEAK_CHECK_ERROR, (data: any) => {
-        this.isRunning = false;
         this.notifyListeners(SocketEvents.LEAK_CHECK_ERROR, data);
       });
 
@@ -189,7 +175,6 @@ export class WebSocketManager {
     this.socket.disconnect();
     this.sessionId = null;
     this.sessionType = null;
-    this.isRunning = false;
   }
 
   /**
@@ -300,31 +285,6 @@ export class WebSocketManager {
    */
   setSessionId(id: string): void {
     this.sessionId = id;
-  }
-
-  /**
-   * Check if a process is running
-   * @returns {boolean} True if a process is running
-   */
-  isProcessRunning(): boolean {
-    return this.isRunning;
-  }
-
-  /**
-   * Set process running state
-   * @param {boolean} running - Whether a process is running
-   */
-  setProcessRunning(running: boolean): void {
-    this.isRunning = running;
-  }
-
-  /**
-   * Send input to a running process
-   * @param {string} input - Input to send
-   * @returns {Promise<void>}
-   */
-  sendInput(input: string): Promise<void> {
-    return this.emit(SocketEvents.INPUT, { input });
   }
 
   /**

@@ -14,7 +14,7 @@ import {
   loadSelectedTemplate,
   initializeTemplates,
 } from "./service/templates";
-import { CompileOptions, DOMElements, DomElementId } from "./types";
+import { CompileOptions } from "./types";
 import {
   initializeShortcuts,
   renderShortcutsList,
@@ -22,7 +22,7 @@ import {
 } from "./service/shortcuts";
 import themeManager from "./ui/themeManager";
 import { initCustomSelects } from "./ui/selector";
-import { useLayout } from "./ui/layout";
+import { socketManager } from "./ws/webSocketManager";
 
 // Import CSS for CodeMirror themes
 import "codemirror/theme/nord.css";
@@ -37,7 +37,7 @@ import "codemirror/theme/the-matrix.css";
 // DOM Utilities - Will become React hooks/state
 
 export const domUtils = {
-  getElements: (): DOMElements => {
+  getElements: () => {
     return {
       template: document.getElementById("template"),
       vimMode: document.getElementById("vimMode") as HTMLInputElement,
@@ -114,11 +114,6 @@ export const domUtils = {
       ? errorStr
       : `Error: ${errorStr}`;
     return `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${errorMessage}</div>`;
-  },
-
-  // Render shortcuts list in the DOM
-  renderShortcutsList: (): void => {
-    renderShortcutsList(DomElementId.SHORTCUTS_CONTENT);
   },
 };
 
@@ -380,49 +375,10 @@ const toggleZenMode = (): void => {
 
 // Application Initialization - Will become React components
 export const initApp = () => {
-  // Initialize socket managers with shared configuration
-  const socketConfig = {
-    showOutput: domUtils.showOutputPanel.bind(domUtils),
-  };
-
-  // Create socket managers
-  const compileSocketManager = new CompileSocketManager(socketConfig);
-  const debugSocketManager = new DebugSocketManager(socketConfig);
-  const leakDetectSocketManager = new LeakDetectSocketManager(socketConfig);
-  const syscallSocketManager = new SyscallSocketManager(socketConfig);
-
-  // Debug actions
-  const debugActions = {
-    startDebugSession: async (options: CompileOptions): Promise<void> => {
-      await debugSocketManager.startDebugSession(options);
-    },
-
-    cleanup: (): void => {
-      debugSocketManager.cleanup();
-    },
-  };
-
-  // Leak detect actions
-  const leakDetectActions = {
-    startLeakDetection: async (options: CompileOptions): Promise<void> => {
-      await leakDetectSocketManager.startLeakDetection(options);
-    },
-
-    cleanup: (): void => {
-      leakDetectSocketManager.cleanup();
-    },
-  };
-
-  // Syscall actions
-  const syscallActions = {
-    startSyscallTracing: async (options: CompileOptions): Promise<void> => {
-      await syscallSocketManager.startSyscallTracing(options);
-    },
-
-    cleanup: (): void => {
-      syscallSocketManager.cleanup();
-    },
-  };
+  const compileSocketManager = new CompileSocketManager();
+  const debugSocketManager = new DebugSocketManager();
+  const leakDetectSocketManager = new LeakDetectSocketManager();
+  const syscallSocketManager = new SyscallSocketManager();
 
   // Set up all event listeners
   const setupEventListeners = () => {
@@ -469,14 +425,11 @@ export const initApp = () => {
     });
 
     addDebouncedHandler(elements.debug, () => {
-      debugActions.startDebugSession(domUtils.getCompileOptions());
+      debugSocketManager.startDebugSession(domUtils.getCompileOptions());
     });
 
     elements.closeOutput?.addEventListener("click", () => {
-      compileSocketManager.cleanup();
-      debugActions.cleanup();
-      leakDetectActions.cleanup();
-      syscallActions.cleanup();
+      socketManager.cleanupSession();
       domUtils.hideOutputPanel();
     });
 
@@ -485,11 +438,10 @@ export const initApp = () => {
     });
 
     addDebouncedHandler(elements.memcheck, () => {
-      leakDetectActions.startLeakDetection(domUtils.getCompileOptions());
+      leakDetectSocketManager.startLeakDetection(domUtils.getCompileOptions());
     });
-
     addDebouncedHandler(elements.syscall, () => {
-      syscallActions.startSyscallTracing(domUtils.getCompileOptions());
+      syscallSocketManager.startSyscallTracing(domUtils.getCompileOptions());
     });
 
     // Settings
@@ -548,13 +500,13 @@ export const initApp = () => {
     initCustomSelects();
     initEditors();
 
-    // Step 3: Initialize layout system
-    const layout = useLayout();
-    layout.initialize();
+    // Step 3: Hide output panel initially
+    const outputPanel = document.getElementById("outputPanel");
+    if (outputPanel) outputPanel.style.display = "none";
 
     // Step 4: Initialize shortcuts system
     initializeShortcuts();
-    domUtils.renderShortcutsList();
+    renderShortcutsList();
 
     // Step 5: Load saved settings (affects editor behavior)
     editorSettings.loadSavedSettings();

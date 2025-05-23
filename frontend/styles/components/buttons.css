@@ -11,9 +11,7 @@
   padding: var(--spacing-xs);
 }
 
-.button-container.right-aligned {
-  margin-left: auto;
-}
+/* right-aligned button container */
 .output-panel .button-container {
   width: 100%;
   justify-content: flex-end;

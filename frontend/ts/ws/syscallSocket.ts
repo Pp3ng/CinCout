@@ -3,7 +3,7 @@
  */
 import { getTerminalService } from "../service/terminal";
 import { getEditorService } from "../service/editor";
-import { CompileOptions, StateUpdater } from "../types";
+import { CompileOptions } from "../types";
 import { socketManager, SocketEvents } from "./webSocketManager";
 import { domUtils } from "../app";
 
@@ -11,14 +11,10 @@ import { domUtils } from "../app";
  * SyscallSocketManager handles the Socket.IO communication for strace system call tracing
  */
 export class SyscallSocketManager {
-  private stateUpdater: StateUpdater;
-
   /**
    * Create a new SyscallSocketManager
-   * @param stateUpdater Interface to update UI based on socket events
    */
-  constructor(stateUpdater: StateUpdater) {
-    this.stateUpdater = stateUpdater;
+  constructor() {
     this.setupEventListeners();
   }
 
@@ -28,7 +24,7 @@ export class SyscallSocketManager {
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       domUtils.setOutput(
         '<div class="loading">Compiling for syscall tracing...</div>'
       );
@@ -40,7 +36,7 @@ export class SyscallSocketManager {
       const terminalService = getTerminalService();
       terminalService.dispose();
 
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
 
       // Setup a terminal for strace output
       terminalService.setDomElements({
@@ -69,7 +65,7 @@ export class SyscallSocketManager {
     });
 
     socketManager.on(SocketEvents.STRACE_REPORT, (data) => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
 
       // Clear existing terminal
       const terminalService = getTerminalService();
@@ -99,7 +95,7 @@ export class SyscallSocketManager {
     socketManager.on(SocketEvents.STRACE_ERROR, (data) => {
       // Only process strace errors for strace session
       if (socketManager.getSessionType() === "strace") {
-        this.stateUpdater.showOutput();
+        domUtils.showOutputPanel();
 
         if (data.output) {
           domUtils.setOutput(
@@ -117,7 +113,7 @@ export class SyscallSocketManager {
 
     // Handle error and exit events
     socketManager.on(SocketEvents.COMPILE_ERROR, (data) => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       domUtils.setOutput(
         `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">${data.output}</div>`
       );
@@ -134,21 +130,10 @@ export class SyscallSocketManager {
   }
 
   /**
-   * Clean up the Socket.IO connection and send cleanup request to server
-   */
-  cleanup(): void {
-    socketManager.cleanupSession();
-  }
-
-  /**
    * Start a strace session using Socket.IO communication
    * @param options Compilation options including code, language, compiler, etc.
    */
   async startSyscallTracing(options: CompileOptions): Promise<void> {
-    if (socketManager.isProcessRunning()) {
-      return;
-    }
-
     if (options.code.trim() === "") {
       domUtils.setOutput(
         '<div class="error-output">Error: Code cannot be empty</div>'
@@ -157,7 +142,7 @@ export class SyscallSocketManager {
     }
 
     try {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       domUtils.setOutput('<div class="loading">Connecting...</div>');
 
       await socketManager.connect();

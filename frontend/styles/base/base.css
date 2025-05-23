@@ -12,7 +12,6 @@
 
 body {
   margin: 0;
-  padding: var(--spacing-sm);
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 0.85em;
@@ -22,10 +21,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.container {
-  max-width: 1600px;
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
   margin: 0 auto;
-  padding: 0 5px;
+  padding: var(--spacing-sm);
 }
 
 /* Global scrollbar styling */

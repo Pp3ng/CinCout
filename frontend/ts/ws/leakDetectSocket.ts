@@ -2,7 +2,7 @@
  * LeakDetectSocket - Module handling memory leak detection Socket.IO communication
  */
 import { getTerminalService } from "../service/terminal";
-import { CompileOptions, StateUpdater } from "../types";
+import { CompileOptions } from "../types";
 import { socketManager, SocketEvents } from "./webSocketManager";
 import { domUtils } from "../app";
 
@@ -10,14 +10,10 @@ import { domUtils } from "../app";
  * LeakDetectSocketManager handles the Socket.IO communication for memory leak detection
  */
 export class LeakDetectSocketManager {
-  private stateUpdater: StateUpdater;
-
   /**
    * Create a new LeakDetectSocketManager
-   * @param stateUpdater Interface to update UI based on socket events
    */
-  constructor(stateUpdater: StateUpdater) {
-    this.stateUpdater = stateUpdater;
+  constructor() {
     this.setupEventListeners();
   }
 
@@ -27,7 +23,7 @@ export class LeakDetectSocketManager {
   private setupEventListeners(): void {
     // Handle compilation phase
     socketManager.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       domUtils.setOutput(
         '<div class="loading">Compiling for leak detection...</div>'
       );
@@ -38,8 +34,7 @@ export class LeakDetectSocketManager {
       // Reset any existing terminal first
       const terminalService = getTerminalService();
       terminalService.dispose();
-
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
 
       // Set up the terminal with the correct DOM elements
       terminalService.setDomElements({
@@ -53,7 +48,7 @@ export class LeakDetectSocketManager {
 
     // Handle leak detection report
     socketManager.on(SocketEvents.LEAK_CHECK_REPORT, (data) => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
 
       // Display the report using domUtils.setOutput
       domUtils.setOutput(
@@ -67,7 +62,7 @@ export class LeakDetectSocketManager {
 
     // Handle leak detection errors
     socketManager.on(SocketEvents.LEAK_CHECK_ERROR, (data) => {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       if (data.output) {
         domUtils.setOutput(
           `<div class="error-output" style="white-space: pre-wrap; overflow: visible;">Compilation Error:<br>${data.output}</div>`
@@ -101,23 +96,10 @@ export class LeakDetectSocketManager {
   }
 
   /**
-   * Clean up the Socket.IO connection and send cleanup request to server
-   */
-  cleanup(): void {
-    socketManager
-      .cleanupSession()
-      .catch((error) => console.error("Cleanup failed:", error));
-  }
-
-  /**
    * Start leak detection using Socket.IO communication
    * @param options Compilation options including code, language, compiler, etc.
    */
   async startLeakDetection(options: CompileOptions): Promise<void> {
-    if (socketManager.isProcessRunning()) {
-      return;
-    }
-
     if (options.code.trim() === "") {
       domUtils.setOutput(
         '<div class="error-output">Error: Code cannot be empty</div>'
@@ -126,7 +108,7 @@ export class LeakDetectSocketManager {
     }
 
     try {
-      this.stateUpdater.showOutput();
+      domUtils.showOutputPanel();
       domUtils.setOutput('<div class="loading">Connecting...</div>');
 
       await socketManager.connect();
@@ -155,18 +137,6 @@ export class LeakDetectSocketManager {
       } catch (e) {
         console.error("Error disconnecting after failure:", e);
       }
-    }
-  }
-
-  /**
-   * Send input to the running program
-   * @param input Input to send
-   */
-  async sendInput(input: string): Promise<void> {
-    try {
-      await socketManager.sendInput(input);
-    } catch (error) {
-      console.error("Failed to send input:", error);
     }
   }
 }

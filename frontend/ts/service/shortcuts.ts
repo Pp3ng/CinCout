@@ -268,8 +268,8 @@ export const initializeShortcuts = (): (() => void) => {
 };
 
 // Render shortcuts list to DOM - could be adapted to React component
-export const renderShortcutsList = (containerId: string): void => {
-  const container = document.getElementById(containerId);
+export const renderShortcutsList = (): void => {
+  const container = document.getElementById("shortcuts-content");
   if (!container) return;
 
   const shortcuts = createShortcuts();

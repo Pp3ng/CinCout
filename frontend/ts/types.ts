@@ -1,29 +1,4 @@
 // ==========================================
-// UI & Layout
-// ==========================================
-
-// DOM elements for accessing UI elements
-export interface DOMElements {
-  template: HTMLElement | null;
-  vimMode: HTMLInputElement | null;
-  language: HTMLSelectElement | null;
-  output: HTMLElement | null;
-  compile: HTMLElement | null;
-  memcheck: HTMLElement | null;
-  format: HTMLElement | null;
-  viewAssembly: HTMLElement | null;
-  lintCode: HTMLElement | null;
-  debug: HTMLElement | null;
-  syscall: HTMLElement | null;
-  themeSelect: HTMLSelectElement | null;
-  outputPanel: HTMLElement | null;
-  closeOutput: HTMLElement | null;
-  codesnap: HTMLElement | null;
-  compiler: HTMLSelectElement | null;
-  optimization: HTMLSelectElement | null;
-}
-
-// ==========================================
 // Editor & CodeMirror
 // ==========================================
 
@@ -60,11 +35,6 @@ export interface CompileOptions {
 export interface WebSocketMessage {
   type: string;
   [key: string]: any;
-}
-
-// Minimal DOM update functions
-export interface StateUpdater {
-  showOutput: () => void;
 }
 
 // ==========================================

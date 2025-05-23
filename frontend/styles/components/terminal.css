@@ -54,13 +54,6 @@
 }
 
 /* Terminal cursor styling */
-.xterm-cursor {
-  background-color: var(--accent) !important;
-  color: var(--bg-primary) !important;
-  opacity: 1;
-  box-shadow: var(--shadow-accent-md) !important;
-}
-
 .xterm-cursor-outline {
   border-color: var(--accent) !important;
   box-shadow: var(--shadow-accent-sm) !important;
@@ -72,14 +65,13 @@
   box-shadow: var(--shadow-accent-sm) !important;
 }
 
-.xterm-cursor-layer {
-  z-index: 5 !important;
-}
-
 /* Consistent cursor blinking behavior */
 .xterm.focus .xterm-cursor,
 .xterm .xterm-cursor,
 .xterm-cursor.xterm-cursor-blink {
+  background-color: var(--accent) !important;
+  color: var(--bg-primary) !important;
+  box-shadow: var(--shadow-accent-md) !important;
   animation: cursor-blink 1s step-end infinite !important;
 }
 

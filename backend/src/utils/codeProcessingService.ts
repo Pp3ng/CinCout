@@ -588,7 +588,6 @@ export class CodeProcessingService implements ICodeProcessingService {
       // Clean up whitespace
       .replace(/^\s*\n/g, "")
       .replace(/\n\s*\n/g, "\n")
-
       // Mark memory leaks and fix potential comma formatting issues in byte counts
       .replace(
         /([\d,]+ bytes? in \d+ blocks? are definitely lost.*?)(?=\s*at|$)/g,
@@ -636,7 +635,8 @@ export class CodeProcessingService implements ICodeProcessingService {
       )
 
       .trim() // Remove leading and trailing whitespace
-      .replace(/\n{2,}/g, "\n"); // Remove multiple newlines
+      .replace(/\n{2,}/g, "\n") // Remove multiple newlines
+      .replace(/^.*malloc.*\n?/gm, "");
 
     return text;
   }

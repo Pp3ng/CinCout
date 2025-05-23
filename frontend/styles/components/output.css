@@ -15,40 +15,35 @@
   border-radius: var(--radius-sm);
 }
 
-
 /* Terminal loading indicator */
 .loading {
   padding: 12px;
-  text-align: center;
   color: var(--accent);
   font-style: italic;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  animation: loading 1.5s steps(4, end) infinite;
 }
 
-.loading:after {
-  content: "...";
-  animation: dots 1.5s steps(5, end) infinite;
-}
-
-@keyframes dots {
-  0%,
-  20% {
-    content: ".";
+@keyframes loading {
+  0% {
+    letter-spacing: 0;
   }
-  40% {
-    content: "..";
+  25% {
+    letter-spacing: 0.1em;
   }
-  60% {
-    content: "...";
+  50% {
+    letter-spacing: 0.2em;
   }
-  80%,
+  75% {
+    letter-spacing: 0.3em;
+  }
   100% {
-    content: "";
+    letter-spacing: 0.4em;
   }
 }
+
 /* Error and warning outputs */
 .error-output {
   background-color: rgba(255, 85, 85, 0.1);

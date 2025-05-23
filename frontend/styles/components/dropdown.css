@@ -7,7 +7,6 @@
   background: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   transition: var(--transition-normal);
 }
@@ -49,13 +48,11 @@
   box-shadow: var(--shadow-md);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  z-index: var(--z-dropdown);
 }
 
 .dropdown-content {
   min-width: 220px;
   font-family: var(--font-mono);
-  overflow: hidden;
   transform: translateY(-10px);
   transition: opacity var(--transition-normal),
     transform var(--transition-normal);

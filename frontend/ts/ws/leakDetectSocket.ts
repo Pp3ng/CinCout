@@ -23,6 +23,7 @@ export class LeakDetectSocketManager {
   private setupEventListeners(): void {
     // Handle compilation phase
     socketManager.on(SocketEvents.LEAK_CHECK_COMPILING, () => {
+      if (socketManager.getSessionType() !== "leak_detection") return;
       domUtils.showOutputPanel();
       domUtils.setOutput(
         '<div class="loading">Compiling for leak detection...</div>'

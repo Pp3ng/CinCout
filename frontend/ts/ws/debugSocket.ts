@@ -23,6 +23,7 @@ export class DebugSocketManager {
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {
+      if (socketManager.getSessionType() !== "debug") return;
       domUtils.showOutputPanel();
     });
 

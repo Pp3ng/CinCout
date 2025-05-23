@@ -24,6 +24,7 @@ export class SyscallSocketManager {
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {
+      if (socketManager.getSessionType() !== "strace") return;
       domUtils.showOutputPanel();
       domUtils.setOutput(
         '<div class="loading">Compiling for syscall tracing...</div>'

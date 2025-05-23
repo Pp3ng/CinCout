@@ -23,6 +23,7 @@ export class CompileSocketManager {
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {
+      if (socketManager.getSessionType() !== "compilation") return;
       domUtils.showOutputPanel();
       this.showOutputMessage('<div class="loading">Compiling</div>');
     });

@@ -1,8 +1,3 @@
-/**
- * Centralized Type Definitions for the CinCout Backend
- * This file contains all common types used across the backend
- * Updated for Koa compatibility and dependency injection
- */
 import * as pty from "node-pty";
 import { DirResult } from "tmp";
 import { Socket } from "socket.io";

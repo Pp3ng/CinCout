@@ -56,7 +56,7 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
       this.compilationService.writeCodeToFile(env.sourceFile, code);
 
       // Notify client that compilation has started
-      this.emitToClient(socket, SocketEvents.COMPILING, {});
+      this.webSocketManager.emitToClient(socket, SocketEvents.COMPILING, {});
 
       // Compile the code with debug flags
       this.compilationService
@@ -72,19 +72,31 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
             );
 
             if (!success) {
-              this.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
-                message: "Failed to start GDB debug session",
-              });
+              this.webSocketManager.emitToClient(
+                socket,
+                SocketEvents.DEBUG_ERROR,
+                {
+                  message: "Failed to start GDB debug session",
+                }
+              );
               // Clean up on error
               env.tmpDir.removeCallback();
             } else {
-              this.emitToClient(socket, SocketEvents.DEBUG_START, {});
+              this.webSocketManager.emitToClient(
+                socket,
+                SocketEvents.DEBUG_START,
+                {}
+              );
             }
           } else {
             // Compilation error
-            this.emitToClient(socket, SocketEvents.COMPILE_ERROR, {
-              output: result.error,
-            });
+            this.webSocketManager.emitToClient(
+              socket,
+              SocketEvents.COMPILE_ERROR,
+              {
+                output: result.error,
+              }
+            );
 
             // Clean up temporary directory
             env.tmpDir.removeCallback();
@@ -92,7 +104,7 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
         })
         .catch((error) => {
           // Unexpected error
-          this.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
+          this.webSocketManager.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
             message: "Unexpected error: " + (error as Error).message,
           });
 
@@ -100,7 +112,7 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
           env.tmpDir.removeCallback();
         });
     } catch (error) {
-      this.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
+      this.webSocketManager.emitToClient(socket, SocketEvents.DEBUG_ERROR, {
         message: "Error setting up debug session: " + (error as Error).message,
       });
 
@@ -121,7 +133,7 @@ export class DebugWebSocketHandler extends BaseSocketHandler {
     // Only process input for debug sessions
     if (session && session.sessionType === "debug") {
       if (!this.sessionService.sendInputToSession(sessionId, data.input)) {
-        this.emitToClient(socket, SocketEvents.ERROR, {
+        this.webSocketManager.emitToClient(socket, SocketEvents.ERROR, {
           message: "No active debug session to receive input",
         });
       }

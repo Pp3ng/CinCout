@@ -383,6 +383,8 @@ export const initApp = () => {
   // Set up all event listeners
   const setupEventListeners = () => {
     const elements = domUtils.getElements();
+    elements.language?.addEventListener("change", handleLanguageChange);
+    elements.template?.addEventListener("change", loadSelectedTemplate);
 
     // Helper function to add debounced click handler
     const addDebouncedHandler = (
@@ -392,10 +394,6 @@ export const initApp = () => {
     ) => {
       element?.addEventListener("click", debounce(handler, delay));
     };
-
-    // Template and language handlers
-    elements.template?.addEventListener("change", loadSelectedTemplate);
-    elements.language?.addEventListener("change", handleLanguageChange);
 
     // Code action buttons
     addDebouncedHandler(elements.codesnap, takeCodeSnap);

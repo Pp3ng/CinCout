@@ -10,16 +10,10 @@ import { domUtils } from "../app";
  * DebugSocketManager handles the Socket.IO communication for GDB debugging
  */
 export class DebugSocketManager {
-  /**
-   * Create a new DebugSocketManager
-   */
   constructor() {
     this.setupEventListeners();
   }
 
-  /**
-   * Set up event listeners for Socket.IO events
-   */
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {

@@ -57,7 +57,7 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
 
     try {
       this.compilationService.writeCodeToFile(env.sourceFile, code);
-      this.emitToClient(socket, SocketEvents.COMPILING, {});
+      this.webSocketManager.emitToClient(socket, SocketEvents.COMPILING, {});
 
       // Compile the code for syscall tracing
       this.compileCodeForSyscallTracing(socket, env, code, {
@@ -66,7 +66,7 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
         optimization: optimization || "-O0",
       });
     } catch (error) {
-      this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
+      this.webSocketManager.emitToClient(socket, SocketEvents.STRACE_ERROR, {
         message:
           "Error setting up syscall tracing: " + (error as Error).message,
       });
@@ -93,19 +93,27 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
       .then((result) => {
         if (result.success) {
           // Signal to client
-          this.emitToClient(socket, SocketEvents.COMPILE_SUCCESS, {});
+          this.webSocketManager.emitToClient(
+            socket,
+            SocketEvents.COMPILE_SUCCESS,
+            {}
+          );
 
           // Execute a special syscall tracing session
           this.executeSyscallTracingSession(socket, env, result.straceLogFile!);
         } else {
-          this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
-            output: result.error,
-          });
+          this.webSocketManager.emitToClient(
+            socket,
+            SocketEvents.STRACE_ERROR,
+            {
+              output: result.error,
+            }
+          );
           env.tmpDir.removeCallback();
         }
       })
       .catch((error) => {
-        this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
+        this.webSocketManager.emitToClient(socket, SocketEvents.STRACE_ERROR, {
           message: "Unexpected error: " + (error as Error).message,
         });
         env.tmpDir.removeCallback();
@@ -149,10 +157,14 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
                 `Error processing strace exit for session ${sessionId}:`,
                 e
               );
-              this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
-                message:
-                  "Error processing strace results: " + (e as Error).message,
-              });
+              this.webSocketManager.emitToClient(
+                socket,
+                SocketEvents.STRACE_ERROR,
+                {
+                  message:
+                    "Error processing strace results: " + (e as Error).message,
+                }
+              );
             } finally {
               // Always clean up
               this.cleanupSession(sessionId);
@@ -175,7 +187,7 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
       }
     } catch (error) {
       console.error(`Error creating strace session ${sessionId}:`, error);
-      this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
+      this.webSocketManager.emitToClient(socket, SocketEvents.STRACE_ERROR, {
         message: `Error executing strace: ${(error as Error).message}`,
       });
       env.tmpDir.removeCallback();
@@ -202,27 +214,31 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
         // Check if file has content
         if (!straceOutput || straceOutput.trim().length === 0) {
           console.error("Strace log file is empty");
-          this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
-            message:
-              "No system call information captured. The program may have failed to execute properly.",
-          });
+          this.webSocketManager.emitToClient(
+            socket,
+            SocketEvents.STRACE_ERROR,
+            {
+              message:
+                "No system call information captured. The program may have failed to execute properly.",
+            }
+          );
           return;
         }
 
         // Send report to client - this will cause the frontend to disconnect
-        this.emitToClient(socket, SocketEvents.STRACE_REPORT, {
+        this.webSocketManager.emitToClient(socket, SocketEvents.STRACE_REPORT, {
           report: straceOutput,
           exitCode: exitCode,
         });
       } else {
         console.error(`Strace log file not found: ${straceLogFile}`);
-        this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
+        this.webSocketManager.emitToClient(socket, SocketEvents.STRACE_ERROR, {
           message: "Strace log file not found after execution",
         });
       }
     } catch (error) {
       console.error("Error processing strace results:", error);
-      this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
+      this.webSocketManager.emitToClient(socket, SocketEvents.STRACE_ERROR, {
         message: "Error processing strace results: " + (error as Error).message,
       });
     }
@@ -240,7 +256,7 @@ export class SyscallWebSocketHandler extends BaseSocketHandler {
     // Only process input for strace sessions
     if (session && session.sessionType === "strace") {
       if (!this.sessionService.sendInputToSession(sessionId, data.input)) {
-        this.emitToClient(socket, SocketEvents.STRACE_ERROR, {
+        this.webSocketManager.emitToClient(socket, SocketEvents.STRACE_ERROR, {
           message: "No active strace session to receive input",
         });
       }

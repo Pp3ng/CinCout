@@ -10,16 +10,10 @@ import { domUtils } from "../app";
  * CompileSocketManager handles the Socket.IO communication for code compilation
  */
 export class CompileSocketManager {
-  /**
-   * Create a new CompileSocketManager
-   */
   constructor() {
     this.setupEventListeners();
   }
 
-  /**
-   * Set up event listeners for Socket.IO events
-   */
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {

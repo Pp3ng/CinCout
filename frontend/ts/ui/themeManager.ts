@@ -39,10 +39,6 @@ export interface ThemeManagerOptions {
   storage?: Storage;
 }
 
-/**
- * ThemeManager - Core theme management functionality
- * This design is decoupled from DOM manipulation for React integration
- */
 export class ThemeManager {
   private currentTheme: string;
   private themeData: ThemeMap;
@@ -67,30 +63,22 @@ export class ThemeManager {
     }
   }
 
-  /**
-   * Get current theme name
-   */
+  // Get the name of the current theme
   getCurrentThemeName(): string {
     return this.currentTheme;
   }
 
-  /**
-   * Get current theme data
-   */
+  // Get the current theme object
   getCurrentTheme(): Theme {
     return this.themeData[this.currentTheme] || this.themeData.default;
   }
 
-  /**
-   * Get all available themes
-   */
+  // Get all available themes
   getThemes(): ThemeMap {
     return this.themeData;
   }
 
-  /**
-   * Get terminal theme configuration
-   */
+  // Get terminal theme based on current theme
   getTerminalTheme(): TerminalTheme {
     const theme = this.getCurrentTheme();
     const terminalColors = theme.terminal || this.themeData.default.terminal;
@@ -120,9 +108,7 @@ export class ThemeManager {
     }) as TerminalTheme;
   }
 
-  /**
-   * Get CSS variables for current theme
-   */
+  // Get CSS variables for the current theme
   getCssVariables(): Record<string, string> {
     const theme = this.getCurrentTheme();
     return {
@@ -138,9 +124,7 @@ export class ThemeManager {
     };
   }
 
-  /**
-   * Set theme and notify listeners
-   */
+  // Set the current theme by name and notify listeners
   setTheme(themeName: string): boolean {
     if (!this.themeData[themeName]) {
       console.warn(`Theme '${themeName}' not found`);
@@ -160,10 +144,7 @@ export class ThemeManager {
     return true;
   }
 
-  /**
-   * Subscribe to theme changes
-   * Returns unsubscribe function (React-friendly)
-   */
+  // Subscribe to theme change events
   subscribe(listener: ThemeListener): () => void {
     this.listeners.add(listener);
 
@@ -173,9 +154,7 @@ export class ThemeManager {
     };
   }
 
-  /**
-   * Private method to notify all listeners
-   */
+  // Notify all listeners about a theme change
   private notifyListeners(event: ThemeChangeEvent): void {
     this.listeners.forEach((listener) => {
       try {
@@ -186,9 +165,7 @@ export class ThemeManager {
     });
   }
 
-  /**
-   * Destroy the theme manager, clean up resources
-   */
+  // Cleanup method to remove all listeners
   destroy(): void {
     this.listeners.clear();
   }

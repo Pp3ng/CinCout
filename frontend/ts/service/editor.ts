@@ -9,9 +9,6 @@ const FONT_SIZE_LIMITS = {
   MAX: 30,
 };
 
-/**
- * EditorService - Manages CodeMirror editor instances
- */
 export class EditorService {
   private static instance: EditorService;
   private editor: CodeMirror.Editor | null = null;
@@ -27,9 +24,6 @@ export class EditorService {
     });
   }
 
-  /**
-   * Get singleton instance
-   */
   static getInstance(): EditorService {
     if (!EditorService.instance) {
       EditorService.instance = new EditorService();
@@ -37,9 +31,7 @@ export class EditorService {
     return EditorService.instance;
   }
 
-  /**
-   * Initialize editor instances
-   */
+  // Init
   setEditors(editors: EditorInstances): void {
     const { editor, assemblyView, straceView } = editors;
     this.editor = editor;
@@ -57,9 +49,7 @@ export class EditorService {
   getAssemblyView = (): CodeMirror.Editor | null => this.assemblyView;
   getStraceView = (): CodeMirror.Editor | null => this.straceView;
 
-  /**
-   * Create a read-only editor for displaying output
-   */
+  // Create a read-only editor for displaying output
   createReadOnlyEditor(): CodeMirror.Editor {
     const themeName = themeManager.getCurrentThemeName();
     const theme = themeName !== "default" ? themeName : "default";
@@ -103,9 +93,7 @@ export class EditorService {
   // Refresh editor display
   refresh = (): void => this.editor?.refresh();
 
-  /**
-   * Set option for the main editor
-   */
+  // Set editor options
   setOption<K extends keyof CodeMirror.EditorConfiguration>(
     key: K,
     value: CodeMirror.EditorConfiguration[K]
@@ -113,9 +101,7 @@ export class EditorService {
     this.editor?.setOption(key, value);
   }
 
-  /**
-   * Set option for all editors
-   */
+  // Set options for all editors
   setOptionForAll<K extends keyof CodeMirror.EditorConfiguration>(
     key: K,
     value: CodeMirror.EditorConfiguration[K]
@@ -128,17 +114,12 @@ export class EditorService {
     this.assemblyView?.setValue(value);
   setStraceValue = (value: string): void => this.straceView?.setValue(value);
 
-  /**
-   * Apply theme to all editors
-   */
+  // Apply theme to all editors
   applyThemeToAllEditors(themeName: string): void {
     const theme = themeName !== "default" ? themeName : "default";
     this.setOptionForAll("theme", theme);
   }
 
-  /**
-   * Set font size for all editors
-   */
   setFontSize(size: number): void {
     this.currentFontSize = size;
     this.forEachEditor((editor) => {
@@ -147,24 +128,16 @@ export class EditorService {
     this.refreshAllEditors();
   }
 
-  /**
-   * Refresh all editors
-   */
   refreshAllEditors(): void {
     this.forEachEditor((editor) => editor.refresh());
   }
 
-  /**
-   * Helper method to perform an operation on all editors
-   */
+  // Apply a operation to each editor instance
   private forEachEditor(callback: (editor: CodeMirror.Editor) => void): void {
     this.editors.forEach(callback);
   }
 }
 
-/**
- * Create and configure editor instances
- */
 const setupEditors = (): EditorInstances => {
   const codeElement = document.getElementById("code") as HTMLTextAreaElement;
   const outputElement = document.getElementById("output") as HTMLDivElement;
@@ -230,9 +203,6 @@ const setupEditors = (): EditorInstances => {
   return { editor, assemblyView, straceView };
 };
 
-/**
- * Set up font zoom functionality
- */
 const setupFontZoomHandler = () => {
   const editorService = EditorService.getInstance();
   let fontSize = DEFAULT_FONT_SIZE;
@@ -274,9 +244,7 @@ export const getEditorActions = (): EditorActions | null => globalActions;
 export const getEditorService = (): EditorService =>
   EditorService.getInstance();
 
-/**
- * Initialize Vim status indicator
- */
+// Initialize Vim status UI
 const initializeVimStatus = (editor: CodeMirror.Editor): void => {
   const vimStatusElement = document.getElementById("vim-status");
   if (!vimStatusElement) return;
@@ -290,9 +258,7 @@ const initializeVimStatus = (editor: CodeMirror.Editor): void => {
   }
 };
 
-/**
- * Initialize all editors and related UI elements
- */
+// Initialize all editors and related services
 export const initEditors = (): void => {
   try {
     // Create editor instances

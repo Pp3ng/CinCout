@@ -10,16 +10,10 @@ import { domUtils } from "../app";
  * LeakDetectSocketManager handles the Socket.IO communication for memory leak detection
  */
 export class LeakDetectSocketManager {
-  /**
-   * Create a new LeakDetectSocketManager
-   */
   constructor() {
     this.setupEventListeners();
   }
 
-  /**
-   * Set up event listeners for Socket.IO events
-   */
   private setupEventListeners(): void {
     // Handle compilation phase
     socketManager.on(SocketEvents.LEAK_CHECK_COMPILING, () => {

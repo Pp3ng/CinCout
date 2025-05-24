@@ -5,33 +5,21 @@ import { getEditorService } from "./editor";
 // Platform detection
 export const isMac = /Mac/.test(navigator.userAgent);
 
-// Key normalization utility
+// Key normalization
 export const normalizeKey = (event: KeyboardEvent): string => {
-  const key = event.key.toLowerCase();
-  // Normalize special keys
-  if (key === "enter" || key === "escape")
-    return key.charAt(0).toUpperCase() + key.slice(1);
-
-  // Build modifier string with array methods
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   const modifiers = [
     event.ctrlKey && "ctrl",
     event.altKey && "alt",
     event.metaKey && "meta",
     event.shiftKey && "shift",
   ].filter(Boolean);
-
-  if (!modifiers.length) return event.key;
-
-  const prefix = modifiers.join("+") + "+";
-  // Only apply prefix to single character keys or numbers
-  return key.length === 1 || /^[0-9]$/.test(key) ? prefix + key : event.key;
+  return modifiers.length ? modifiers.join("+") + "+" + key : key;
 };
 
-// Helper to reduce DOM access repetition
-const clickElement = (id: string): void => document.getElementById(id)?.click();
+const clickElement = (id: string) => document.getElementById(id)?.click();
 
-// Core UI actions - easily adaptable to React components
-export const uiActions = {
+const uiActions = {
   compile: () => clickElement(DomElementId.COMPILE),
   viewAssembly: () => clickElement(DomElementId.VIEW_ASSEMBLY),
   formatCode: () => clickElement(DomElementId.FORMAT),
@@ -51,20 +39,17 @@ export const uiActions = {
   },
 };
 
-// Editor-specific actions
-export const editorActions = {
-  toggleCodeFolding: (): void => {
+const editorActions = {
+  toggleCodeFolding: () => {
     const editor = getEditorService().getEditor();
     editor?.foldCode(editor.getCursor());
   },
 
-  saveCodeToFile: async (): Promise<void> => {
-    const editorService = getEditorService();
-    const editor = editorService.getEditor();
+  saveCodeToFile: async () => {
+    const editor = getEditorService().getEditor();
     if (!editor) return;
-
     try {
-      const code = editorService.getValue();
+      const code = getEditorService().getValue();
       const fileType =
         (document.getElementById(DomElementId.LANGUAGE) as HTMLSelectElement)
           ?.value === "cpp"
@@ -81,152 +66,103 @@ export const editorActions = {
 
       // Clean up URL object
       setTimeout(() => URL.revokeObjectURL(url), 100);
-    } catch (error) {
-      console.error("Failed to save file:", error);
+    } catch (e) {
+      console.error("Failed to save file:", e);
     }
   },
-
-  openCodeFromFile: async (): Promise<void> => {
+  openCodeFromFile: async () => {
     try {
-      // Create and click file input
+      // Create file input element and trigger click
       const fileInput = Object.assign(document.createElement("input"), {
         type: "file",
         accept: ".c,.cpp",
       });
       fileInput.click();
-
       // Wait for file selection
       const file = await new Promise<File | null>((resolve) => {
         fileInput.onchange = (e) =>
           resolve((e.target as HTMLInputElement).files?.[0] ?? null);
         fileInput.oncancel = () => resolve(null);
       });
-
       if (!file) return;
-
-      // Load file content into editor
+      // Load file content
       getEditorService().setValue(await file.text());
-    } catch (error) {
-      console.error("Failed to open file:", error);
+    } catch (e) {
+      console.error("Failed to open file:", e);
     }
   },
 };
 
-// View actions
-export const viewActions = {
+const viewActions = {
   toggleZenMode: () => clickElement(DomElementId.ZEN_MODE),
 };
 
-// Action descriptions - for UI rendering
-export const actionDescriptions = {
-  compile: "Compile and run",
-  saveCode: "Save code to file",
-  openCode: "Open code from file",
-  toggleFolding: "Toggle code folding",
-  takeSnapshot: "Take code snapshot",
-  zenMode: "Zen Mode",
-  viewAssembly: "View assembly code",
-  formatCode: "Format code",
-  lintCode: "Lint code",
-  memoryCheck: "Memory check",
-  debug: "Debug with GDB",
-  syscallTrace: "Trace system calls",
-  closeOutput: "Close output panel",
-};
-
-// Create shortcut configuration based on platform
-export const createShortcuts = (): ShortcutCategories => {
-  const cmdKey = isMac ? "meta" : "ctrl";
-
-  // Common shortcuts that use cmd/ctrl key combinations
+// Create shortcut configuration
+const createShortcuts = (): ShortcutCategories => {
+  const cmd = isMac ? "meta" : "ctrl";
   const common = {
-    [`${cmdKey}+Enter`]: {
+    [`${cmd}+Enter`]: {
       action: uiActions.compile,
-      description: actionDescriptions.compile,
+      description: "Compile and run",
       displayKeys: isMac ? ["⌘", "return"] : ["Ctrl", "Enter"],
     },
-    [`${cmdKey}+s`]: {
+    [`${cmd}+s`]: {
       action: editorActions.saveCodeToFile,
-      description: actionDescriptions.saveCode,
+      description: "Save code to file",
       displayKeys: isMac ? ["⌘", "S"] : ["Ctrl", "S"],
     },
-    [`${cmdKey}+o`]: {
+    [`${cmd}+o`]: {
       action: editorActions.openCodeFromFile,
-      description: actionDescriptions.openCode,
+      description: "Open code from file",
       displayKeys: isMac ? ["⌘", "O"] : ["Ctrl", "O"],
     },
-    [`${cmdKey}+k`]: {
+    [`${cmd}+k`]: {
       action: editorActions.toggleCodeFolding,
-      description: actionDescriptions.toggleFolding,
+      description: "Toggle code folding",
       displayKeys: isMac ? ["⌘", "K"] : ["Ctrl", "K"],
     },
-    [`${cmdKey}+p`]: {
+    [`${cmd}+p`]: {
       action: uiActions.takeCodeSnapshot,
-      description: actionDescriptions.takeSnapshot,
+      description: "Take code snapshot",
       displayKeys: isMac ? ["⌘", "P"] : ["Ctrl", "P"],
     },
-    [`${cmdKey}+shift+z`]: {
+    [`${cmd}+shift+z`]: {
       action: viewActions.toggleZenMode,
-      description: actionDescriptions.zenMode,
+      description: "Zen Mode",
       displayKeys: isMac ? ["⌘", "⇧", "Z"] : ["Ctrl", "Shift", "Z"],
     },
   };
+  const numberPairs: { action: () => void; description: string }[] = [
+    { action: uiActions.viewAssembly, description: "View assembly code" },
+    { action: uiActions.formatCode, description: "Format code" },
+    { action: uiActions.lintCode, description: "Lint code" },
+    { action: uiActions.memoryCheck, description: "Memory check" },
+    { action: uiActions.debug, description: "Debug with GDB" },
+    { action: uiActions.syscallTrace, description: "Trace system calls" },
+  ];
+  const mac: Record<string, ShortcutDefinition> = {},
+    other: Record<string, ShortcutDefinition> = {};
 
-  // Define number action mappings with their descriptions
-  const numberActionPairs = [
-    [uiActions.viewAssembly, actionDescriptions.viewAssembly],
-    [uiActions.formatCode, actionDescriptions.formatCode],
-    [uiActions.lintCode, actionDescriptions.lintCode],
-    [uiActions.memoryCheck, actionDescriptions.memoryCheck],
-    [uiActions.debug, actionDescriptions.debug],
-    [uiActions.syscallTrace, actionDescriptions.syscallTrace],
-  ] as const;
-
-  // Generate platform-specific shortcuts for numbers
-  const mac: Record<string, ShortcutDefinition> = {};
-  const other: Record<string, ShortcutDefinition> = {};
-
-  // Map number keys to actions based on platform
-  numberActionPairs.forEach(([action, description], index) => {
-    const num = index + 1;
-    mac[`ctrl+${num}`] = { action, description, displayKeys: ["^", `${num}`] };
-    other[`alt+${num}`] = {
-      action,
-      description,
-      displayKeys: ["Alt", `${num}`],
-    };
+  // Map number pairs to shortcuts
+  numberPairs.forEach(({ action, description }, index) => {
+    const n = index + 1;
+    mac[`ctrl+${n}`] = { action, description, displayKeys: ["^", `${n}`] };
+    other[`alt+${n}`] = { action, description, displayKeys: ["Alt", `${n}`] };
   });
-
-  // Special keys that don't change between platforms
   const special = {
     Escape: {
       action: () => uiActions.closeOutputPanel(),
-      description: actionDescriptions.closeOutput,
+      description: "Close output panel",
       displayKeys: ["Esc"],
     },
   };
-
   return { common, mac, other, special };
 };
 
-// Handler for keyboard shortcuts
-export const handleKeyboardEvent = (
+const handleKeyboardEvent = (
   event: KeyboardEvent,
   shortcuts: ShortcutCategories
 ): void => {
-  // Priority handlers for common keys
-  if (event.key === "Escape" && uiActions.closeOutputPanel()) {
-    event.preventDefault();
-    return;
-  }
-
-  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault();
-    uiActions.compile();
-    return;
-  }
-
-  // Find and execute matching shortcut
   const normalizedKey = normalizeKey(event);
   const { common, mac, other, special } = shortcuts;
 
@@ -235,67 +171,52 @@ export const handleKeyboardEvent = (
     special[normalizedKey] ||
     common[normalizedKey] ||
     (isMac ? mac : other)[normalizedKey];
-
   if (shortcut) {
     event.preventDefault();
     shortcut.action();
   }
 };
 
-// Create array of shortcut items for UI rendering
-export const createShortcutItems = (
+// Array of all shortcut for rendering
+const createShortcutItems = (
   shortcuts: ShortcutCategories
-): ShortcutDefinition[] => {
-  const { common, special } = shortcuts;
-  const platformShortcuts = isMac ? shortcuts.mac : shortcuts.other;
-
-  // Combine all shortcut collections into one array
-  return Object.values({
-    ...common,
-    ...platformShortcuts,
-    ...special,
+): ShortcutDefinition[] =>
+  Object.values({
+    ...shortcuts.common,
+    ...(isMac ? shortcuts.mac : shortcuts.other),
+    ...shortcuts.special,
   });
-};
 
-// Initialize shortcut listener - returns cleanup function
 export const initializeShortcuts = (): (() => void) => {
   const shortcuts = createShortcuts();
   const handler = (event: KeyboardEvent) =>
     handleKeyboardEvent(event, shortcuts);
-
   document.addEventListener("keydown", handler);
   return () => document.removeEventListener("keydown", handler);
 };
 
-// Render shortcuts list to DOM - could be adapted to React component
+// Render shortcuts list UI
 export const renderShortcutsList = (): void => {
   const container = document.getElementById("shortcuts-content");
   if (!container) return;
-
   const shortcuts = createShortcuts();
   const shortcutItems = createShortcutItems(shortcuts);
-
-  // Create a styled keyboard key element
-  const createKeyElement = (key: string) => `
+  // Create styled key elements
+  const createKey = (k: string) => `
     <kbd class="inline-block bg-[var(--bg-primary)] text-[var(--accent)] 
       font-[600] text-[0.85em] leading-[1.2] font-mono py-[2px] px-[4px] 
       m-[0_2px] rounded-[var(--radius-sm)] border border-[var(--accent)] 
-      shadow-[var(--shadow-sm)] whitespace-nowrap transform-gpu translate-y-0 
+      shadow-[var(--shadow-sm)] whitespace-nowrap translate-y-0 
       transition-[transform,box-shadow] duration-[var(--transition-fast)] 
-      hover:translate-y-[-1px] hover:shadow-[var(--shadow-md)]">${key}</kbd>
+      hover:translate-y-[-1px] hover:shadow-[var(--shadow-md)]">${k}</kbd>
   `;
-
-  // Create HTML for a shortcut item
-  const createListItem = ({ displayKeys, description }: ShortcutDefinition) => `
+  // Create entire list
+  container.innerHTML = `<ul class="list-none p-0 m-0">${shortcutItems
+    .map(
+      ({ displayKeys, description }) => `
     <li class="mb-[3px] py-[3px] px-0">
-      ${displayKeys.map(createKeyElement).join(" + ")} - ${description}
-    </li>
-  `;
-
-  // Create the entire list at once
-  container.innerHTML = `
-    <ul class="list-none p-0 m-0">
-      ${shortcutItems.map(createListItem).join("")}
-    </ul>
-  `;
+      ${displayKeys.map(createKey).join(" + ")} - ${description}
+    </li>`
+    )
+    .join("")}</ul>`;
 };

@@ -1,29 +1,45 @@
-// Utility functions
 import html2canvas from "html2canvas";
 import CodeMirror from "codemirror";
 import Toastify from "toastify-js";
 import { showNotification } from "./notification";
 
-/**
- * Take a code snapshot of the code editor
- * @returns {Promise<void>}
- */
+const getEditorStyle = (editor: Element) => {
+  const style = getComputedStyle(editor);
+  return {
+    fontFamily: style.getPropertyValue("font-family"),
+    fontSize: style.getPropertyValue("font-size"),
+    lineHeight: style.getPropertyValue("line-height"),
+  };
+};
+
+const getLongestLineWidth = (lines: string[], style: any): number => {
+  const measureEl = document.createElement("div");
+  measureEl.style.cssText =
+    "position:absolute;left:-9999px;visibility:hidden;white-space:pre;";
+  measureEl.style.fontFamily = style.fontFamily;
+  measureEl.style.fontSize = style.fontSize;
+  measureEl.textContent = lines.reduce(
+    (a, b) => (b.length > a.length ? b : a),
+    ""
+  );
+  document.body.appendChild(measureEl);
+  const width = measureEl.clientWidth;
+  document.body.removeChild(measureEl);
+  return width;
+};
+
 export const takeCodeSnap = async (): Promise<void> => {
-  // Get the CodeMirror editor element
   const editorElement = document.querySelector(".CodeMirror");
+  if (!editorElement)
+    return showNotification("error", "CodeMirror editor element not found");
 
-  if (!editorElement) {
-    showNotification("error", "CodeMirror editor element not found");
-    return;
-  }
-
+  let loadingToast: any;
   try {
-    // Show loading notification
-    const loadingToast = Toastify({
+    loadingToast = Toastify({
       text: '<i class="fas fa-spinner fa-spin"></i> Generating code snapshot...',
-      duration: -1, // Stay until manually dismissed
-      gravity: "top" as const,
-      position: "right" as const,
+      duration: -1,
+      gravity: "top",
+      position: "right",
       className: "codesnap-loading",
       style: {
         fontFamily: "var(--font-mono)",
@@ -34,81 +50,39 @@ export const takeCodeSnap = async (): Promise<void> => {
       escapeMarkup: false,
       stopOnFocus: true,
     });
-
     loadingToast.showToast();
 
-    // Get the CodeMirror instance
     const cm = (editorElement as any).CodeMirror;
-    if (!cm) {
-      throw new Error("CodeMirror instance not found");
-    }
-
-    // Get code content and language
+    if (!cm) throw new Error("CodeMirror instance not found");
     const fullContent = cm.getValue();
     const lang =
       (document.getElementById("language") as HTMLSelectElement)?.value ||
       "code";
-
-    // Create filename with timestamp
-    const timestamp = (() => {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}-${String(now.getDate()).padStart(2, "0")} at ${String(
-        now.getHours()
-      ).padStart(2, "0")}.${String(now.getMinutes()).padStart(2, "0")}.${String(
-        now.getSeconds()
-      ).padStart(2, "0")}`;
-    })();
-    const filename = `${lang}-${timestamp}.png`;
-
-    // Get current theme directly from theme selector
+    const now = new Date();
+    const filename = `${lang}-${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} at ${String(
+      now.getHours()
+    ).padStart(2, "0")}.${String(now.getMinutes()).padStart(2, "0")}.${String(
+      now.getSeconds()
+    ).padStart(2, "0")}.png`;
     const currentTheme =
       (document.getElementById("theme-select") as HTMLSelectElement)?.value ||
       "default";
 
-    // Calculate width based on longest line
     const lines = fullContent.split("\n");
-    const longestLine = lines.reduce(
-      (longest: string, line: string) =>
-        line.length > longest.length ? line : longest,
-      ""
-    );
-
-    // Measure line width
-    const measureEl = document.createElement("div");
-    measureEl.style.cssText =
-      "position: absolute; left: -9999px; visibility: hidden; white-space: pre;";
-    const view = document.defaultView || window;
-    measureEl.style.fontFamily =
-      view.getComputedStyle(editorElement).fontFamily;
-    measureEl.style.fontSize = view.getComputedStyle(editorElement).fontSize;
-    measureEl.textContent = longestLine;
-    document.body.appendChild(measureEl);
-    const longestLineWidth = measureEl.clientWidth;
-    document.body.removeChild(measureEl);
-
-    // Calculate total width including line numbers
+    const style = getEditorStyle(editorElement);
+    const longestLineWidth = getLongestLineWidth(lines, style);
     const lineNumbersWidth =
-      editorElement.querySelector(".CodeMirror-linenumbers")?.clientWidth || 0;
+      (editorElement.querySelector(".CodeMirror-linenumbers") as HTMLElement)
+        ?.clientWidth || 0;
     const totalWidth = longestLineWidth + lineNumbersWidth + 40;
 
-    // Create temporary container for new editor
+    // Create a tempoary container for the new CodeMirror instance
     const tempContainer = document.createElement("div");
-    tempContainer.style.cssText = `position: absolute; left: -9999px; top: -9999px; opacity: 1; width: ${totalWidth}px;`;
+    tempContainer.style.cssText = `position:absolute;left:-9999px;top:-9999px;width:${totalWidth}px;`;
     document.body.appendChild(tempContainer);
 
-    // Get original editor styling
-    const computedStyle = view.getComputedStyle(editorElement);
-    const editorStyles = {
-      fontFamily: computedStyle.getPropertyValue("font-family"),
-      fontSize: computedStyle.getPropertyValue("font-size"),
-      lineHeight: computedStyle.getPropertyValue("line-height"),
-    };
-
-    // Copy editor options that matter for rendering
-    const currentOptions = {};
     const relevantOptions = [
       "mode",
       "lineWrapping",
@@ -119,95 +93,57 @@ export const takeCodeSnap = async (): Promise<void> => {
       "indentWithTabs",
       "smartIndent",
     ];
-
-    for (const option of relevantOptions) {
-      try {
-        const value = cm.getOption(option);
-        if (value !== undefined) {
-          (currentOptions as any)[option] = value;
-        }
-      } catch (e) {
-        console.warn(`Couldn't get option ${option}:`, e);
-      }
-    }
-
-    // Create new CodeMirror instance for snapshot
+    const currentOptions: Record<string, any> = {};
+    relevantOptions.forEach((opt) => (currentOptions[opt] = cm.getOption(opt)));
     const newCm = CodeMirror(tempContainer, {
       ...currentOptions,
       value: fullContent,
       readOnly: true,
       viewportMargin: Infinity,
-      theme: currentTheme !== "default" ? currentTheme : "default",
+      theme: currentTheme,
     });
 
-    // Wait for theme CSS to load and apply
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((r) => setTimeout(r, 400));
+    const newEditor = tempContainer.querySelector(".CodeMirror") as HTMLElement;
+    if (!newEditor) throw new Error("New editor element not found");
 
-    // Style the new editor element
-    const newEditorElement = tempContainer.querySelector(
-      ".CodeMirror"
-    ) as HTMLElement;
-    if (!newEditorElement) {
-      throw new Error("New editor element not found");
-    }
-
-    // Apply necessary styling
-    newEditorElement.style.fontFamily = editorStyles.fontFamily;
-    newEditorElement.style.fontSize = editorStyles.fontSize;
-    newEditorElement.style.lineHeight = editorStyles.lineHeight;
-    newEditorElement.style.width = `${totalWidth}px`;
-
-    // Make content fully visible without scrolling
-    const scrollElement = newEditorElement.querySelector(
-      ".CodeMirror-scroll"
-    ) as HTMLElement;
-    if (scrollElement) {
-      scrollElement.style.height = "auto";
-      scrollElement.style.maxHeight = "none";
-      scrollElement.style.overflow = "visible";
-      scrollElement.style.width = `${totalWidth}px`;
-    }
-
-    const sizerElement = newEditorElement.querySelector(
-      ".CodeMirror-sizer"
-    ) as HTMLElement;
-    if (sizerElement) {
-      sizerElement.style.marginBottom = "0";
-      sizerElement.style.minWidth = `${totalWidth - lineNumbersWidth}px`;
-    }
-
-    const codeArea = newEditorElement.querySelector(
+    Object.assign(newEditor.style, style, { width: `${totalWidth}px` });
+    const scroll = newEditor.querySelector(".CodeMirror-scroll") as HTMLElement;
+    if (scroll)
+      Object.assign(scroll.style, {
+        height: "auto",
+        maxHeight: "none",
+        overflow: "visible",
+        width: `${totalWidth}px`,
+      });
+    const sizer = newEditor.querySelector(".CodeMirror-sizer") as HTMLElement;
+    if (sizer) sizer.style.minWidth = `${totalWidth - lineNumbersWidth}px`;
+    const codeArea = newEditor.querySelector(
       ".CodeMirror-lines"
     ) as HTMLElement;
-    if (codeArea) {
-      codeArea.style.width = `${totalWidth - lineNumbersWidth}px`;
-    }
+    if (codeArea) codeArea.style.width = `${totalWidth - lineNumbersWidth}px`;
 
-    // Force refresh and wait for it to complete
+    // Force refresh and wait for it complete
     newCm.refresh();
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((r) => setTimeout(r, 200));
 
-    // Take screenshot
-    const canvas = await html2canvas(newEditorElement, {
+    // Take snapshot
+    const canvas = await html2canvas(newEditor, {
       backgroundColor: null,
       scale: 2,
       logging: false,
       useCORS: true,
       allowTaint: true,
-      height: newEditorElement.scrollHeight,
+      height: newEditor.scrollHeight,
       width: totalWidth,
-      windowHeight: newEditorElement.scrollHeight + 100,
+      windowHeight: newEditor.scrollHeight + 100,
     });
 
-    // Convert to blob and download
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/png")
+    // Convert blob and download
+    const blob = await new Promise<Blob | null>((res) =>
+      canvas.toBlob(res, "image/png")
     );
-    if (!blob) {
-      throw new Error("Failed to create blob from canvas");
-    }
-
-    // Download the image
+    if (!blob) throw new Error("Failed to create blob from canvas");
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -220,23 +156,9 @@ export const takeCodeSnap = async (): Promise<void> => {
     // Clean up
     document.body.removeChild(tempContainer);
     loadingToast.hideToast();
-
-    // Show success notification
     showNotification("success", "Code snapshot saved!");
   } catch (error) {
-    console.error("CodeSnap error:", error);
-
-    // Make sure loading indicator is removed in case of error
-    const loadingToasts = document.querySelectorAll(
-      ".toastify.codesnap-loading"
-    );
-    loadingToasts.forEach((toast) => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-    });
-
-    // Show error notification
+    if (loadingToast) loadingToast.hideToast();
     showNotification("error", "Failed to create code snapshot");
   }
 };

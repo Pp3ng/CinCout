@@ -87,21 +87,6 @@ export abstract class BaseSocketHandler {
   }
 
   /**
-   * Send a message to a client
-   * @param socket - Socket.IO socket
-   * @param event - Event name
-   * @param data - Data to send
-   * @protected
-   */
-  protected emitToClient(
-    socket: SessionSocket,
-    event: string,
-    data: any
-  ): void {
-    this.webSocketManager.emitToClient(socket, event, data);
-  }
-
-  /**
    * Clean up a session
    * @param sessionId - Session ID
    * @protected
@@ -122,7 +107,11 @@ export abstract class BaseSocketHandler {
     // Only handle cleanup for specified session type
     if (session && session.sessionType === sessionType) {
       this.cleanupSession(sessionId);
-      this.emitToClient(socket, SocketEvents.CLEANUP_COMPLETE, {});
+      this.webSocketManager.emitToClient(
+        socket,
+        SocketEvents.CLEANUP_COMPLETE,
+        {}
+      );
     }
   }
 
@@ -265,25 +254,21 @@ export class WebSocketManager implements IWebSocketManager {
   }
 }
 
-// Helper function to set up compile handlers
 const setupCompileHandlers = async (socket: SessionSocket) => {
   const { compileHandler } = await import("./compileSocket");
   compileHandler.setupSocketHandlers(socket);
 };
 
-// Helper function to set up debug handlers
 const setupDebugHandlers = async (socket: SessionSocket) => {
   const { debugHandler } = await import("./debugSocket");
   debugHandler.setupSocketHandlers(socket);
 };
 
-// Helper function to set up leak detection handlers
 const setupLeakDetectHandlers = async (socket: SessionSocket) => {
   const { leakDetectHandler } = await import("./leakDetectSocket");
   leakDetectHandler.setupSocketHandlers(socket);
 };
 
-// Setup function for strace socket handlers
 const setupStraceHandlers = async (socket: SessionSocket) => {
   const { straceHandler } = await import("./syscallSocket");
   straceHandler.setupSocketHandlers(socket);

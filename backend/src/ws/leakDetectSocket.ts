@@ -55,7 +55,11 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
     const env = this.compilationService.createCompilationEnvironment(lang);
 
     try {
-      this.emitToClient(socket, SocketEvents.LEAK_CHECK_COMPILING, {});
+      this.webSocketManager.emitToClient(
+        socket,
+        SocketEvents.LEAK_CHECK_COMPILING,
+        {}
+      );
 
       // Prepare the leak detection environment using the specialized method
       this.compileCodeForLeakCheck(socket, env, code, {
@@ -64,9 +68,14 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
         optimization,
       });
     } catch (error) {
-      this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-        message: "Error setting up leak detection: " + (error as Error).message,
-      });
+      this.webSocketManager.emitToClient(
+        socket,
+        SocketEvents.LEAK_CHECK_ERROR,
+        {
+          message:
+            "Error setting up leak detection: " + (error as Error).message,
+        }
+      );
       env.tmpDir.removeCallback();
     }
   }
@@ -92,16 +101,25 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
           // Execute a special leak detection session with the prepared valgrindLogFile
           this.executeLeakDetectionSession(socket, env, result.valgrindLogFile);
         } else {
-          this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-            output: result.error || "Compilation failed with no specific error",
-          });
+          this.webSocketManager.emitToClient(
+            socket,
+            SocketEvents.LEAK_CHECK_ERROR,
+            {
+              output:
+                result.error || "Compilation failed with no specific error",
+            }
+          );
           env.tmpDir.removeCallback();
         }
       })
       .catch((error) => {
-        this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-          message: "Unexpected error: " + (error as Error).message,
-        });
+        this.webSocketManager.emitToClient(
+          socket,
+          SocketEvents.LEAK_CHECK_ERROR,
+          {
+            message: "Unexpected error: " + (error as Error).message,
+          }
+        );
         env.tmpDir.removeCallback();
       });
   }
@@ -119,7 +137,11 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
     valgrindLogFile: string
   ): void {
     // Let the client know we're running leak detection
-    this.emitToClient(socket, SocketEvents.LEAK_CHECK_RUNNING, {});
+    this.webSocketManager.emitToClient(
+      socket,
+      SocketEvents.LEAK_CHECK_RUNNING,
+      {}
+    );
 
     // Create a session for running the program with Valgrind
     const sessionId = socket.sessionId;
@@ -159,7 +181,7 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
           sessionService["updateSessionActivity"](sessionId);
 
           // Send output to client
-          this.emitToClient(socket, SocketEvents.OUTPUT, {
+          this.webSocketManager.emitToClient(socket, SocketEvents.OUTPUT, {
             output: data,
           });
         } catch (e) {
@@ -179,11 +201,15 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
             `Error processing leak detection exit for session ${sessionId}:`,
             e
           );
-          this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-            message:
-              "Error processing leak detection results: " +
-              (e as Error).message,
-          });
+          this.webSocketManager.emitToClient(
+            socket,
+            SocketEvents.LEAK_CHECK_ERROR,
+            {
+              message:
+                "Error processing leak detection results: " +
+                (e as Error).message,
+            }
+          );
         } finally {
           // Always clean up
           this.cleanupSession(sessionId);
@@ -194,9 +220,15 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
         `Error creating PTY for leak detection session ${sessionId}:`,
         error
       );
-      this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-        message: `Error executing leak detection: ${(error as Error).message}`,
-      });
+      this.webSocketManager.emitToClient(
+        socket,
+        SocketEvents.LEAK_CHECK_ERROR,
+        {
+          message: `Error executing leak detection: ${
+            (error as Error).message
+          }`,
+        }
+      );
       env.tmpDir.removeCallback();
     }
   }
@@ -244,21 +276,33 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
         );
 
         // Send report to client
-        this.emitToClient(socket, SocketEvents.LEAK_CHECK_REPORT, {
-          report: formattedReport,
-          exitCode: exitCode,
-        });
+        this.webSocketManager.emitToClient(
+          socket,
+          SocketEvents.LEAK_CHECK_REPORT,
+          {
+            report: formattedReport,
+            exitCode: exitCode,
+          }
+        );
       } else {
-        this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-          message: "Valgrind log file not found after execution",
-        });
+        this.webSocketManager.emitToClient(
+          socket,
+          SocketEvents.LEAK_CHECK_ERROR,
+          {
+            message: "Valgrind log file not found after execution",
+          }
+        );
       }
     } catch (error) {
-      this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-        message:
-          "Error processing leak detection results: " +
-          (error as Error).message,
-      });
+      this.webSocketManager.emitToClient(
+        socket,
+        SocketEvents.LEAK_CHECK_ERROR,
+        {
+          message:
+            "Error processing leak detection results: " +
+            (error as Error).message,
+        }
+      );
     }
   }
 
@@ -274,9 +318,13 @@ export class LeakDetectWebSocketHandler extends BaseSocketHandler {
     // Only process input for leak detection sessions
     if (session && session.sessionType === "leak_detection") {
       if (!this.sessionService.sendInputToSession(sessionId, data.input)) {
-        this.emitToClient(socket, SocketEvents.LEAK_CHECK_ERROR, {
-          message: "No active leak detection session to receive input",
-        });
+        this.webSocketManager.emitToClient(
+          socket,
+          SocketEvents.LEAK_CHECK_ERROR,
+          {
+            message: "No active leak detection session to receive input",
+          }
+        );
       }
     }
   }

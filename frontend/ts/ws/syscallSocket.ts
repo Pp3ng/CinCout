@@ -11,16 +11,10 @@ import { domUtils } from "../app";
  * SyscallSocketManager handles the Socket.IO communication for strace system call tracing
  */
 export class SyscallSocketManager {
-  /**
-   * Create a new SyscallSocketManager
-   */
   constructor() {
     this.setupEventListeners();
   }
 
-  /**
-   * Set up event listeners for Socket.IO events
-   */
   private setupEventListeners(): void {
     // Handle compilation events
     socketManager.on(SocketEvents.COMPILING, () => {

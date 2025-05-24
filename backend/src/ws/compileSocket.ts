@@ -58,7 +58,7 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
       this.compilationService.writeCodeToFile(env.sourceFile, code);
 
       // Notify client that compilation has started
-      this.emitToClient(socket, SocketEvents.COMPILING, {});
+      this.webSocketManager.emitToClient(socket, SocketEvents.COMPILING, {});
 
       // Run the compilation
       this.compilationService
@@ -66,14 +66,22 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
         .then((result) => {
           if (result.success) {
             // Compilation succeeded, run the program
-            this.emitToClient(socket, SocketEvents.COMPILE_SUCCESS, {});
+            this.webSocketManager.emitToClient(
+              socket,
+              SocketEvents.COMPILE_SUCCESS,
+              {}
+            );
 
             this.runCompiledProgram(socket, env);
           } else {
             // Compilation failed, send error to client
-            this.emitToClient(socket, SocketEvents.COMPILE_ERROR, {
-              output: result.error,
-            });
+            this.webSocketManager.emitToClient(
+              socket,
+              SocketEvents.COMPILE_ERROR,
+              {
+                output: result.error,
+              }
+            );
 
             // Clean up the temporary directory
             env.tmpDir.removeCallback();
@@ -81,16 +89,20 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
         })
         .catch((error) => {
           // Unexpected error
-          this.emitToClient(socket, SocketEvents.COMPILE_ERROR, {
-            output: `Unexpected error: ${(error as Error).message}`,
-          });
+          this.webSocketManager.emitToClient(
+            socket,
+            SocketEvents.COMPILE_ERROR,
+            {
+              output: `Unexpected error: ${(error as Error).message}`,
+            }
+          );
 
           // Clean up the temporary directory
           env.tmpDir.removeCallback();
         });
     } catch (error) {
       // Error handling
-      this.emitToClient(socket, SocketEvents.COMPILE_ERROR, {
+      this.webSocketManager.emitToClient(socket, SocketEvents.COMPILE_ERROR, {
         output: `Error: ${(error as Error).message}`,
       });
 
@@ -116,13 +128,13 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
           env.outputFile
         )
       ) {
-        this.emitToClient(socket, SocketEvents.ERROR, {
+        this.webSocketManager.emitToClient(socket, SocketEvents.ERROR, {
           message: "Failed to execute compilation session",
         });
         env.tmpDir.removeCallback();
       }
     } catch (error) {
-      this.emitToClient(socket, SocketEvents.ERROR, {
+      this.webSocketManager.emitToClient(socket, SocketEvents.ERROR, {
         message: `Failed to run program: ${(error as Error).message}`,
       });
       env.tmpDir.removeCallback();
@@ -141,7 +153,7 @@ export class CompileWebSocketHandler extends BaseSocketHandler {
     // Only process input for compilation sessions
     if (session && session.sessionType === "compilation") {
       if (!this.sessionService.sendInputToSession(sessionId, data.input)) {
-        this.emitToClient(socket, SocketEvents.ERROR, {
+        this.webSocketManager.emitToClient(socket, SocketEvents.ERROR, {
           message: "No active program to receive input",
         });
       }

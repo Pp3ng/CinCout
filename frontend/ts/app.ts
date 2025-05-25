@@ -9,11 +9,6 @@ import SyscallSocketManager from "./ws/syscallSocket";
 import apiService from "./service/api";
 import { getEditorService, initEditors } from "./service/editor";
 import { getTerminalService } from "./service/terminal";
-import {
-  handleLanguageChange,
-  loadSelectedTemplate,
-  initializeTemplates,
-} from "./service/templates";
 import { CompileOptions } from "./types";
 import {
   initializeShortcuts,
@@ -21,7 +16,7 @@ import {
   isMac,
 } from "./service/shortcuts";
 import themeManager from "./ui/themeManager";
-import { initCustomSelects } from "./ui/selector";
+import { initSelects, getSelectorState } from "./ui/selector";
 import { socketManager } from "./ws/webSocketManager";
 
 // Import CSS for CodeMirror themes
@@ -39,9 +34,7 @@ import "codemirror/theme/the-matrix.css";
 export const domUtils = {
   getElements: () => {
     return {
-      template: document.getElementById("template"),
       vimMode: document.getElementById("vimMode") as HTMLInputElement,
-      language: document.getElementById("language") as HTMLSelectElement,
       output: document.getElementById("output"),
       compile: document.getElementById("compile"),
       memcheck: document.getElementById("memcheck"),
@@ -50,14 +43,9 @@ export const domUtils = {
       lintCode: document.getElementById("lintCode"),
       debug: document.getElementById("debug"),
       syscall: document.getElementById("syscall"),
-      themeSelect: document.getElementById("theme-select") as HTMLSelectElement,
       outputPanel: document.getElementById("outputPanel"),
       closeOutput: document.getElementById("closeOutput"),
       codesnap: document.getElementById("codeSnap"),
-      compiler: document.getElementById("compiler") as HTMLSelectElement,
-      optimization: document.getElementById(
-        "optimization"
-      ) as HTMLSelectElement,
     };
   },
 
@@ -97,13 +85,13 @@ export const domUtils = {
   },
 
   getCompileOptions: (): CompileOptions => {
-    const elements = domUtils.getElements();
+    const selectorState = getSelectorState();
     const editorService = getEditorService();
     return {
       code: editorService.getValue(),
-      lang: elements.language?.value ?? "c",
-      compiler: elements.compiler?.value ?? "gcc",
-      optimization: elements.optimization?.value ?? "O0",
+      lang: selectorState.language,
+      compiler: selectorState.compiler,
+      optimization: selectorState.optimization,
     };
   },
 
@@ -266,30 +254,6 @@ export const themeUtils = {
   },
 
   initializeThemeUI: (): void => {
-    const themeSelect = document.getElementById(
-      "theme-select"
-    ) as HTMLSelectElement;
-    // Early return if select doesn't exist or is already populated
-    if (!themeSelect || themeSelect.options.length > 0) return;
-
-    // Create options from themes
-    const fragment = document.createDocumentFragment();
-    Object.entries(themeManager.getThemes()).forEach(([key, theme]) => {
-      const option = document.createElement("option");
-      option.value = key;
-      option.textContent = theme.name;
-      fragment.appendChild(option);
-    });
-    themeSelect.appendChild(fragment);
-
-    // Set current theme as selected
-    themeSelect.value = themeManager.getCurrentThemeName();
-
-    // Add change listener
-    themeSelect.addEventListener("change", ({ target }) => {
-      themeManager.setTheme((target as HTMLSelectElement).value);
-    });
-
     // Subscribe to theme changes and apply initial theme
     themeManager.subscribe(themeUtils.applyThemeToDOM);
     themeUtils.applyThemeToDOM();
@@ -383,8 +347,6 @@ export const initApp = () => {
   // Set up all event listeners
   const setupEventListeners = () => {
     const elements = domUtils.getElements();
-    elements.language?.addEventListener("change", handleLanguageChange);
-    elements.template?.addEventListener("change", loadSelectedTemplate);
 
     // Helper function to add debounced click handler
     const addDebouncedHandler = (
@@ -399,16 +361,12 @@ export const initApp = () => {
     addDebouncedHandler(elements.codesnap, takeCodeSnap);
 
     addDebouncedHandler(elements.format, () => {
-      const editorService = getEditorService();
-      const code = editorService.getValue();
-      const lang = elements.language?.value ?? "c";
+      const { code, lang } = domUtils.getCompileOptions();
       codeActions.formatCode(code, lang);
     });
 
     addDebouncedHandler(elements.lintCode, () => {
-      const editorService = getEditorService();
-      const code = editorService.getValue();
-      const lang = elements.language?.value ?? "c";
+      const { code, lang } = domUtils.getCompileOptions();
       codeActions.runLintCode(code, lang);
     });
 
@@ -494,8 +452,7 @@ export const initApp = () => {
     themeUtils.initializeThemeUI();
 
     // Step 2: Initialize UI components
-    initializeTemplates();
-    initCustomSelects();
+    initSelects();
     initEditors();
 
     // Step 3: Hide output panel initially

@@ -5,7 +5,6 @@
 /* Dropdown buttons */
 .dropdown-btn {
   background: var(--bg-secondary);
-  color: var(--text-primary);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   transition: var(--transition-normal);
@@ -14,14 +13,12 @@
 .dropdown-btn:hover {
   border-color: var(--accent);
   background-color: rgba(var(--accent-rgb), 0.1);
-  transform: translateY(-1px);
   box-shadow: var(--shadow-accent-md);
 }
 
 /* Dropdowns structure */
 .dropdown,
 .shortcuts-panel {
-  position: relative;
   z-index: 100;
 }
 
@@ -47,11 +44,9 @@
   background-color: var(--bg-secondary);
   box-shadow: var(--shadow-md);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
 }
 
 .dropdown-content {
-  min-width: 220px;
   font-family: var(--font-mono);
   transform: translateY(-10px);
   transition: opacity var(--transition-normal),
@@ -96,12 +91,9 @@
 
 /* Links */
 .dropdown-content a {
-  color: var(--text-primary);
   padding: var(--spacing-sm) var(--spacing-md);
   display: flex;
-  align-items: center;
   gap: var(--spacing-sm);
-  text-decoration: none;
   transition: transform var(--transition-normal),
     box-shadow var(--transition-normal);
 }

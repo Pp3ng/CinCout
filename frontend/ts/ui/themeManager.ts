@@ -164,11 +164,6 @@ export class ThemeManager {
       }
     });
   }
-
-  // Cleanup method to remove all listeners
-  destroy(): void {
-    this.listeners.clear();
-  }
 }
 
 // Create a default instance for backwards compatibility

@@ -20,7 +20,6 @@
 /* Base button styles */
 button {
   background: linear-gradient(45deg, var(--accent), var(--accent-hover));
-  color: var(--text-primary);
   font-family: var(--font-mono);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
@@ -47,13 +46,10 @@ button:active {
   transition: transform var(--transition-fast);
 }
 
-button i,
-button svg {
+button i {
   transition: transform var(--transition-normal);
 }
-
-button:hover i,
-button:hover svg {
+button:hover i {
   transform: scale(1.3);
 }
 

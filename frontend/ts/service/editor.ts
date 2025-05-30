@@ -35,6 +35,10 @@ export class EditorService {
 
   private currentFontSize: number = 14;
   private readonly activeEditors = new Set<CodeMirror.Editor>();
+  private readonly debouncedRefresh = debounce(
+    () => this.refreshAllEditors(),
+    300
+  );
 
   private constructor() {
     // Subscribe to theme changes
@@ -148,7 +152,7 @@ export class EditorService {
       editor.getWrapperElement().style.fontSize = `${size}px`;
     });
 
-    debounce(() => this.refreshAllEditors(), 300);
+    this.debouncedRefresh();
   };
 
   readonly refreshAllEditors = (): void => {

@@ -19,16 +19,6 @@ import themeManager from "./ui/themeManager";
 import { initSelects, getSelectorState } from "./ui/selector";
 import { socketManager } from "./ws/webSocketManager";
 
-// Import CSS for CodeMirror themes
-import "codemirror/theme/nord.css";
-import "codemirror/theme/dracula.css";
-import "codemirror/theme/monokai.css";
-import "codemirror/theme/material.css";
-import "codemirror/theme/ayu-dark.css";
-import "codemirror/theme/gruvbox-dark.css";
-import "codemirror/theme/seti.css";
-import "codemirror/theme/the-matrix.css";
-
 // DOM Utilities - Will become React hooks/state
 
 export const domUtils = {
@@ -278,28 +268,7 @@ export const editorSettings = {
 
   setVimMode: (enabled: boolean): void => {
     localStorage.setItem("cincout-vim-mode", enabled.toString());
-    getEditorService().setOption("keyMap", enabled ? "vim" : "default");
-
-    // Update vim status visibility
-    const vimStatusElement = document.getElementById("vim-status");
-    if (vimStatusElement) {
-      if (enabled) {
-        vimStatusElement.style.display = "block";
-        vimStatusElement.textContent = "-- NORMAL --"; // Default initial mode
-
-        // Set up jk mapping for Escape in insert mode
-        const editor = getEditorService().getEditor();
-        if (editor) {
-          const CodeMirror = (editor as any).constructor;
-          if (CodeMirror && CodeMirror.Vim) {
-            // Map jk to Escape in insert mode
-            CodeMirror.Vim.map("jk", "<Esc>", "insert");
-          }
-        }
-      } else {
-        vimStatusElement.style.display = "none";
-      }
-    }
+    getEditorService().setVimMode(enabled);
   },
 
   loadSavedSettings: (): void => {

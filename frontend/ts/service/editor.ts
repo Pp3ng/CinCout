@@ -1,21 +1,40 @@
 import CodeMirror from "codemirror";
+import "codemirror/mode/clike/clike";
+import "codemirror/mode/gas/gas";
+import "codemirror/keymap/vim";
+import "codemirror/addon/edit/closebrackets";
+import "codemirror/addon/edit/matchbrackets";
+import "codemirror/addon/fold/foldcode";
+import "codemirror/addon/fold/foldgutter";
+import "codemirror/addon/fold/brace-fold";
+import "codemirror/addon/fold/comment-fold";
+import "codemirror/addon/selection/active-line.js";
+import { debounce } from "lodash-es";
 import { EditorInstances } from "../types";
 import themeManager from "../ui/themeManager";
 
-// Default editor settings
-const DEFAULT_FONT_SIZE = 14;
-const FONT_SIZE_LIMITS = {
-  MIN: 10,
-  MAX: 30,
-};
+const EDITOR_CONFIG = {
+  DEFAULT_FONT_SIZE: 14 as const,
+  FONT_SIZE_LIMITS: {
+    MIN: 10 as const,
+    MAX: 30 as const,
+  },
+  DEFAULT_THEME: "default" as const,
+  VIM_STATUS: {
+    NORMAL: "-- NORMAL --" as const,
+    UPPER: (mode: string) => `-- ${mode.toUpperCase()} --` as const,
+  },
+} as const;
 
 export class EditorService {
   private static instance: EditorService;
+
   private editor: CodeMirror.Editor | null = null;
   private assemblyView: CodeMirror.Editor | null = null;
   private straceView: CodeMirror.Editor | null = null;
-  private currentFontSize: number = DEFAULT_FONT_SIZE;
-  private editors: CodeMirror.Editor[] = [];
+
+  private currentFontSize: number = 14;
+  private readonly activeEditors = new Set<CodeMirror.Editor>();
 
   private constructor() {
     // Subscribe to theme changes
@@ -25,39 +44,41 @@ export class EditorService {
   }
 
   static getInstance(): EditorService {
-    if (!EditorService.instance) {
-      EditorService.instance = new EditorService();
-    }
-    return EditorService.instance;
+    return (EditorService.instance ??= new EditorService());
   }
 
-  // Init
-  setEditors(editors: EditorInstances): void {
-    const { editor, assemblyView, straceView } = editors;
+  readonly setEditors = ({
+    editor,
+    assemblyView,
+    straceView,
+  }: EditorInstances): void => {
     this.editor = editor;
     this.assemblyView = assemblyView;
     this.straceView = straceView;
 
-    // Store non-null editors in array for bulk operations
-    this.editors = [editor, assemblyView, straceView].filter(
-      Boolean
-    ) as CodeMirror.Editor[];
-  }
+    this.activeEditors.clear();
+    [editor, assemblyView, straceView]
+      .filter((ed): ed is CodeMirror.Editor => Boolean(ed))
+      .forEach((ed) => this.activeEditors.add(ed));
+  };
 
   // Editor instance getters
-  getEditor = (): CodeMirror.Editor | null => this.editor;
-  getAssemblyView = (): CodeMirror.Editor | null => this.assemblyView;
-  getStraceView = (): CodeMirror.Editor | null => this.straceView;
+  readonly getEditor = (): CodeMirror.Editor | null => this.editor;
+  readonly getAssemblyView = (): CodeMirror.Editor | null => this.assemblyView;
+  readonly getStraceView = (): CodeMirror.Editor | null => this.straceView;
 
-  // Create a read-only editor for displaying output
-  createReadOnlyEditor(): CodeMirror.Editor {
+  // Create a read-only editor
+  readonly createReadOnlyEditor = (): CodeMirror.Editor => {
     const themeName = themeManager.getCurrentThemeName();
-    const theme = themeName !== "default" ? themeName : "default";
+    const theme =
+      themeName !== EDITOR_CONFIG.DEFAULT_THEME
+        ? themeName
+        : EDITOR_CONFIG.DEFAULT_THEME;
 
     // Create editor instance
     this.straceView = CodeMirror(document.createElement("div"), {
       lineNumbers: true,
-      mode: "text/x-csrc", // C-like syntax highlighting for strace
+      mode: "text/x-csrc",
       readOnly: true,
       lineWrapping: true,
       theme,
@@ -68,74 +89,144 @@ export class EditorService {
       this.straceView.getWrapperElement().style.fontSize = `${this.currentFontSize}px`;
     }
 
-    // Add to editors array if not already present
-    if (!this.editors.includes(this.straceView)) {
-      this.editors.push(this.straceView);
-    }
+    // Add to active editors set
+    this.activeEditors.add(this.straceView);
 
     return this.straceView;
-  }
+  };
 
-  // Editor content methods
-  getValue = (): string => this.editor?.getValue() ?? "";
-  setValue = (value: string): void => this.editor?.setValue(value);
+  // Editor value methods
+  readonly getValue = (): string => this.editor?.getValue() ?? "";
+  readonly setValue = (value: string): void => this.editor?.setValue(value);
 
   // Editor cursor and scroll methods
-  getCursor = (): CodeMirror.Position | null =>
+  readonly getCursor = (): CodeMirror.Position | null =>
     this.editor?.getCursor() ?? null;
-  setCursor = (cursor: CodeMirror.Position): void =>
+  readonly setCursor = (cursor: CodeMirror.Position): void =>
     this.editor?.setCursor(cursor);
-  getScrollInfo = (): CodeMirror.ScrollInfo | null =>
+  readonly getScrollInfo = (): CodeMirror.ScrollInfo | null =>
     this.editor?.getScrollInfo() ?? null;
-  scrollTo = (left: number, top: number): void =>
+  readonly scrollTo = (left: number, top: number): void =>
     this.editor?.scrollTo(left, top);
 
   // Refresh editor display
-  refresh = (): void => this.editor?.refresh();
+  readonly refresh = (): void => this.editor?.refresh();
 
   // Set editor options
-  setOption<K extends keyof CodeMirror.EditorConfiguration>(
+  readonly setOption = <K extends keyof CodeMirror.EditorConfiguration>(
     key: K,
     value: CodeMirror.EditorConfiguration[K]
-  ): void {
+  ): void => {
     this.editor?.setOption(key, value);
-  }
+  };
 
   // Set options for all editors
-  setOptionForAll<K extends keyof CodeMirror.EditorConfiguration>(
+  readonly setOptionForAll = <K extends keyof CodeMirror.EditorConfiguration>(
     key: K,
     value: CodeMirror.EditorConfiguration[K]
-  ): void {
+  ): void => {
     this.forEachEditor((editor) => editor.setOption(key, value));
-  }
+  };
 
-  // Set content for specialized views
-  setAssemblyValue = (value: string): void =>
+  // Set assembly and strace view values
+  readonly setAssemblyValue = (value: string): void =>
     this.assemblyView?.setValue(value);
-  setStraceValue = (value: string): void => this.straceView?.setValue(value);
+  readonly setStraceValue = (value: string): void =>
+    this.straceView?.setValue(value);
 
-  // Apply theme to all editors
-  applyThemeToAllEditors(themeName: string): void {
-    const theme = themeName !== "default" ? themeName : "default";
+  readonly applyThemeToAllEditors = (themeName: string): void => {
+    const theme =
+      themeName !== EDITOR_CONFIG.DEFAULT_THEME
+        ? themeName
+        : EDITOR_CONFIG.DEFAULT_THEME;
     this.setOptionForAll("theme", theme);
-  }
+  };
 
-  setFontSize(size: number): void {
+  readonly setFontSize = (size: number): void => {
     this.currentFontSize = size;
     this.forEachEditor((editor) => {
       editor.getWrapperElement().style.fontSize = `${size}px`;
     });
-    this.refreshAllEditors();
-  }
 
-  refreshAllEditors(): void {
+    debounce(() => this.refreshAllEditors(), 300);
+  };
+
+  readonly refreshAllEditors = (): void => {
     this.forEachEditor((editor) => editor.refresh());
-  }
+  };
 
-  // Apply a operation to each editor instance
-  private forEachEditor(callback: (editor: CodeMirror.Editor) => void): void {
-    this.editors.forEach(callback);
-  }
+  // Vim mode management
+  readonly setVimMode = (enabled: boolean): void => {
+    this.editor?.setOption("keyMap", enabled ? "vim" : "default");
+    this.updateVimStatusVisibility(enabled);
+
+    if (enabled) {
+      this.setupVimKeyMappings();
+      this.setupVimModeChangeListener();
+    }
+  };
+
+  readonly initializeVimStatus = (): void => {
+    if (!this.editor) return;
+
+    const keyMap = this.editor.getOption("keyMap");
+    const isVimEnabled = keyMap?.startsWith("vim") ?? false;
+    this.updateVimStatusVisibility(isVimEnabled);
+
+    if (isVimEnabled) {
+      this.setupVimModeChangeListener();
+    }
+  };
+
+  private readonly updateVimStatusVisibility = (enabled: boolean): void => {
+    const vimStatusElement = document.getElementById("vim-status");
+    if (!vimStatusElement) return;
+
+    if (enabled) {
+      vimStatusElement.style.display = "block";
+      vimStatusElement.textContent = EDITOR_CONFIG.VIM_STATUS.NORMAL;
+    } else {
+      vimStatusElement.style.display = "none";
+    }
+  };
+
+  private readonly setupVimModeChangeListener = (): void => {
+    if (!this.editor) return;
+
+    // Remove existing listener to avoid duplicates
+    (this.editor as any).off("vim-mode-change");
+
+    // Add new listener
+    (this.editor as any).on("vim-mode-change", ({ mode }: { mode: string }) => {
+      const vimStatusElement = document.getElementById("vim-status");
+      if (!vimStatusElement) return;
+
+      vimStatusElement.textContent = EDITOR_CONFIG.VIM_STATUS.UPPER(mode);
+
+      // Ensure status is visible when in vim mode
+      const keyMap = this.editor?.getOption("keyMap");
+      if (keyMap?.startsWith("vim")) {
+        vimStatusElement.style.display = "block";
+      }
+    });
+  };
+
+  private readonly setupVimKeyMappings = (): void => {
+    const editor = this.editor;
+    if (!editor) return;
+
+    const CodeMirror = (editor as any).constructor;
+    if (CodeMirror && CodeMirror.Vim) {
+      // Map jk to Escape in insert mode
+      CodeMirror.Vim.map("jk", "<Esc>", "insert");
+    }
+  };
+
+  private readonly forEachEditor = (
+    callback: (editor: CodeMirror.Editor) => void
+  ): void => {
+    this.activeEditors.forEach(callback);
+  };
 }
 
 const setupEditors = (): EditorInstances => {
@@ -148,10 +239,12 @@ const setupEditors = (): EditorInstances => {
 
   // Get current theme
   const themeName = themeManager.getCurrentThemeName();
-  const theme = themeName !== "default" ? themeName : "default";
+  const theme =
+    themeName !== EDITOR_CONFIG.DEFAULT_THEME
+      ? themeName
+      : EDITOR_CONFIG.DEFAULT_THEME;
 
-  // Create main code editor
-  const editor = CodeMirror.fromTextArea(codeElement, {
+  const editorConfig: CodeMirror.EditorConfiguration = {
     lineNumbers: true,
     mode: "text/x-c++src",
     keyMap: "default",
@@ -166,112 +259,69 @@ const setupEditors = (): EditorInstances => {
     gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
     foldOptions: { widget: "..." },
     theme,
-  });
+  };
 
-  // Set up Vim mode change listener
-  (editor as any).on("vim-mode-change", (data: { mode: string }) => {
-    const vimStatusElement = document.getElementById("vim-status");
-    if (vimStatusElement) {
-      vimStatusElement.textContent = `-- ${data.mode.toUpperCase()} --`;
+  // Create main editor instance
+  const editor = CodeMirror.fromTextArea(codeElement, editorConfig);
 
-      // Only show vim status when vim mode is active
-      const keyMap = editor.getOption("keyMap");
-      vimStatusElement.style.display = keyMap?.startsWith("vim")
-        ? "block"
-        : "none";
-    }
-  });
+  const readOnlyConfig: CodeMirror.EditorConfiguration = {
+    lineNumbers: true,
+    readOnly: true,
+    lineWrapping: true,
+    theme,
+  };
 
-  // Create assembly view (detached)
+  // Assembly (gas)
   const assemblyView = CodeMirror(document.createElement("div"), {
-    lineNumbers: true,
+    ...readOnlyConfig,
     mode: "gas",
-    readOnly: true,
-    lineWrapping: true,
-    theme,
   });
 
-  // Create strace view
+  // Strace (c-like)
   const straceView = CodeMirror(document.createElement("div"), {
-    lineNumbers: true,
+    ...readOnlyConfig,
     mode: "text/x-csrc", // C-like syntax highlighting for strace
-    readOnly: true,
-    lineWrapping: true,
-    theme,
   });
 
   return { editor, assemblyView, straceView };
 };
 
-const setupFontZoomHandler = () => {
+const setupFontZoomHandler = (): void => {
   const editorService = EditorService.getInstance();
-  let fontSize = DEFAULT_FONT_SIZE;
+  let fontSize = 14; // Start with default font size
+
   editorService.setFontSize(fontSize);
 
-  // Handle font zooming with ctrl+wheel
   document.addEventListener(
     "wheel",
-    (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
+    (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
 
-        // Adjust font size based on scroll direction
-        fontSize =
-          e.deltaY < 0
-            ? Math.min(fontSize + 1, FONT_SIZE_LIMITS.MAX)
-            : Math.max(fontSize - 1, FONT_SIZE_LIMITS.MIN);
+      event.preventDefault();
 
-        editorService.setFontSize(fontSize);
-      }
+      const delta = event.deltaY < 0 ? 1 : -1;
+      // Adjust font size with limits
+      fontSize = Math.max(10, Math.min(30, fontSize + delta));
+
+      editorService.setFontSize(fontSize);
     },
     { passive: false }
   );
 };
 
-// External editor actions interface
-export interface EditorActions {
-  toggleZenMode: () => void;
-}
-
-// Global actions state
-let globalActions: EditorActions | null = null;
-
-// Action management functions
-export const setEditorActions = (actions: EditorActions): void => {
-  globalActions = actions;
-};
-export const getEditorActions = (): EditorActions | null => globalActions;
 export const getEditorService = (): EditorService =>
   EditorService.getInstance();
 
-// Initialize Vim status UI
-const initializeVimStatus = (editor: CodeMirror.Editor): void => {
-  const vimStatusElement = document.getElementById("vim-status");
-  if (!vimStatusElement) return;
-
-  const keyMap = editor.getOption("keyMap");
-  const isVimEnabled = keyMap?.startsWith("vim");
-
-  vimStatusElement.style.display = isVimEnabled ? "block" : "none";
-  if (isVimEnabled) {
-    vimStatusElement.textContent = "-- NORMAL --"; // Default initial mode
-  }
-};
-
 // Initialize all editors and related services
 export const initEditors = (): void => {
-  try {
-    // Create editor instances
-    const editorInstances = setupEditors();
+  const editorInstances = setupEditors();
 
-    // Initialize the editor service
-    const editorService = EditorService.getInstance();
-    editorService.setEditors(editorInstances);
+  const editorService = EditorService.getInstance();
+  editorService.setEditors(editorInstances);
 
-    // Setup additional features
-    setupFontZoomHandler();
-    initializeVimStatus(editorInstances.editor);
-  } catch (e) {
-    console.error("Editor setup failed:", e);
-  }
+  // Setup additional features
+  setupFontZoomHandler();
+
+  // Initialize vim status through EditorService
+  editorService.initializeVimStatus();
 };

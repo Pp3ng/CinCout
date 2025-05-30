@@ -1,94 +1,111 @@
 import themeDefinitions from "../../config/themes.json";
 import { ThemeMap, Theme, TerminalTheme } from "../types";
 
-// Helper functions
+// Import CSS for CodeMirror themes
+import "codemirror/theme/nord.css";
+import "codemirror/theme/dracula.css";
+import "codemirror/theme/monokai.css";
+import "codemirror/theme/material.css";
+import "codemirror/theme/ayu-dark.css";
+import "codemirror/theme/gruvbox-dark.css";
+import "codemirror/theme/seti.css";
+import "codemirror/theme/the-matrix.css";
+
+const THEME_CONFIG = {
+  STORAGE_KEY: "cincout-theme",
+  DEFAULT_THEME: "default",
+  DEFAULT_RGB: "30, 136, 229",
+  HEX_REGEX: /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i,
+} as const;
+
 export const hexToRgb = (hex: string): string => {
-  const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return rgb
-    ? `${parseInt(rgb[1], 16)}, ${parseInt(rgb[2], 16)}, ${parseInt(
-        rgb[3],
-        16
-      )}`
-    : "30, 136, 229";
+  const match = THEME_CONFIG.HEX_REGEX.exec(hex);
+
+  if (!match) return THEME_CONFIG.DEFAULT_RGB;
+
+  const [, r, g, b] = match;
+  return [r, g, b].map((component) => parseInt(component, 16)).join(", ");
 };
 
 export const ensureHashPrefixes = (
   colorObject: Record<string, string>
-): Record<string, string> =>
-  Object.fromEntries(
-    Object.entries(colorObject).map(([key, value]) => [
-      key,
-      typeof value === "string" && value.trim() !== "" && !value.startsWith("#")
-        ? "#" + value.trim()
-        : value,
-    ])
-  );
+): Record<string, string> => {
+  return Object.fromEntries(
+    Object.entries(colorObject).map(([key, value]) => {
+      const isValidString = typeof value === "string" && value.trim();
+      const needsHash = isValidString && !value.startsWith("#");
 
-// Types for theme events and listeners
-export type ThemeChangeEvent = {
-  themeName: string;
-  theme: Theme;
+      return [key, needsHash ? `#${value.trim()}` : value];
+    })
+  );
 };
+
+export interface ThemeChangeEvent {
+  readonly themeName: string;
+  readonly theme: Theme;
+}
 
 export type ThemeListener = (event: ThemeChangeEvent) => void;
 
-// Options for theme manager creation
+// Options for theme manager initialization
 export interface ThemeManagerOptions {
-  initialTheme?: string;
-  themeData?: ThemeMap;
-  storage?: Storage;
+  readonly initialTheme?: string;
+  readonly themeData?: ThemeMap;
+  readonly storage?: Storage;
+  readonly storageKey?: string;
 }
 
 export class ThemeManager {
-  private currentTheme: string;
-  private themeData: ThemeMap;
-  private listeners: Set<ThemeListener> = new Set();
-  private storage: Storage;
-  private STORAGE_KEY = "cincout-theme";
+  private readonly listeners = new Set<ThemeListener>();
+  private readonly storage: Storage;
+  private readonly storageKey: string;
+  private readonly themeData: ThemeMap;
+
+  private currentThemeName: string;
 
   constructor(options: ThemeManagerOptions = {}) {
-    this.storage = options.storage || localStorage;
-    this.themeData = options.themeData || (themeDefinitions as ThemeMap);
+    const {
+      storage = localStorage,
+      themeData = themeDefinitions as ThemeMap,
+      storageKey = THEME_CONFIG.STORAGE_KEY,
+      initialTheme,
+    } = options;
 
-    // Get initial theme from options, storage, or fallback to default
-    const savedTheme = this.storage.getItem(this.STORAGE_KEY);
-    this.currentTheme = options.initialTheme || savedTheme || "default";
+    this.storage = storage;
+    this.themeData = themeData;
+    this.storageKey = storageKey;
 
-    // Validate current theme exists
-    if (!this.themeData[this.currentTheme]) {
-      console.warn(
-        `Theme '${this.currentTheme}' not found, falling back to default`
-      );
-      this.currentTheme = "default";
-    }
+    this.currentThemeName = this.resolveInitialTheme(initialTheme);
   }
 
-  // Get the name of the current theme
-  getCurrentThemeName(): string {
-    return this.currentTheme;
-  }
+  private readonly resolveInitialTheme = (initialTheme?: string): string => {
+    const savedTheme = this.storage.getItem(this.storageKey);
+    return initialTheme ?? savedTheme ?? THEME_CONFIG.DEFAULT_THEME;
+  };
 
-  // Get the current theme object
-  getCurrentTheme(): Theme {
-    return this.themeData[this.currentTheme] || this.themeData.default;
-  }
+  readonly getCurrentThemeName = (): string => this.currentThemeName;
 
-  // Get all available themes
-  getThemes(): ThemeMap {
-    return this.themeData;
-  }
+  readonly getCurrentTheme = (): Theme =>
+    this.themeData[this.currentThemeName] ??
+    this.themeData[THEME_CONFIG.DEFAULT_THEME];
+
+  readonly getThemes = (): ThemeMap => this.themeData;
 
   // Get terminal theme based on current theme
-  getTerminalTheme(): TerminalTheme {
+  readonly getTerminalTheme = (): TerminalTheme => {
     const theme = this.getCurrentTheme();
-    const terminalColors = theme.terminal || this.themeData.default.terminal;
+    const terminalColors =
+      theme.terminal ?? this.themeData[THEME_CONFIG.DEFAULT_THEME].terminal;
 
-    return ensureHashPrefixes({
+    const baseColors = {
       background: theme.bg,
       foreground: theme.text,
       cursor: theme.accent,
       cursorAccent: theme.bg,
-      selection: theme.accent + "40",
+      selection: `${theme.accent}40`, // 40 = 25% opacity in hex
+    };
+
+    const standardColors = {
       black: "#000000",
       red: terminalColors.red,
       green: terminalColors.green,
@@ -97,6 +114,9 @@ export class ThemeManager {
       magenta: terminalColors.magenta,
       cyan: terminalColors.cyan,
       white: "#bfbfbf",
+    };
+
+    const brightColors = {
       brightBlack: "#4d4d4d",
       brightRed: terminalColors.red,
       brightGreen: terminalColors.green,
@@ -105,12 +125,18 @@ export class ThemeManager {
       brightMagenta: terminalColors.magenta,
       brightCyan: terminalColors.cyan,
       brightWhite: "#e6e6e6",
-    }) as TerminalTheme;
-  }
+    };
 
-  // Get CSS variables for the current theme
-  getCssVariables(): Record<string, string> {
+    return ensureHashPrefixes({
+      ...baseColors,
+      ...standardColors,
+      ...brightColors,
+    }) as TerminalTheme;
+  };
+
+  readonly getCssVariables = (): Record<string, string> => {
     const theme = this.getCurrentTheme();
+
     return {
       "--bg-primary": theme.bg,
       "--bg-secondary": theme.bgSecondary,
@@ -122,40 +148,34 @@ export class ThemeManager {
       "--accent-rgb": hexToRgb(theme.accent),
       "--error-rgb": "255, 85, 85",
     };
-  }
+  };
 
-  // Set the current theme by name and notify listeners
-  setTheme(themeName: string): boolean {
-    if (!this.themeData[themeName]) {
-      console.warn(`Theme '${themeName}' not found`);
+  // Set current theme by name and notify listeners
+  readonly setTheme = (themeName: string): boolean => {
+    // Early return for no change
+    if (this.currentThemeName === themeName) {
       return false;
     }
 
-    if (this.currentTheme === themeName) {
-      return false; // No change, avoid unnecessary updates
-    }
+    this.currentThemeName = themeName;
+    this.storage.setItem(this.storageKey, themeName);
 
-    this.currentTheme = themeName;
-    this.storage.setItem(this.STORAGE_KEY, themeName);
-
-    // Notify all listeners
+    // Notify listeners
     const theme = this.getCurrentTheme();
     this.notifyListeners({ themeName, theme });
-    return true;
-  }
 
-  // Subscribe to theme change events
-  subscribe(listener: ThemeListener): () => void {
+    return true;
+  };
+
+  // Subscribe method for theme changes
+  readonly subscribe = (listener: ThemeListener): (() => void) => {
     this.listeners.add(listener);
 
-    // Return unsubscribe function
-    return () => {
-      this.listeners.delete(listener);
-    };
-  }
+    // Return cleanup function to remove listener
+    return () => this.listeners.delete(listener);
+  };
 
-  // Notify all listeners about a theme change
-  private notifyListeners(event: ThemeChangeEvent): void {
+  private readonly notifyListeners = (event: ThemeChangeEvent): void => {
     this.listeners.forEach((listener) => {
       try {
         listener(event);
@@ -163,7 +183,7 @@ export class ThemeManager {
         console.error("Error in theme listener:", error);
       }
     });
-  }
+  };
 }
 
 // Create a default instance for backwards compatibility

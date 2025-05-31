@@ -1,16 +1,26 @@
 {
-  "name": "cincout",
+  "name": "academic-presentation",
+  "private": true,
+  "version": "0.1.0",
   "scripts": {
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cd frontend && npm install && npm run build",
-    "build:backend": "cd backend && npm install && npm run build",
-    "clean": "rm -rf frontend/node_modules frontend/dist frontend/package-lock.json backend/node_modules backend/dist backend/package-lock.json",
-    "start": "node backend/dist/server.bundle.js"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
-  "description": "This project is a web IDE (integrated development environment) for _C/C++_ language. It allows users to write code, compile, analyze, and run C/C++ programs directly in their web browser. The application is built using `Typescript/Node.js` for the backend and `HTML/CSS/TypeScript` for the frontend. It provides a user-friendly interface with rich features.",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pp3ng/cincout.git"
+  "dependencies": {
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "@mui/material": "^5.15.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "reveal.js": "^5.0.4"
   },
-  "homepage": "https://github.com/pp3ng/cincout#readme"
+  "devDependencies": {
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@types/reveal.js": "^4.4.8",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12"
+  }
 }

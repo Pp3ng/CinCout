@@ -1,0 +1,45 @@
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+.reveal {
+  font-family: 'Roboto', sans-serif;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+}
+
+.reveal h1 {
+  font-size: 2.5em;
+  font-weight: 700;
+}
+
+.reveal h2 {
+  font-size: 1.8em;
+  font-weight: 500;
+}
+
+.reveal h3 {
+  font-size: 1.4em;
+  font-weight: 400;
+}
+
+.reveal ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.reveal li {
+  margin: 15px 0;
+  font-size: 1.2em;
+}
+
+.reveal p {
+  font-size: 1.2em;
+  line-height: 1.4;
+}

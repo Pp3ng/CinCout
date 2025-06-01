@@ -13,7 +13,6 @@
 .dropdown-btn:hover {
   border-color: var(--accent);
   background-color: rgba(var(--accent-rgb), 0.1);
-  box-shadow: var(--shadow-accent-md);
 }
 
 /* Dropdowns structure */

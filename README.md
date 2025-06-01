@@ -20,14 +20,30 @@
 ### 🛠️ Built with
 
 <p align="center">
-  <img src="https://img.shields.io/badge/-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
-  <img src="https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js"/>
-  <img src="https://img.shields.io/badge/-Socket.IO-010101?style=flat-square&logo=socket.io&logoColor=white" alt="Socket.IO"/>
-  <img src="https://img.shields.io/badge/-Koa-33333D?style=flat-square&logo=koa&logoColor=white" alt="Koa"/>
-  <img src="https://img.shields.io/badge/-Vite-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite"/>
-  <img src="https://img.shields.io/badge/-Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS"/>
-  <img src="https://img.shields.io/badge/-CodeMirror-d30707?style=flat-square&logo=codemirror&logoColor=white" alt="CodeMirror"/>
-  <img src="https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"/>
+  <a href="https://www.typescriptlang.org/">
+    <img src="https://img.shields.io/badge/-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
+  </a>
+  <a href="https://nodejs.org/">
+    <img src="https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js"/>
+  </a>
+  <a href="https://socket.io/">
+    <img src="https://img.shields.io/badge/-Socket.IO-010101?style=flat-square&logo=socket.io&logoColor=white" alt="Socket.IO"/>
+  </a>
+  <a href="https://koajs.com/">
+    <img src="https://img.shields.io/badge/-Koa-33333D?style=flat-square&logo=koa&logoColor=white" alt="Koa"/>
+  </a>
+  <a href="https://vitejs.dev/">
+    <img src="https://img.shields.io/badge/-Vite-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite"/>
+  </a>
+  <a href="https://tailwindcss.com/">
+    <img src="https://img.shields.io/badge/-Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS"/>
+  </a>
+  <a href="https://codemirror.net/">
+    <img src="https://img.shields.io/badge/-CodeMirror-d30707?style=flat-square&logo=codemirror&logoColor=white" alt="CodeMirror"/>
+  </a>
+  <a href="https://www.docker.com/">
+    <img src="https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"/>
+  </a>
 </p>
 
 </div>

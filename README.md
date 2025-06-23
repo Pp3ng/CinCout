@@ -13,6 +13,9 @@
   <a href="https://wakatime.com/badge/github/Pp3ng/CinCout">
     <img src="https://wakatime.com/badge/github/Pp3ng/CinCout.svg" alt="wakatime"/>
   </a>
+  <a href="https://hub.docker.com/r/pp3ng/cincout">
+    <img src="https://img.shields.io/badge/Docker_Hub-pp3ng/cincout-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker Hub"/>
+  </a>
 </p>
 
 ---
@@ -140,28 +143,3 @@ The project follows a clean separation between frontend and backend:
 | **Debug with GDB**    |      `Alt + 5`      |   `^ + 5`    |
 | **View System Calls** |      `Alt + 6`      |   `^ + 6`    |
 | **Close Output**      |        `ESC`        |    `ESC`     |
-
-## 🤝 Contributing
-
-<div align="center">
-
-**welcome contributions!** 🎉
-
-Feel free to fork the repository, make your creative changes, and submit a pull request.
-
-<p>
-  <a href="https://github.com/Pp3ng/CinCout/fork">
-    <img src="https://img.shields.io/badge/🍴_Fork-Repository-orange" alt="Fork Repository"/>
-  </a>
-  <a href="https://github.com/Pp3ng/CinCout/issues">
-    <img src="https://img.shields.io/badge/🐛_Report-Issues-red" alt="Report Issues"/>
-  </a>
-</p>
-
-</div>
-
----
-
-<div align="center">
-⭐ Star this repository if you find it helpful! ⭐
-</div>
